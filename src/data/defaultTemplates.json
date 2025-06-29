@@ -1,0 +1,22 @@
+[
+  {
+    "id": 1,
+  "name": "Code Debug - Step 1: Context Gathering",
+  "description": "Gather all necessary context about a code error for further analysis.",
+  "content": "An error occurred, likely caused by the code from your last output. Please analyze all provided information and generate a detailed summary for the next AI agent. The summary must be in English and include the following sections:\n\n1.  **Problem Description:** Briefly describe the error based on my initial input and the console log.\n\n2.  **Console Log:**\n    ```{console_log}```\n\n3.  **Analysis of Previous Code:** Review the code you generated in your last output. Identify and list potential areas in that code that could have caused this error.\n\n4.  **Relevant Code Snippet(s):** Provide the code snippet(s) from the relevant file(s) where the error likely originates. You MUST include the full file path for each snippet.\n\n5.  **Expected vs. Actual Behavior:** Describe what the code was expected to do versus what it actually did (the error).\n\n6.  **Environment Information:** List all relevant environment details (e.g., Node.js version, Browser version, Operating System, etc.).\n\nYour entire output must be a single, structured text block. Conclude this summary with the following call to action for the GitHub AI:\n\n---\n\n**Call to Action for GitHub AI:** Based on the detailed summary above, generate a new, final prompt that I can send back to the Copilot in my IDE. This prompt must contain the complete, step-by-step instructions and code needed to fix the original issue.",
+    "category": "Coding",
+    "variables": ["console_log"],
+    "lastUsed": "2025-06-29T00:00:00.000Z",
+    "favorite": false
+  },
+  {
+    "id": 2,
+    "name": "Code Review",
+    "description": "Structure code review requests",
+    "content": "Please review this {language} code for {focus_areas}. The code is for {project_context}. Pay special attention to {specific_concerns}.\n\nCode:\n{code}",
+    "category": "Development",
+    "variables": ["language", "focus_areas", "project_context", "specific_concerns", "code"],
+    "lastUsed": "2025-06-28T00:00:00.000Z",
+    "favorite": false
+  }
+]

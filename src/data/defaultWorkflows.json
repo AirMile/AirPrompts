@@ -1,0 +1,26 @@
+[
+  {
+    "id": 1,
+    "name": "Content Creation Pipeline",
+    "description": "Complete content creation from research to final draft",
+    "steps": [
+      {
+        "id": "step1",
+        "templateId": 1,
+        "name": "Research Phase",
+        "content": "Generate 5 research questions about {topic} for {audience}. Focus on {research_focus}.",
+        "variables": ["topic", "audience", "research_focus"]
+      },
+      {
+        "id": "step2",
+        "templateId": 2,
+        "name": "Outline Creation",
+        "content": "Create a detailed outline for a {content_type} about {topic}. Use this research: {previous_output}",
+        "variables": ["content_type", "topic", "previous_output"]
+      }
+    ],
+    "category": "Content",
+    "lastUsed": "2025-06-27T00:00:00.000Z",
+    "favorite": true
+  }
+]
