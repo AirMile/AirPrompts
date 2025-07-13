@@ -9,10 +9,28 @@ const ItemExecutor = ({ item, type, onComplete, onCancel }) => {
   const [copied, setCopied] = useState(false);
   const [completedSteps, setCompletedSteps] = useState([]);
   const [copiedAgainId, setCopiedAgainId] = useState(null);
+  const [selectedTemplates, setSelectedTemplates] = useState({}); // stepId -> templateId
 
   const isWorkflow = type === 'workflow';
   const steps = isWorkflow ? item.steps : [{ content: item.content, variables: item.variables }];
   const currentStepData = steps[currentStep];
+  
+  // Get the current template for this step
+  const getCurrentTemplate = () => {
+    if (!isWorkflow) return currentStepData;
+    
+    // If step has multiple template options, get selected one
+    if (currentStepData.templateOptions && currentStepData.templateOptions.length > 0) {
+      const selectedTemplateId = selectedTemplates[currentStepData.id];
+      const selectedTemplate = currentStepData.templateOptions.find(t => t.id === selectedTemplateId);
+      return selectedTemplate || currentStepData.templateOptions[0]; // Default to first option
+    }
+    
+    // Legacy single template step
+    return currentStepData;
+  };
+  
+  const currentTemplate = getCurrentTemplate();
   
   // Auto-focus first input on mount and step changes
   useEffect(() => {
@@ -33,7 +51,7 @@ const ItemExecutor = ({ item, type, onComplete, onCancel }) => {
   };
 
   const generateOutput = () => {
-    let output = currentStepData.content;
+    let output = currentTemplate.content;
     Object.entries(variableValues).forEach(([key, value]) => {
       output = output.replace(new RegExp(`\\{${key}\\}`, 'g'), value);
     });
@@ -97,9 +115,12 @@ const ItemExecutor = ({ item, type, onComplete, onCancel }) => {
     }
   };
 
-  const canProceed = currentStepData.variables?.every(variable => 
+  const canProceed = currentTemplate.variables?.every(variable => 
     variableValues[variable]?.trim()
   ) ?? true;
+  
+  const hasTemplateOptions = isWorkflow && currentStepData.templateOptions && currentStepData.templateOptions.length > 1;
+  const needsTemplateSelection = hasTemplateOptions && !selectedTemplates[currentStepData.id];
 
   if (copied) {
     return (
@@ -131,6 +152,11 @@ const ItemExecutor = ({ item, type, onComplete, onCancel }) => {
                 <p className="text-gray-300 mb-2">
                   Step {currentStep + 1} of {steps.length}: {currentStepData.name}
                 </p>
+                {hasTemplateOptions && (
+                  <p className="text-sm text-blue-300 mb-2">
+                    Template options available ({currentStepData.templateOptions.length})
+                  </p>
+                )}
                 {/* Progress indicator */}
                 <div className="flex items-center gap-2">
                   {steps.map((_, index) => (
@@ -170,9 +196,9 @@ const ItemExecutor = ({ item, type, onComplete, onCancel }) => {
             <button
               onClick={handleCopyAndNext}
               onKeyDown={(e) => e.key === 'Enter' && handleCopyAndNext()}
-              disabled={!canProceed}
+              disabled={!canProceed || needsTemplateSelection}
               className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
-              tabIndex={currentStepData.variables?.length + 1 || 1}
+              tabIndex={currentTemplate.variables?.length + 1 || 1}
             >
               <Copy className="w-4 h-4" />
               {isWorkflow && currentStep < steps.length - 1 
@@ -185,11 +211,49 @@ const ItemExecutor = ({ item, type, onComplete, onCancel }) => {
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <div className="space-y-4">
+            {/* Template Selection */}
+            {hasTemplateOptions && (
+              <div>
+                <h3 className="text-lg font-semibold text-gray-100 mb-3">Choose Template</h3>
+                <div className="space-y-2">
+                  {currentStepData.templateOptions.map((template) => (
+                    <div
+                      key={template.id}
+                      className={`p-3 border rounded-lg cursor-pointer transition-colors ${
+                        selectedTemplates[currentStepData.id] === template.id
+                          ? 'border-blue-500 bg-blue-900/30'
+                          : 'border-gray-600 bg-gray-800 hover:bg-gray-700'
+                      }`}
+                      onClick={() => {
+                        setSelectedTemplates({
+                          ...selectedTemplates,
+                          [currentStepData.id]: template.id
+                        });
+                        setVariableValues({}); // Reset variables when template changes
+                      }}
+                    >
+                      <h4 className="font-medium text-gray-100 mb-1">{template.name}</h4>
+                      <p className="text-sm text-gray-300 mb-2">{template.description}</p>
+                      <div className="text-xs text-gray-400 font-mono bg-gray-900 p-2 rounded">
+                        {template.content.length > 100 
+                          ? `${template.content.substring(0, 100)}...` 
+                          : template.content
+                        }
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+            
             <div>
               <h3 className="text-lg font-semibold text-gray-100 mb-3">Fill in Variables</h3>
-              {currentStepData.variables?.map((variable, index) => {
-                const isFirst = index === 0;
-                const isLast = index === currentStepData.variables.length - 1;
+              {needsTemplateSelection ? (
+                <p className="text-gray-500 italic">Select a template above to see variables</p>
+              ) : (
+                currentTemplate.variables?.map((variable, index) => {
+                  const isFirst = index === 0;
+                  const isLast = index === currentTemplate.variables.length - 1;
                 
                 return (
                   <div key={variable} className="mb-4">
@@ -221,7 +285,8 @@ const ItemExecutor = ({ item, type, onComplete, onCancel }) => {
                     )}
                   </div>
                 );
-              }) || <p className="text-gray-500">No variables to fill for this step.</p>}
+                }) || <p className="text-gray-500">No variables to fill for this step.</p>
+              )}
             </div>
           </div>
 

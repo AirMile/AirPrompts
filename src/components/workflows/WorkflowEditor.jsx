@@ -1,13 +1,23 @@
 import React, { useState } from 'react';
-import { ArrowRight, Workflow, Trash2 } from 'lucide-react';
-import { DEFAULT_CATEGORIES } from '../../types/template.types.js';
+import { ArrowRight, Workflow, Trash2, Plus, X } from 'lucide-react';
+import { DEFAULT_CATEGORIES, createWorkflowStep } from '../../types/template.types.js';
 
 const WorkflowEditor = ({ workflow, templates, onSave, onCancel }) => {
-  const [formData, setFormData] = useState({
-    name: workflow?.name || '',
-    description: workflow?.description || '',
-    category: workflow?.category || 'General',
-    steps: workflow?.steps || []
+  const [formData, setFormData] = useState(() => {
+    // For new workflows, start with one empty step
+    const initialSteps = workflow?.steps || [
+      createWorkflowStep({
+        name: 'Step 1',
+        templateOptions: []
+      })
+    ];
+    
+    return {
+      name: workflow?.name || '',
+      description: workflow?.description || '',
+      category: workflow?.category || 'General',
+      steps: initialSteps
+    };
   });
 
   const handleSave = () => {
@@ -20,17 +30,47 @@ const WorkflowEditor = ({ workflow, templates, onSave, onCancel }) => {
     onSave(newWorkflow);
   };
 
-  const addTemplate = (template) => {
-    const newStep = {
-      id: `step_${Date.now()}`,
-      templateId: template.id,
-      name: `Step ${formData.steps.length + 1}: ${template.name}`,
-      content: template.content,
-      variables: template.variables
-    };
+  const addNewStep = () => {
+    const newStep = createWorkflowStep({
+      name: `Step ${formData.steps.length + 1}`,
+      templateOptions: []
+    });
     setFormData({
       ...formData,
       steps: [...formData.steps, newStep]
+    });
+  };
+
+  const addTemplateToStep = (stepId, template) => {
+    setFormData({
+      ...formData,
+      steps: formData.steps.map(step => {
+        if (step.id === stepId) {
+          const updatedOptions = [...step.templateOptions, template];
+          return {
+            ...step,
+            templateOptions: updatedOptions,
+            name: step.templateOptions.length === 0 ? `Step ${formData.steps.findIndex(s => s.id === stepId) + 1}: ${template.name}` : step.name
+          };
+        }
+        return step;
+      })
+    });
+  };
+
+  const removeTemplateFromStep = (stepId, templateId) => {
+    setFormData({
+      ...formData,
+      steps: formData.steps.map(step => {
+        if (step.id === stepId) {
+          const updatedOptions = step.templateOptions.filter(t => t.id !== templateId);
+          return {
+            ...step,
+            templateOptions: updatedOptions
+          };
+        }
+        return step;
+      })
     });
   };
 
@@ -119,8 +159,19 @@ const WorkflowEditor = ({ workflow, templates, onSave, onCancel }) => {
             </div>
 
             <div>
-              <h3 className="text-lg font-semibold text-gray-100 mb-3">Available Templates</h3>
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="text-lg font-semibold text-gray-100">Workflow Steps</h3>
+                <button
+                  onClick={addNewStep}
+                  className="px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center gap-2"
+                >
+                  <Plus className="w-4 h-4" />
+                  Add Step
+                </button>
+              </div>
+              
               <div className="space-y-2 max-h-80 overflow-y-auto">
+                <h4 className="text-sm font-medium text-gray-300 mb-2">Available Templates</h4>
                 {templates.map(template => (
                   <div key={template.id} className="p-3 border border-gray-600 bg-gray-800 text-gray-100 rounded-lg hover:bg-gray-700">
                     <div className="flex items-center justify-between">
@@ -129,12 +180,6 @@ const WorkflowEditor = ({ workflow, templates, onSave, onCancel }) => {
                         <p className="text-sm text-gray-300">{template.description}</p>
                         <p className="text-xs text-gray-400">{template.variables.length} variables</p>
                       </div>
-                      <button
-                        onClick={() => addTemplate(template)}
-                        className="px-3 py-1 bg-green-600 text-white rounded text-sm hover:bg-green-700"
-                      >
-                        Add
-                      </button>
                     </div>
                   </div>
                 ))}
@@ -144,14 +189,16 @@ const WorkflowEditor = ({ workflow, templates, onSave, onCancel }) => {
 
           {/* Workflow Steps */}
           <div className="lg:col-span-2">
-            <h3 className="text-lg font-semibold text-gray-100 mb-3">
-              Workflow Steps ({formData.steps.length})
-            </h3>
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-lg font-semibold text-gray-100">
+                Workflow Steps ({formData.steps.length})
+              </h3>
+            </div>
             
             {formData.steps.length === 0 ? (
               <div className="text-center py-12 border-2 border-dashed border-gray-600 rounded-lg">
                 <Workflow className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                <p className="text-gray-500">Add templates from the left to build your workflow</p>
+                <p className="text-gray-500">Click "Add Step" to start building your workflow</p>
               </div>
             ) : (
               <div className="space-y-4">
@@ -163,8 +210,21 @@ const WorkflowEditor = ({ workflow, templates, onSave, onCancel }) => {
                           {index + 1}
                         </span>
                         <div>
-                          <h4 className="font-medium text-gray-100">{step.name}</h4>
-                          <p className="text-sm text-gray-300">{step.variables.length} variables</p>
+                          <input
+                            type="text"
+                            value={step.name}
+                            onChange={(e) => {
+                              setFormData({
+                                ...formData,
+                                steps: formData.steps.map(s => 
+                                  s.id === step.id ? { ...s, name: e.target.value } : s
+                                )
+                              });
+                            }}
+                            className="bg-transparent text-gray-100 font-medium border-none outline-none focus:bg-gray-700 px-2 py-1 rounded"
+                            placeholder="Step name..."
+                          />
+                          <p className="text-sm text-gray-300">{step.templateOptions.length} template option(s)</p>
                         </div>
                       </div>
                       <div className="flex items-center gap-1">
@@ -191,19 +251,50 @@ const WorkflowEditor = ({ workflow, templates, onSave, onCancel }) => {
                       </div>
                     </div>
                     
-                    <div className="bg-gray-900 rounded p-3 border border-gray-700">
-                      <div className="text-sm text-gray-200 font-mono">
-                        {step.content.split(/(\{[^}]+\})/).map((part, partIndex) => (
-                          <span key={partIndex}>
-                            {part.match(/\{[^}]+\}/) ? (
-                              <span className="bg-green-100 text-green-800 px-1 rounded">
-                                {part}
+                    {/* Template Options */}
+                    <div className="space-y-3">
+                      {step.templateOptions.map((template) => (
+                        <div key={template.id} className="bg-gray-900 rounded p-3 border border-gray-700">
+                          <div className="flex items-center justify-between mb-2">
+                            <h4 className="font-medium text-gray-100">{template.name}</h4>
+                            <button
+                              onClick={() => removeTemplateFromStep(step.id, template.id)}
+                              className="p-1 text-red-500 hover:text-red-700"
+                            >
+                              <X className="w-4 h-4" />
+                            </button>
+                          </div>
+                          <div className="text-sm text-gray-200 font-mono">
+                            {template.content.split(/(\{[^}]+\})/).map((part, partIndex) => (
+                              <span key={partIndex}>
+                                {part.match(/\{[^}]+\}/) ? (
+                                  <span className="bg-green-100 text-green-800 px-1 rounded">
+                                    {part}
+                                  </span>
+                                ) : (
+                                  part
+                                )}
                               </span>
-                            ) : (
-                              part
-                            )}
-                          </span>
-                        ))}
+                            ))}
+                          </div>
+                        </div>
+                      ))}
+                      
+                      {/* Add Template to Step */}
+                      <div className="border-2 border-dashed border-gray-600 rounded-lg p-3">
+                        <p className="text-sm text-gray-400 mb-2">Add template option:</p>
+                        <div className="grid grid-cols-1 gap-2 max-h-32 overflow-y-auto">
+                          {templates.filter(t => !step.templateOptions.find(opt => opt.id === t.id)).map(template => (
+                            <button
+                              key={template.id}
+                              onClick={() => addTemplateToStep(step.id, template)}
+                              className="text-left p-2 border border-gray-600 bg-gray-700 text-gray-100 rounded hover:bg-gray-600"
+                            >
+                              <div className="font-medium text-sm">{template.name}</div>
+                              <div className="text-xs text-gray-300">{template.variables.length} variables</div>
+                            </button>
+                          ))}
+                        </div>
                       </div>
                     </div>
 

@@ -34,6 +34,21 @@ export const createTemplate = (data = {}) => {
 };
 
 /**
+ * Create a new workflow step with template options
+ * @param {Object} data - Step data
+ * @returns {Object} Complete workflow step object
+ */
+export const createWorkflowStep = (data = {}) => {
+  return {
+    id: data.id || `step_${Date.now()}`,
+    name: data.name || '',
+    templateOptions: data.templateOptions || [], // Array of template objects for choice
+    selectedTemplateId: data.selectedTemplateId || null, // For execution
+    variables: data.variables || []
+  };
+};
+
+/**
  * Create a new workflow with default values
  * @param {Object} data - Workflow data
  * @returns {Object} Complete workflow object
