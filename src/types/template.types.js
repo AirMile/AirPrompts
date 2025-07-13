@@ -59,6 +59,7 @@ export const createTemplate = (data = {}) => {
     description: data.description || '',
     content,
     category: data.category || 'General',
+    folderId: data.folderId || 'general',
     variables: data.variables || extractVariables(content),
     lastUsed: data.lastUsed || now,
     favorite: data.favorite || false,
@@ -100,6 +101,7 @@ export const createWorkflow = (data = {}) => {
     description: data.description || '',
     steps: data.steps || [],
     category: data.category || 'General',
+    folderId: data.folderId || 'workflows',
     lastUsed: data.lastUsed || now,
     favorite: data.favorite || false,
     createdAt: data.createdAt || now,
@@ -108,7 +110,38 @@ export const createWorkflow = (data = {}) => {
 };
 
 /**
- * Default categories for templates and workflows
+ * Create a new folder with default values
+ * @param {Object} data - Folder data
+ * @returns {Object} Complete folder object
+ */
+export const createFolder = (data = {}) => {
+  const now = new Date().toISOString();
+  
+  return {
+    id: data.id || Date.now(),
+    name: data.name || '',
+    parentId: data.parentId || null,
+    type: 'folder',
+    createdAt: data.createdAt || now,
+    updatedAt: data.updatedAt || now
+  };
+};
+
+/**
+ * Default folder structure for the application
+ */
+export const DEFAULT_FOLDERS = [
+  { id: 'root', name: 'Root', parentId: null },
+  { id: 'general', name: 'General', parentId: 'root' },
+  { id: 'content', name: 'Content', parentId: 'general' },
+  { id: 'moods', name: 'Moods', parentId: 'general' },
+  { id: 'workflows', name: 'Common Workflows', parentId: 'general' },
+  { id: 'projects', name: 'Projects', parentId: 'root' },
+  { id: 'archive', name: 'Archive', parentId: 'root' }
+];
+
+/**
+ * Default categories for templates and workflows (deprecated - use folders)
  */
 export const DEFAULT_CATEGORIES = [
   'General',
@@ -189,6 +222,7 @@ export const createSnippet = (data = {}) => {
     content: data.content || '',
     tags: data.tags || [],
     category: data.category || 'General',
+    folderId: data.folderId || 'moods',
     createdAt: data.createdAt || now,
     updatedAt: data.updatedAt || now
   };

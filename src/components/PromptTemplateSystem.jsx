@@ -1,7 +1,4 @@
-import React, { useState, useEffect } from 'react';
-import { Plus, Play, Edit, Copy, Trash2, ArrowRight, ArrowLeft, Check, Search, Tag, Workflow, FileText, Star, Clock } from 'lucide-react';
-import { extractVariables, createTemplate, createWorkflow, createSnippet, DEFAULT_CATEGORIES } from '../types/template.types.js';
-import { copyToClipboard } from '../utils/clipboard.js';
+import React, { useState } from 'react';
 import TemplateEditor from './templates/TemplateEditor.jsx';
 import ItemExecutor from './common/ItemExecutor.jsx';
 import Homepage from './dashboard/Homepage.jsx';
@@ -10,18 +7,20 @@ import InsertEditor from './inserts/InsertEditor.jsx';
 import defaultTemplates from '../data/defaultTemplates.json';
 import defaultWorkflows from '../data/defaultWorkflows.json';
 import defaultInserts from '../data/defaultInserts.json';
+import defaultFolders from '../data/defaultFolders.json';
 
 const PromptTemplateSystem = () => {
-  const [currentView, setCurrentView] = useState('home');
   const [templates, setTemplates] = useState(defaultTemplates);
   const [workflows, setWorkflows] = useState(defaultWorkflows);
   const [inserts, setInserts] = useState(defaultInserts);
+  const [folders, setFolders] = useState(defaultFolders);
   const [editingTemplate, setEditingTemplate] = useState(null);
   const [editingWorkflow, setEditingWorkflow] = useState(null);
   const [editingInsert, setEditingInsert] = useState(null);
   const [executingItem, setExecutingItem] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('All');
+  const [selectedFolderId, setSelectedFolderId] = useState(null);
 
   // Main render logic
   const handleSaveTemplate = (template) => {
@@ -31,7 +30,6 @@ const PromptTemplateSystem = () => {
       setTemplates([...templates, { ...template, id: Date.now() }]);
     }
     setEditingTemplate(null);
-    setCurrentView('home');
   };
 
   const handleSaveWorkflow = (workflow) => {
@@ -41,7 +39,6 @@ const PromptTemplateSystem = () => {
       setWorkflows([...workflows, { ...workflow, id: Date.now() }]);
     }
     setEditingWorkflow(null);
-    setCurrentView('home');
   };
 
   const handleSaveInsert = (insert) => {
@@ -51,7 +48,21 @@ const PromptTemplateSystem = () => {
       setInserts([...inserts, { ...insert, id: Date.now() }]);
     }
     setEditingInsert(null);
-    setCurrentView('home');
+  };
+
+  const handleCreateFolder = (parentId = 'root') => {
+    const folderName = prompt('Enter folder name:');
+    if (folderName) {
+      const newFolder = {
+        id: `folder_${Date.now()}`,
+        name: folderName,
+        parentId: parentId,
+        type: 'folder',
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      };
+      setFolders([...folders, newFolder]);
+    }
   };
 
   if (executingItem) {
@@ -62,11 +73,9 @@ const PromptTemplateSystem = () => {
         inserts={inserts}
         onComplete={() => {
           setExecutingItem(null);
-          setCurrentView('home');
         }}
         onCancel={() => {
           setExecutingItem(null);
-          setCurrentView('home');
         }}
       />
     );
@@ -76,10 +85,10 @@ const PromptTemplateSystem = () => {
     return (
       <TemplateEditor
         template={editingTemplate}
+        folders={folders}
         onSave={handleSaveTemplate}
         onCancel={() => {
           setEditingTemplate(null);
-          setCurrentView('home');
         }}
       />
     );
@@ -91,10 +100,10 @@ const PromptTemplateSystem = () => {
         workflow={editingWorkflow}
         templates={templates}
         inserts={inserts}
+        folders={folders}
         onSave={handleSaveWorkflow}
         onCancel={() => {
           setEditingWorkflow(null);
-          setCurrentView('home');
         }}
       />
     );
@@ -104,10 +113,10 @@ const PromptTemplateSystem = () => {
     return (
       <InsertEditor
         insert={editingInsert}
+        folders={folders}
         onSave={handleSaveInsert}
         onCancel={() => {
           setEditingInsert(null);
-          setCurrentView('home');
         }}
       />
     );
@@ -118,10 +127,13 @@ const PromptTemplateSystem = () => {
       templates={templates}
       workflows={workflows}
       inserts={inserts}
+      folders={folders}
       searchQuery={searchQuery}
       setSearchQuery={setSearchQuery}
       selectedCategory={selectedCategory}
       setSelectedCategory={setSelectedCategory}
+      selectedFolderId={selectedFolderId}
+      setSelectedFolderId={setSelectedFolderId}
       onEditTemplate={setEditingTemplate}
       onEditWorkflow={setEditingWorkflow}
       onEditInsert={setEditingInsert}
@@ -129,6 +141,7 @@ const PromptTemplateSystem = () => {
       onDeleteTemplate={(id) => setTemplates(templates.filter(t => t.id !== id))}
       onDeleteWorkflow={(id) => setWorkflows(workflows.filter(w => w.id !== id))}
       onDeleteInsert={(id) => setInserts(inserts.filter(s => s.id !== id))}
+      onCreateFolder={handleCreateFolder}
     />
   );
 };

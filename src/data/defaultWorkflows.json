@@ -1,26 +1,138 @@
 [
   {
     "id": 1,
-    "name": "Content Creation Pipeline",
-    "description": "Complete content creation from research to final draft",
+    "name": "Complete Feature Development",
+    "description": "End-to-end workflow voor het ontwikkelen van een nieuwe feature",
     "steps": [
       {
         "id": "step1",
-        "templateId": 1,
-        "name": "Research Phase",
-        "content": "Generate 5 research questions about {topic} for {audience}. Focus on {research_focus}.",
-        "variables": ["topic", "audience", "research_focus"]
+        "name": "Feature Analysis & Planning",
+        "type": "template",
+        "content": "Analyseer de volgende feature request en maak een implementatieplan:\n\n**Feature Request:**\n{feature_description}\n\n**Requirements:**\n{requirements}\n\n**Constraints:**\n{constraints}\n\nLever:\n1. Gedetailleerde feature analyse\n2. Technical approach\n3. Implementation timeline\n4. Resource requirements\n5. Risk assessment\n6. Testing strategy",
+        "variables": ["feature_description", "requirements", "constraints"]
+      },
+      {
+        "id": "step2", 
+        "name": "Code Implementation",
+        "type": "template",
+        "content": "Implementeer de feature op basis van de volgende planning:\n\n**Planning:** {previous_output}\n\n**Technical Specifications:**\n- Language/Framework: {tech_stack}\n- Architecture pattern: {architecture}\n- Integration points: {integrations}\n\n**Implementation Requirements:**\n- Code style: {code_style}\n- Documentation level: {documentation_level}\n- Performance targets: {performance_targets}\n\nGenereer complete implementatie met:\n1. Main feature code\n2. Error handling\n3. Input validation\n4. Logging\n5. Configuration management",
+        "variables": ["previous_output", "tech_stack", "architecture", "integrations", "code_style", "documentation_level", "performance_targets"]
+      },
+      {
+        "id": "step3",
+        "name": "Testing & Documentation",
+        "type": "template", 
+        "content": "Maak uitgebreide tests en documentatie voor de geïmplementeerde feature:\n\n**Implementation:** {previous_output}\n\n**Testing Requirements:**\n- Test framework: {test_framework}\n- Coverage target: {coverage_target}%\n- Test environments: {test_environments}\n\n**Documentation Requirements:**\n- API documentation: {api_docs}\n- User documentation: {user_docs}\n- Developer documentation: {dev_docs}\n\nLever:\n1. Complete test suite (unit, integration, e2e)\n2. Test data en mocks\n3. API documentation\n4. Usage examples\n5. Troubleshooting guide\n6. Deployment instructions",
+        "variables": ["previous_output", "test_framework", "coverage_target", "test_environments", "api_docs", "user_docs", "dev_docs"]
+      }
+    ],
+    "category": "Development",
+    "folderId": "workflows",
+    "lastUsed": "2025-01-13T00:00:00.000Z",
+    "favorite": true,
+    "createdAt": "2025-01-13T00:00:00.000Z",
+    "updatedAt": "2025-01-13T00:00:00.000Z"
+  },
+  {
+    "id": 2,
+    "name": "Bug Investigation & Resolution",
+    "description": "Systematische bug hunting en fix workflow",
+    "steps": [
+      {
+        "id": "step1",
+        "name": "Bug Reproduction & Analysis", 
+        "type": "template",
+        "content": "Reproduceer en analyseer de volgende bug:\n\n**Bug Report:**\n{bug_report}\n\n**Environment Details:**\n{environment_details}\n\n**Steps to Reproduce:**\n{reproduction_steps}\n\n**Expected vs Actual:**\n- Expected: {expected_behavior}\n- Actual: {actual_behavior}\n\nUitvoeren:\n1. Bug reproductie verificatie\n2. Root cause analyse\n3. Impact assessment\n4. Related components identificatie\n5. Fix approach opties\n6. Priority en effort schatting",
+        "variables": ["bug_report", "environment_details", "reproduction_steps", "expected_behavior", "actual_behavior"]
       },
       {
         "id": "step2",
-        "templateId": 2,
-        "name": "Outline Creation",
-        "content": "Create a detailed outline for a {content_type} about {topic}. Use this research: {previous_output}",
-        "variables": ["content_type", "topic", "previous_output"]
+        "name": "Fix Implementation",
+        "type": "template",
+        "content": "Implementeer de bug fix op basis van de analyse:\n\n**Bug Analysis:** {previous_output}\n\n**Fix Approach:**\n{fix_approach}\n\n**Code Context:**\n- Affected files: {affected_files}\n- Dependencies: {dependencies}\n- Framework: {framework}\n\nImplementeer:\n1. Core bug fix\n2. Edge case handling\n3. Input validation improvements\n4. Error messaging\n5. Logging enhancements\n6. Regression prevention",
+        "variables": ["previous_output", "fix_approach", "affected_files", "dependencies", "framework"]
+      },
+      {
+        "id": "step3",
+        "name": "Testing & Verification",
+        "type": "template", 
+        "content": "Test en verifieer de bug fix:\n\n**Implemented Fix:** {previous_output}\n\n**Testing Strategy:**\n- Regression tests: {regression_tests}\n- Integration tests: {integration_tests}\n- Performance tests: {performance_tests}\n\n**Verification Checklist:**\n{verification_checklist}\n\nUitvoeren:\n1. Bug fix verification tests\n2. Regression test suite\n3. Performance impact testing\n4. Edge case validation\n5. User acceptance criteria check\n6. Deployment verification plan",
+        "variables": ["previous_output", "regression_tests", "integration_tests", "performance_tests", "verification_checklist"]
       }
     ],
-    "category": "Content",
-    "lastUsed": "2025-06-27T00:00:00.000Z",
-    "favorite": true
+    "category": "Development", 
+    "folderId": "workflows",
+    "lastUsed": "2025-01-13T00:00:00.000Z",
+    "favorite": true,
+    "createdAt": "2025-01-13T00:00:00.000Z",
+    "updatedAt": "2025-01-13T00:00:00.000Z"
+  },
+  {
+    "id": 3,
+    "name": "Code Refactoring Pipeline",
+    "description": "Veilige en systematische code refactoring workflow",
+    "steps": [
+      {
+        "id": "step1",
+        "name": "Refactoring Assessment",
+        "type": "template",
+        "content": "Analyseer de code die gerefactored moet worden:\n\n**Current Code:**\n```{language}\n{code_to_refactor}\n```\n\n**Refactoring Goals:**\n{refactoring_goals}\n\n**Constraints:**\n- Backward compatibility: {compatibility_requirements}\n- Performance impact: {performance_constraints}\n- Timeline: {timeline}\n\n**Context:**\n- Usage patterns: {usage_patterns}\n- Dependencies: {dependencies}\n- Test coverage: {current_test_coverage}\n\nLever:\n1. Code quality assessment\n2. Refactoring opportunities identificatie\n3. Risk analysis\n4. Refactoring strategy\n5. Breaking changes assessment\n6. Implementation plan",
+        "variables": ["language", "code_to_refactor", "refactoring_goals", "compatibility_requirements", "performance_constraints", "timeline", "usage_patterns", "dependencies", "current_test_coverage"]
+      },
+      {
+        "id": "step2",
+        "name": "Refactoring Implementation",
+        "type": "template",
+        "content": "Implementeer de refactoring op basis van het assessment:\n\n**Assessment Results:** {previous_output}\n\n**Implementation Approach:**\n{implementation_approach}\n\n**Refactoring Techniques:**\n{refactoring_techniques}\n\n**Safety Measures:**\n- Feature flags: {feature_flags}\n- Gradual rollout: {gradual_rollout}\n- Rollback plan: {rollback_plan}\n\nImplementeer:\n1. Refactored code implementatie\n2. Backward compatibility layer (indien nodig)\n3. Migration utilities\n4. Updated interfaces/APIs\n5. Configuration updates\n6. Documentation updates",
+        "variables": ["previous_output", "implementation_approach", "refactoring_techniques", "feature_flags", "gradual_rollout", "rollback_plan"]
+      },
+      {
+        "id": "step3",
+        "name": "Testing & Migration",
+        "type": "template",
+        "content": "Test de refactoring en plan de migratie:\n\n**Refactored Implementation:** {previous_output}\n\n**Testing Requirements:**\n- Existing functionality: {existing_functionality_tests}\n- Performance benchmarks: {performance_benchmarks}\n- Integration testing: {integration_testing}\n\n**Migration Strategy:**\n{migration_strategy}\n\nUitvoeren:\n1. Comprehensive test suite\n2. Performance comparison\n3. Integration verification\n4. Migration scripts/tools\n5. Rollout plan\n6. Monitoring en alerting setup",
+        "variables": ["previous_output", "existing_functionality_tests", "performance_benchmarks", "integration_testing", "migration_strategy"]
+      }
+    ],
+    "category": "Development",
+    "folderId": "workflows", 
+    "lastUsed": "2025-01-13T00:00:00.000Z",
+    "favorite": false,
+    "createdAt": "2025-01-13T00:00:00.000Z",
+    "updatedAt": "2025-01-13T00:00:00.000Z"
+  },
+  {
+    "id": 4,
+    "name": "API Development Workflow",
+    "description": "Complete API ontwikkeling van design tot deployment",
+    "steps": [
+      {
+        "id": "step1",
+        "name": "API Design & Specification",
+        "type": "template",
+        "content": "Ontwerp een REST API voor: {api_purpose}\n\n**Requirements:**\n{api_requirements}\n\n**Data Model:**\n{data_model}\n\n**Business Rules:**\n{business_rules}\n\n**Non-functional Requirements:**\n- Authentication: {auth_requirements}\n- Rate limiting: {rate_limiting}\n- Caching: {caching_strategy}\n- Performance: {performance_requirements}\n\nLever:\n1. Complete OpenAPI/Swagger specification\n2. Resource design\n3. Endpoint definitions\n4. Request/Response schemas\n5. Error handling specification\n6. Authentication flow design",
+        "variables": ["api_purpose", "api_requirements", "data_model", "business_rules", "auth_requirements", "rate_limiting", "caching_strategy", "performance_requirements"]
+      },
+      {
+        "id": "step2",
+        "name": "API Implementation",
+        "type": "template", 
+        "content": "Implementeer de API op basis van de specificatie:\n\n**API Specification:** {previous_output}\n\n**Implementation Details:**\n- Framework: {framework}\n- Database: {database}\n- Architecture: {architecture}\n- Deployment target: {deployment_target}\n\n**Quality Requirements:**\n- Error handling: {error_handling}\n- Logging: {logging_requirements}\n- Monitoring: {monitoring_requirements}\n\nImplementeer:\n1. API endpoints\n2. Data validation\n3. Business logic\n4. Error handling\n5. Authentication/Authorization\n6. Rate limiting\n7. Logging en monitoring",
+        "variables": ["previous_output", "framework", "database", "architecture", "deployment_target", "error_handling", "logging_requirements", "monitoring_requirements"]
+      },
+      {
+        "id": "step3",
+        "name": "Testing & Documentation",
+        "type": "template",
+        "content": "Test de API en maak documentatie:\n\n**API Implementation:** {previous_output}\n\n**Testing Requirements:**\n- Test framework: {test_framework}\n- Coverage target: {coverage_target}%\n- Load testing: {load_testing_requirements}\n\n**Documentation Requirements:**\n- Developer docs: {developer_docs}\n- Integration guides: {integration_guides}\n- Examples: {example_requirements}\n\nLever:\n1. Complete test suite (unit, integration, contract)\n2. Load en performance tests\n3. API documentation\n4. Integration examples\n5. SDK/client libraries (indien nodig)\n6. Deployment guide",
+        "variables": ["previous_output", "test_framework", "coverage_target", "load_testing_requirements", "developer_docs", "integration_guides", "example_requirements"]
+      }
+    ],
+    "category": "Development",
+    "folderId": "workflows",
+    "lastUsed": "2025-01-13T00:00:00.000Z", 
+    "favorite": false,
+    "createdAt": "2025-01-13T00:00:00.000Z",
+    "updatedAt": "2025-01-13T00:00:00.000Z"
   }
 ]

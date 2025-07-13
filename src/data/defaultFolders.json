@@ -1,0 +1,58 @@
+[
+  {
+    "id": "root",
+    "name": "Root",
+    "parentId": null,
+    "type": "folder",
+    "createdAt": "2025-01-13T00:00:00.000Z",
+    "updatedAt": "2025-01-13T00:00:00.000Z"
+  },
+  {
+    "id": "general",
+    "name": "General",
+    "parentId": "root",
+    "type": "folder",
+    "createdAt": "2025-01-13T00:00:00.000Z",
+    "updatedAt": "2025-01-13T00:00:00.000Z"
+  },
+  {
+    "id": "content",
+    "name": "Content",
+    "parentId": "general",
+    "type": "folder",
+    "createdAt": "2025-01-13T00:00:00.000Z",
+    "updatedAt": "2025-01-13T00:00:00.000Z"
+  },
+  {
+    "id": "moods",
+    "name": "Moods",
+    "parentId": "general",
+    "type": "folder",
+    "createdAt": "2025-01-13T00:00:00.000Z",
+    "updatedAt": "2025-01-13T00:00:00.000Z"
+  },
+  {
+    "id": "workflows",
+    "name": "Common Workflows",
+    "parentId": "general",
+    "type": "folder",
+    "createdAt": "2025-01-13T00:00:00.000Z",
+    "updatedAt": "2025-01-13T00:00:00.000Z"
+  },
+  {
+    "id": "projects",
+    "name": "Projects",
+    "parentId": "root",
+    "type": "folder",
+    "createdAt": "2025-01-13T00:00:00.000Z",
+    "updatedAt": "2025-01-13T00:00:00.000Z"
+  },
+  {
+    "id": "archive",
+    "name": "Archive",
+    "parentId": "root",
+    "type": "folder",
+    "createdAt": "2025-01-13T00:00:00.000Z",
+    "updatedAt": "2025-01-13T00:00:00.000Z"
+  }
+]

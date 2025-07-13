@@ -1,50 +1,202 @@
 [
   {
     "id": 1,
-    "name": "Creative Mood",
-    "content": "Be creative and think outside the box. Use vivid language and metaphors.",
-    "tags": ["mood", "creative"],
-    "category": "General",
-    "createdAt": "2025-01-13T00:00:00.000Z"
+    "name": "Code Quality Focus",
+    "content": "Focus op code kwaliteit: clean code principes, SOLID principes, DRY, KISS, en maintainability. Geef concrete voorbeelden van verbetering.",
+    "tags": ["code-quality", "focus", "clean-code"],
+    "category": "Development",
+    "folderId": "moods",
+    "createdAt": "2025-01-13T00:00:00.000Z",
+    "updatedAt": "2025-01-13T00:00:00.000Z"
   },
   {
     "id": 2,
-    "name": "Precise Mood", 
-    "content": "Be exact and factual. Stick to the requirements without deviation.",
-    "tags": ["mood", "precise"],
-    "category": "General",
-    "createdAt": "2025-01-13T00:00:00.000Z"
+    "name": "Security First",
+    "content": "Prioriteer security in alle aspecten: input validation, authentication, authorization, data encryption, SQL injection prevention, XSS protection.",
+    "tags": ["security", "focus", "protection"],
+    "category": "Development", 
+    "folderId": "moods",
+    "createdAt": "2025-01-13T00:00:00.000Z",
+    "updatedAt": "2025-01-13T00:00:00.000Z"
   },
   {
     "id": 3,
-    "name": "Professional Tone",
-    "content": "Maintain a professional, business-appropriate tone throughout.",
-    "tags": ["tone", "professional"],
-    "category": "Business",
-    "createdAt": "2025-01-13T00:00:00.000Z"
+    "name": "Performance Optimized",
+    "content": "Optimaliseer voor performance: algoritme efficiency, geheugen gebruik, database queries, caching strategies, lazy loading.",
+    "tags": ["performance", "optimization", "efficiency"],
+    "category": "Development",
+    "folderId": "moods",
+    "createdAt": "2025-01-13T00:00:00.000Z", 
+    "updatedAt": "2025-01-13T00:00:00.000Z"
   },
   {
     "id": 4,
-    "name": "Casual Tone",
-    "content": "Use a friendly, conversational and approachable tone.",
-    "tags": ["tone", "casual"],
-    "category": "General",
-    "createdAt": "2025-01-13T00:00:00.000Z"
+    "name": "Production Ready",
+    "content": "Maak production-ready code: error handling, logging, monitoring, graceful degradation, rollback strategies, health checks.",
+    "tags": ["production", "robust", "enterprise"],
+    "category": "Development",
+    "folderId": "moods",
+    "createdAt": "2025-01-13T00:00:00.000Z",
+    "updatedAt": "2025-01-13T00:00:00.000Z"
   },
   {
     "id": 5,
-    "name": "Technical Focus",
-    "content": "Focus on technical details, specifications, and implementation aspects.",
-    "tags": ["focus", "technical"],
+    "name": "Test-Driven Approach",
+    "content": "Gebruik test-driven development: schrijf tests eerst, focus op test coverage, mocking strategies, edge cases, regression prevention.",
+    "tags": ["testing", "tdd", "quality"],
     "category": "Development",
-    "createdAt": "2025-01-13T00:00:00.000Z"
+    "folderId": "moods", 
+    "createdAt": "2025-01-13T00:00:00.000Z",
+    "updatedAt": "2025-01-13T00:00:00.000Z"
   },
   {
     "id": 6,
-    "name": "User-Friendly Focus",
-    "content": "Prioritize clarity and accessibility for non-technical users.",
-    "tags": ["focus", "user-friendly"],
+    "name": "Scalable Architecture",
+    "content": "Ontwerp voor schaalbaarheid: microservices, horizontal scaling, load balancing, database sharding, caching layers.",
+    "tags": ["scalability", "architecture", "design"],
+    "category": "Architecture",
+    "folderId": "moods",
+    "createdAt": "2025-01-13T00:00:00.000Z",
+    "updatedAt": "2025-01-13T00:00:00.000Z"
+  },
+  {
+    "id": 7,
+    "name": "Beginner Friendly",
+    "content": "Leg uit alsof je het aan een beginner vertelt: gebruik eenvoudige taal, geef stap-voor-stap uitleg, veel voorbeelden, vermijd jargon.",
+    "tags": ["beginner", "educational", "simple"],
     "category": "General",
-    "createdAt": "2025-01-13T00:00:00.000Z"
+    "folderId": "moods",
+    "createdAt": "2025-01-13T00:00:00.000Z",
+    "updatedAt": "2025-01-13T00:00:00.000Z"
+  },
+  {
+    "id": 8,
+    "name": "Expert Level",
+    "content": "Geef advanced technische details: design patterns, algoritme complexiteit, trade-offs, edge cases, performance implications.",
+    "tags": ["expert", "advanced", "technical"],
+    "category": "General",
+    "folderId": "moods",
+    "createdAt": "2025-01-13T00:00:00.000Z",
+    "updatedAt": "2025-01-13T00:00:00.000Z"
+  },
+  {
+    "id": 9,
+    "name": "Step by Step",
+    "content": "Geef gedetailleerde stap-voor-stap instructies: genummerde stappen, verificatie punten, troubleshooting tips, verwachte output.",
+    "tags": ["tutorial", "steps", "detailed"],
+    "category": "General",
+    "folderId": "moods",
+    "createdAt": "2025-01-13T00:00:00.000Z",
+    "updatedAt": "2025-01-13T00:00:00.000Z"
+  },
+  {
+    "id": 10,
+    "name": "With Examples",
+    "content": "Geef altijd concrete code voorbeelden: working code, input/output samples, different use cases, best practices voorbeelden.",
+    "tags": ["examples", "practical", "code"],
+    "category": "General", 
+    "folderId": "moods",
+    "createdAt": "2025-01-13T00:00:00.000Z",
+    "updatedAt": "2025-01-13T00:00:00.000Z"
+  },
+  {
+    "id": 11,
+    "name": "Error Handling Focus",
+    "content": "Behandel error scenarios uitgebreid: exception handling, graceful failures, user-friendly error messages, logging strategies.",
+    "tags": ["errors", "exceptions", "robust"],
+    "category": "Development",
+    "folderId": "moods",
+    "createdAt": "2025-01-13T00:00:00.000Z",
+    "updatedAt": "2025-01-13T00:00:00.000Z"
+  },
+  {
+    "id": 12,
+    "name": "Documentation Heavy",
+    "content": "Genereer uitgebreide documentatie: inline comments, API docs, usage examples, troubleshooting guides, installation instructies.",
+    "tags": ["documentation", "comments", "guides"],
+    "category": "Documentation",
+    "folderId": "moods",
+    "createdAt": "2025-01-13T00:00:00.000Z",
+    "updatedAt": "2025-01-13T00:00:00.000Z"
+  },
+  {
+    "id": 13,
+    "name": "Cross-Platform",
+    "content": "Overweeg cross-platform compatibility: OS differences, browser compatibility, mobile responsiveness, device limitations.",
+    "tags": ["cross-platform", "compatibility", "responsive"],
+    "category": "Development",
+    "folderId": "moods",
+    "createdAt": "2025-01-13T00:00:00.000Z",
+    "updatedAt": "2025-01-13T00:00:00.000Z"
+  },
+  {
+    "id": 14,
+    "name": "API First Design",
+    "content": "Ontwerp API-first: RESTful principles, OpenAPI specifications, versioning strategy, rate limiting, authentication.",
+    "tags": ["api", "rest", "design"],
+    "category": "Development",
+    "folderId": "moods",
+    "createdAt": "2025-01-13T00:00:00.000Z",
+    "updatedAt": "2025-01-13T00:00:00.000Z"
+  },
+  {
+    "id": 15,
+    "name": "Database Optimized",
+    "content": "Optimaliseer database interacties: query optimization, indexing strategies, connection pooling, transaction management.",
+    "tags": ["database", "optimization", "queries"],
+    "category": "Development",
+    "folderId": "moods",
+    "createdAt": "2025-01-13T00:00:00.000Z",
+    "updatedAt": "2025-01-13T00:00:00.000Z"
+  },
+  {
+    "id": 16,
+    "name": "DevOps Minded",
+    "content": "Denk aan deployment en operations: CI/CD pipelines, containerization, monitoring, logging, infrastructure as code.",
+    "tags": ["devops", "deployment", "operations"],
+    "category": "Development",
+    "folderId": "moods",
+    "createdAt": "2025-01-13T00:00:00.000Z",
+    "updatedAt": "2025-01-13T00:00:00.000Z"
+  },
+  {
+    "id": 17,
+    "name": "Accessibility First",
+    "content": "Prioriteer accessibility: screen reader support, keyboard navigation, color contrast, semantic HTML, ARIA labels.",
+    "tags": ["accessibility", "a11y", "inclusive"],
+    "category": "Development",
+    "folderId": "moods",
+    "createdAt": "2025-01-13T00:00:00.000Z",
+    "updatedAt": "2025-01-13T00:00:00.000Z"
+  },
+  {
+    "id": 18,
+    "name": "Mobile First",
+    "content": "Ontwerp mobile-first: responsive design, touch interactions, performance op mobiel, offline capabilities.",
+    "tags": ["mobile", "responsive", "touch"],
+    "category": "Development",
+    "folderId": "moods",
+    "createdAt": "2025-01-13T00:00:00.000Z",
+    "updatedAt": "2025-01-13T00:00:00.000Z"
+  },
+  {
+    "id": 19,
+    "name": "Future Proof",
+    "content": "Maak toekomstbestendige code: modulair design, loose coupling, configurable behavior, easy to extend.",
+    "tags": ["future-proof", "modular", "extensible"],
+    "category": "Development",
+    "folderId": "moods",
+    "createdAt": "2025-01-13T00:00:00.000Z",
+    "updatedAt": "2025-01-13T00:00:00.000Z"
+  },
+  {
+    "id": 20,
+    "name": "Cost Conscious",
+    "content": "Optimaliseer voor kosten: resource efficiency, cloud cost optimization, serverless waar mogelijk, auto-scaling.",
+    "tags": ["cost", "efficiency", "optimization"],
+    "category": "Architecture",
+    "folderId": "moods",
+    "createdAt": "2025-01-13T00:00:00.000Z",
+    "updatedAt": "2025-01-13T00:00:00.000Z"
   }
 ]

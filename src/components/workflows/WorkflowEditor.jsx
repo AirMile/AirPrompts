@@ -2,12 +2,13 @@ import React, { useState } from 'react';
 import { ArrowRight, Workflow, Trash2, Plus, X, FileText, Info, Tag } from 'lucide-react';
 import { DEFAULT_CATEGORIES, createWorkflowStep } from '../../types/template.types.js';
 
-const WorkflowEditor = ({ workflow, templates, inserts = [], onSave, onCancel }) => {
+const WorkflowEditor = ({ workflow, templates, inserts = [], folders = [], onSave, onCancel }) => {
   const [formData, setFormData] = useState(() => {
     return {
       name: workflow?.name || '',
       description: workflow?.description || '',
       category: workflow?.category || 'General',
+      folderId: workflow?.folderId || 'workflows',
       steps: workflow?.steps || []
     };
   });
@@ -172,6 +173,21 @@ const WorkflowEditor = ({ workflow, templates, inserts = [], onSave, onCancel })
                 className="w-full h-24 p-3 border border-gray-600 bg-gray-800 text-gray-100 rounded-lg focus:ring-2 focus:ring-green-400 focus:border-transparent"
                 placeholder="Brief description..."
               />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-2">
+                Folder
+              </label>
+              <select
+                value={formData.folderId}
+                onChange={(e) => setFormData({...formData, folderId: e.target.value})}
+                className="w-full p-3 border border-gray-600 bg-gray-800 text-gray-100 rounded-lg focus:ring-2 focus:ring-green-400 focus:border-transparent"
+              >
+                {folders.filter(f => f.id !== 'root').map(folder => (
+                  <option key={folder.id} value={folder.id}>{folder.name}</option>
+                ))}
+              </select>
             </div>
 
             <div>

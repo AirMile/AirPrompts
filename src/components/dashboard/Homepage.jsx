@@ -1,74 +1,100 @@
 import React from 'react';
-import { Plus, Play, Edit, Trash2, Search, Workflow, FileText, Star, Clock, Tag } from 'lucide-react';
+import { Plus, Play, Edit, Trash2, Search, Workflow, FileText, Star, Tag } from 'lucide-react';
 import { DEFAULT_CATEGORIES } from '../../types/template.types.js';
+import FolderTree from '../folders/FolderTree.jsx';
+import FolderBreadcrumb from '../folders/FolderBreadcrumb.jsx';
 
 const Homepage = ({ 
   templates, 
   workflows, 
   inserts,
+  folders,
   searchQuery,
   setSearchQuery,
   selectedCategory,
   setSelectedCategory,
+  selectedFolderId,
+  setSelectedFolderId,
   onEditTemplate, 
   onEditWorkflow, 
   onEditInsert,
   onExecuteItem,
   onDeleteTemplate,
   onDeleteWorkflow,
-  onDeleteInsert
+  onDeleteInsert,
+  onCreateFolder
 }) => {
   const categories = ['All', ...DEFAULT_CATEGORIES];
   
-  const filteredTemplates = templates.filter(template => 
+  // Get all descendants of current folder
+  const getFolderDescendants = (folderId) => {
+    if (!folders || !Array.isArray(folders)) return new Set([folderId]);
+    
+    const descendants = new Set([folderId]);
+    const findChildren = (parentId) => {
+      folders.filter(f => f.parentId === parentId).forEach(child => {
+        descendants.add(child.id);
+        findChildren(child.id);
+      });
+    };
+    findChildren(folderId);
+    return descendants;
+  };
+
+  const currentFolderIds = selectedFolderId && selectedFolderId !== 'root' ? getFolderDescendants(selectedFolderId) : new Set();
+  
+  const filteredTemplates = (templates || []).filter(template => 
+    (!selectedFolderId || selectedFolderId === 'root' || currentFolderIds.has(template.folderId)) &&
     (selectedCategory === 'All' || template.category === selectedCategory) &&
     (template.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
      template.description.toLowerCase().includes(searchQuery.toLowerCase()))
   );
 
-  const filteredWorkflows = workflows.filter(workflow =>
+  const filteredWorkflows = (workflows || []).filter(workflow =>
+    (!selectedFolderId || selectedFolderId === 'root' || currentFolderIds.has(workflow.folderId)) &&
     (selectedCategory === 'All' || workflow.category === selectedCategory) &&
     (workflow.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
      workflow.description.toLowerCase().includes(searchQuery.toLowerCase()))
   );
 
-  const filteredInserts = inserts.filter(insert =>
+  const filteredInserts = (inserts || []).filter(insert =>
+    (!selectedFolderId || selectedFolderId === 'root' || currentFolderIds.has(insert.folderId)) &&
     (selectedCategory === 'All' || insert.category === selectedCategory) &&
     (insert.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
      insert.content.toLowerCase().includes(searchQuery.toLowerCase()) ||
-     insert.tags.some(tag => tag.toLowerCase().includes(searchQuery.toLowerCase())))
+     (insert.tags || []).some(tag => tag.toLowerCase().includes(searchQuery.toLowerCase())))
   );
 
-  const recentItems = [...templates, ...workflows]
-    .sort((a, b) => new Date(b.lastUsed) - new Date(a.lastUsed))
-    .slice(0, 4);
-
-  const favoriteItems = [...templates, ...workflows].filter(item => item.favorite);
-
-  // Create combined and deduplicated list for Quick Access section
-  const quickAccessItems = new Map();
-
-  // Add favorites first (they take priority)
-  favoriteItems.forEach(item => {
-    quickAccessItems.set(item.id, { ...item, isFavorite: true, itemType: templates.includes(item) ? 'template' : 'workflow' });
-  });
-
-  // Add recent items, but only if they're not already favorites
-  recentItems.forEach(item => {
-    if (!quickAccessItems.has(item.id)) {
-      quickAccessItems.set(item.id, { ...item, isRecent: true, itemType: templates.includes(item) ? 'template' : 'workflow' });
-    }
-  });
-
-  const uniqueQuickAccessItems = Array.from(quickAccessItems.values());
 
   return (
-    <div className="max-w-7xl mx-auto p-6">
-      {/* Header */}
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-100 mb-2">Prompt Templates & Workflows</h1>
-        <p className="text-gray-300">Create, manage, and execute prompt templates and multi-step workflows</p>
+    <div className="flex h-screen bg-gray-900">
+      {/* Sidebar */}
+      <div className="w-64 bg-gray-800 border-r border-gray-700 flex flex-col">
+        <FolderTree
+          folders={folders || []}
+          selectedFolderId={selectedFolderId}
+          onFolderSelect={setSelectedFolderId}
+          onCreateFolder={onCreateFolder}
+        />
       </div>
+
+      {/* Main Content */}
+      <div className="flex-1 overflow-y-auto">
+        <div className="max-w-6xl mx-auto p-6">
+          {/* Header */}
+          <div className="mb-6">
+            <h1 className="text-3xl font-bold text-gray-100 mb-2">Prompt Templates & Workflows</h1>
+            <p className="text-gray-300">Create, manage, and execute prompt templates and multi-step workflows</p>
+            
+            {/* Breadcrumb */}
+            <div className="mt-4">
+              <FolderBreadcrumb
+                folders={folders || []}
+                currentFolderId={selectedFolderId}
+                onFolderSelect={setSelectedFolderId}
+              />
+            </div>
+          </div>
 
       {/* Search and Filters */}
       <div className="mb-8 flex flex-col sm:flex-row gap-4">
@@ -93,49 +119,6 @@ const Homepage = ({
         </select>
       </div>
 
-      {/* Quick Access */}
-      {uniqueQuickAccessItems.length > 0 && (
-        <div className="mb-8">
-          <h2 className="text-xl font-semibold text-gray-100 mb-4 flex items-center gap-2">
-            <Star className="w-5 h-5 text-gray-300" />
-            Quick Access
-          </h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {uniqueQuickAccessItems.map(item => (
-              <div key={`quick-access-${item.id}`} className="bg-gray-800 rounded-lg shadow-md border border-gray-700 p-4 hover:shadow-lg transition-shadow">
-                <div className="flex items-start justify-between mb-3">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-2">
-                      {item.itemType === 'template' ? (
-                        <FileText className="w-4 h-4 text-gray-300" />
-                      ) : (
-                        <Workflow className="w-4 h-4 text-gray-300" />
-                      )}
-                      <h3 className="font-semibold text-gray-100">{item.name}</h3>
-                    </div>
-                    <p className="text-sm text-gray-300 mb-2">{item.description}</p>
-                    <div className="flex items-center gap-2 mb-2">
-                      <span className="px-2 py-1 bg-gray-700 text-gray-200 text-xs rounded">{item.category}</span>
-                      {item.isFavorite && <Star className="w-4 h-4 text-yellow-300 fill-current" />}
-                      {item.isRecent && !item.isFavorite && <Clock className="w-4 h-4 text-blue-300" />}
-                    </div>
-                    <p className="text-xs text-gray-400">
-                      {item.itemType === 'template' ? `${item.variables?.length || 0} variables` : `${item.steps?.length || 0} steps`}
-                    </p>
-                  </div>
-                </div>
-                <button
-                  onClick={() => onExecuteItem({item, type: item.itemType})}
-                  className="w-full px-3 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 flex items-center justify-center gap-2 font-semibold"
-                >
-                  <Play className="w-4 h-4" />
-                  {item.itemType === 'template' ? 'Use Template' : 'Run Workflow'}
-                </button>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
 
       {/* Templates Section */}
       <div className="mb-8">
@@ -306,6 +289,8 @@ const Homepage = ({
               </div>
             </div>
           ))}
+        </div>
+      </div>
         </div>
       </div>
     </div>
