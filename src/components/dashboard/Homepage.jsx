@@ -1,6 +1,5 @@
 import React from 'react';
 import { Plus, Play, Edit, Trash2, Search, Workflow, FileText, Star, Tag } from 'lucide-react';
-import { DEFAULT_CATEGORIES } from '../../types/template.types.js';
 import FolderTree from '../folders/FolderTree.jsx';
 import FolderBreadcrumb from '../folders/FolderBreadcrumb.jsx';
 
@@ -11,8 +10,6 @@ const Homepage = ({
   folders,
   searchQuery,
   setSearchQuery,
-  selectedCategory,
-  setSelectedCategory,
   selectedFolderId,
   setSelectedFolderId,
   onEditTemplate, 
@@ -24,7 +21,6 @@ const Homepage = ({
   onDeleteInsert,
   onCreateFolder
 }) => {
-  const categories = ['All', ...DEFAULT_CATEGORIES];
   
   // Get all descendants of current folder
   const getFolderDescendants = (folderId) => {
@@ -45,21 +41,18 @@ const Homepage = ({
   
   const filteredTemplates = (templates || []).filter(template => 
     (!selectedFolderId || selectedFolderId === 'root' || currentFolderIds.has(template.folderId)) &&
-    (selectedCategory === 'All' || template.category === selectedCategory) &&
     (template.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
      template.description.toLowerCase().includes(searchQuery.toLowerCase()))
   );
 
   const filteredWorkflows = (workflows || []).filter(workflow =>
     (!selectedFolderId || selectedFolderId === 'root' || currentFolderIds.has(workflow.folderId)) &&
-    (selectedCategory === 'All' || workflow.category === selectedCategory) &&
     (workflow.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
      workflow.description.toLowerCase().includes(searchQuery.toLowerCase()))
   );
 
   const filteredInserts = (inserts || []).filter(insert =>
     (!selectedFolderId || selectedFolderId === 'root' || currentFolderIds.has(insert.folderId)) &&
-    (selectedCategory === 'All' || insert.category === selectedCategory) &&
     (insert.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
      insert.content.toLowerCase().includes(searchQuery.toLowerCase()) ||
      (insert.tags || []).some(tag => tag.toLowerCase().includes(searchQuery.toLowerCase())))
@@ -96,27 +89,18 @@ const Homepage = ({
             </div>
           </div>
 
-      {/* Search and Filters */}
-      <div className="mb-8 flex flex-col sm:flex-row gap-4">
-        <div className="flex-1 relative">
+      {/* Search */}
+      <div className="mb-8">
+        <div className="relative">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
           <input
             type="text"
-            placeholder="Search templates and workflows..."
+            placeholder="Search templates, workflows, and inserts..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="w-full pl-10 pr-4 py-3 border border-gray-600 bg-gray-800 text-gray-100 rounded-lg focus:ring-2 focus:ring-blue-400 focus:border-transparent placeholder-gray-400"
           />
         </div>
-        <select
-          value={selectedCategory}
-          onChange={(e) => setSelectedCategory(e.target.value)}
-          className="px-4 py-3 border border-gray-600 bg-gray-800 text-gray-100 rounded-lg focus:ring-2 focus:ring-blue-400 focus:border-transparent"
-        >
-          {categories.map(category => (
-            <option key={category} value={category}>{category}</option>
-          ))}
-        </select>
       </div>
 
 
@@ -144,7 +128,6 @@ const Homepage = ({
                   <h3 className="font-semibold text-gray-100 mb-1">{template.name}</h3>
                   <p className="text-sm text-gray-300 mb-2">{template.description}</p>
                   <div className="flex items-center gap-2 mb-2">
-                    <span className="px-2 py-1 bg-gray-700 text-gray-200 text-xs rounded">{template.category}</span>
                     {template.favorite && <Star className="w-4 h-4 text-yellow-300 fill-current" />}
                   </div>
                   <p className="text-xs text-gray-400">{template.variables.length} variables</p>
@@ -199,9 +182,6 @@ const Homepage = ({
                 <div className="flex-1">
                   <h3 className="font-semibold text-gray-100 mb-1">{insert.name}</h3>
                   <p className="text-sm text-gray-300 mb-2 line-clamp-2">{insert.content}</p>
-                  <div className="flex items-center gap-2 mb-2">
-                    <span className="px-2 py-1 bg-gray-700 text-gray-200 text-xs rounded">{insert.category}</span>
-                  </div>
                   <div className="flex flex-wrap gap-1">
                     {insert.tags.slice(0, 3).map((tag, index) => (
                       <span key={index} className="px-2 py-1 bg-purple-900 text-purple-100 text-xs rounded">
@@ -260,7 +240,6 @@ const Homepage = ({
                   <h3 className="font-semibold text-gray-100 mb-1">{workflow.name}</h3>
                   <p className="text-sm text-gray-300 mb-2">{workflow.description}</p>
                   <div className="flex items-center gap-2 mb-2">
-                    <span className="px-2 py-1 bg-gray-700 text-gray-200 text-xs rounded">{workflow.category}</span>
                     {workflow.favorite && <Star className="w-4 h-4 text-yellow-300 fill-current" />}
                   </div>
                   <p className="text-xs text-gray-400">{workflow.steps.length} steps</p>

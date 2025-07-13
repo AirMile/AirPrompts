@@ -58,7 +58,6 @@ export const createTemplate = (data = {}) => {
     name: data.name || '',
     description: data.description || '',
     content,
-    category: data.category || 'General',
     folderId: data.folderId || 'general',
     variables: data.variables || extractVariables(content),
     lastUsed: data.lastUsed || now,
@@ -100,7 +99,6 @@ export const createWorkflow = (data = {}) => {
     name: data.name || '',
     description: data.description || '',
     steps: data.steps || [],
-    category: data.category || 'General',
     folderId: data.folderId || 'workflows',
     lastUsed: data.lastUsed || now,
     favorite: data.favorite || false,
@@ -140,20 +138,6 @@ export const DEFAULT_FOLDERS = [
   { id: 'archive', name: 'Archive', parentId: 'root' }
 ];
 
-/**
- * Default categories for templates and workflows (deprecated - use folders)
- */
-export const DEFAULT_CATEGORIES = [
-  'General',
-  'Content Creation',
-  'Development',
-  'Analysis',
-  'Marketing',
-  'Research',
-  'Documentation',
-  'Planning',
-  'Communication'
-];
 
 /**
  * Template validation rules
@@ -172,10 +156,6 @@ export const TEMPLATE_VALIDATION = {
     required: true,
     minLength: 1
   },
-  category: {
-    required: true,
-    allowedValues: DEFAULT_CATEGORIES
-  }
 };
 
 /**
@@ -198,9 +178,6 @@ export const validateTemplate = (template) => {
     errors.push('Template content is required');
   }
   
-  if (!template.category || !DEFAULT_CATEGORIES.includes(template.category)) {
-    errors.push('Valid category is required');
-  }
   
   return {
     isValid: errors.length === 0,
@@ -221,7 +198,6 @@ export const createSnippet = (data = {}) => {
     name: data.name || '',
     content: data.content || '',
     tags: data.tags || [],
-    category: data.category || 'General',
     folderId: data.folderId || 'moods',
     createdAt: data.createdAt || now,
     updatedAt: data.updatedAt || now
@@ -241,10 +217,6 @@ export const SNIPPET_VALIDATION = {
     required: true,
     minLength: 1
   },
-  category: {
-    required: true,
-    allowedValues: DEFAULT_CATEGORIES
-  }
 };
 
 /**
@@ -267,9 +239,6 @@ export const validateSnippet = (snippet) => {
     errors.push('Snippet content is required');
   }
   
-  if (!snippet.category || !DEFAULT_CATEGORIES.includes(snippet.category)) {
-    errors.push('Valid category is required');
-  }
   
   return {
     isValid: errors.length === 0,

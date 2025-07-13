@@ -1,13 +1,12 @@
 import React, { useState } from 'react';
 import { Tag } from 'lucide-react';
-import { extractAllVariables, DEFAULT_CATEGORIES } from '../../types/template.types.js';
+import { extractAllVariables } from '../../types/template.types.js';
 
 const TemplateEditor = ({ template, folders = [], onSave, onCancel }) => {
   const [formData, setFormData] = useState({
     name: template?.name || '',
     description: template?.description || '',
     content: template?.content || '',
-    category: template?.category || 'General',
     folderId: template?.folderId || 'general'
   });
 
@@ -90,20 +89,6 @@ const TemplateEditor = ({ template, folders = [], onSave, onCancel }) => {
               </select>
             </div>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">
-                Category
-              </label>
-              <select
-                value={formData.category}
-                onChange={(e) => setFormData({...formData, category: e.target.value})}
-                className="w-full p-3 border border-gray-600 bg-gray-800 text-gray-100 rounded-lg focus:ring-2 focus:ring-blue-400 focus:border-transparent"
-              >
-                {DEFAULT_CATEGORIES.map(category => (
-                  <option key={category} value={category}>{category}</option>
-                ))}
-              </select>
-            </div>
 
             <div>
               <label className="block text-sm font-medium text-gray-300 mb-2">

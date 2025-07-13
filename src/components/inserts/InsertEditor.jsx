@@ -1,12 +1,11 @@
 import React, { useState } from 'react';
 import { Save, X, Tag } from 'lucide-react';
-import { DEFAULT_CATEGORIES, validateSnippet } from '../../types/template.types.js';
+import { validateSnippet } from '../../types/template.types.js';
 
 const InsertEditor = ({ insert, folders = [], onSave, onCancel }) => {
   const [formData, setFormData] = useState({
     name: insert?.name || '',
     content: insert?.content || '',
-    category: insert?.category || 'General',
     folderId: insert?.folderId || 'moods',
     tags: insert?.tags || []
   });
@@ -125,20 +124,6 @@ const InsertEditor = ({ insert, folders = [], onSave, onCancel }) => {
               </select>
             </div>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">
-                Category
-              </label>
-              <select
-                value={formData.category}
-                onChange={(e) => setFormData({...formData, category: e.target.value})}
-                className="w-full p-3 border border-gray-600 bg-gray-800 text-gray-100 rounded-lg focus:ring-2 focus:ring-green-400 focus:border-transparent"
-              >
-                {DEFAULT_CATEGORIES.map(category => (
-                  <option key={category} value={category}>{category}</option>
-                ))}
-              </select>
-            </div>
 
             <div>
               <label className="block text-sm font-medium text-gray-300 mb-2">
@@ -202,10 +187,6 @@ const InsertEditor = ({ insert, folders = [], onSave, onCancel }) => {
                   <div>
                     <span className="text-sm font-medium text-gray-300">Name: </span>
                     <span className="text-gray-100">{formData.name || 'Untitled Insert'}</span>
-                  </div>
-                  <div>
-                    <span className="text-sm font-medium text-gray-300">Category: </span>
-                    <span className="text-gray-100">{formData.category}</span>
                   </div>
                   <div>
                     <span className="text-sm font-medium text-gray-300">Tags: </span>

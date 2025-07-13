@@ -19,7 +19,6 @@ const PromptTemplateSystem = () => {
   const [editingInsert, setEditingInsert] = useState(null);
   const [executingItem, setExecutingItem] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState('All');
   const [selectedFolderId, setSelectedFolderId] = useState(null);
 
   // Main render logic
@@ -130,8 +129,6 @@ const PromptTemplateSystem = () => {
       folders={folders}
       searchQuery={searchQuery}
       setSearchQuery={setSearchQuery}
-      selectedCategory={selectedCategory}
-      setSelectedCategory={setSelectedCategory}
       selectedFolderId={selectedFolderId}
       setSelectedFolderId={setSelectedFolderId}
       onEditTemplate={setEditingTemplate}

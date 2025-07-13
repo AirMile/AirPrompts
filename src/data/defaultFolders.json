@@ -48,9 +48,25 @@
     "updatedAt": "2025-01-13T00:00:00.000Z"
   },
   {
-    "id": "archive",
-    "name": "Archive",
-    "parentId": "root",
+    "id": "ai-character-story",
+    "name": "AI Character Story",
+    "parentId": "projects",
+    "type": "folder",
+    "createdAt": "2025-01-13T00:00:00.000Z",
+    "updatedAt": "2025-01-13T00:00:00.000Z"
+  },
+  {
+    "id": "prompt-website",
+    "name": "Prompt Website",
+    "parentId": "projects",
+    "type": "folder",
+    "createdAt": "2025-01-13T00:00:00.000Z",
+    "updatedAt": "2025-01-13T00:00:00.000Z"
+  },
+  {
+    "id": "rogue-lite-game",
+    "name": "Rogue-lite Game",
+    "parentId": "projects",
     "type": "folder",
     "createdAt": "2025-01-13T00:00:00.000Z",
     "updatedAt": "2025-01-13T00:00:00.000Z"
