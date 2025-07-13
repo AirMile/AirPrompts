@@ -1,16 +1,16 @@
 // Template type definitions and utility functions
 
 /**
- * Extract snippet variables from template content
- * @param {string} content - Template content with {snippet:tagname} placeholders
- * @returns {Object[]} Array of snippet variable objects
+ * Extract insert variables from template content
+ * @param {string} content - Template content with {insert:tagname} placeholders
+ * @returns {Object[]} Array of insert variable objects
  */
 export const extractSnippetVariables = (content) => {
-  const snippetMatches = content.match(/\{snippet:([^}]+)\}/g);
-  return snippetMatches ? snippetMatches.map(match => {
-    const tag = match.match(/\{snippet:([^}]+)\}/)[1];
+  const insertMatches = content.match(/\{insert:([^}]+)\}/g);
+  return insertMatches ? insertMatches.map(match => {
+    const tag = match.match(/\{insert:([^}]+)\}/)[1];
     return {
-      type: 'snippet',
+      type: 'insert',
       tag,
       placeholder: match
     };
@@ -18,7 +18,7 @@ export const extractSnippetVariables = (content) => {
 };
 
 /**
- * Extract regular variables from template content (excluding snippets)
+ * Extract regular variables from template content (excluding inserts)
  * @param {string} content - Template content with {variable} placeholders
  * @returns {string[]} Array of variable names
  */
@@ -26,16 +26,16 @@ export const extractVariables = (content) => {
   const matches = content.match(/\{([^}]+)\}/g);
   if (!matches) return [];
   
-  // Filter out snippet variables
+  // Filter out insert variables
   return matches
     .map(match => match.slice(1, -1))
-    .filter(variable => !variable.startsWith('snippet:'));
+    .filter(variable => !variable.startsWith('insert:'));
 };
 
 /**
- * Extract all variables (both regular and snippet) from template content
+ * Extract all variables (both regular and insert) from template content
  * @param {string} content - Template content
- * @returns {Object} Object with regular variables and snippet variables
+ * @returns {Object} Object with regular variables and insert variables
  */
 export const extractAllVariables = (content) => {
   return {
@@ -76,9 +76,13 @@ export const createWorkflowStep = (data = {}) => {
   return {
     id: data.id || `step_${Date.now()}`,
     name: data.name || '',
-    templateOptions: data.templateOptions || [], // Array of template objects for choice
+    type: data.type || 'template', // 'template', 'info', 'insert'
+    templateOptions: data.templateOptions || [], // For template steps
     selectedTemplateId: data.selectedTemplateId || null, // For execution
-    variables: data.variables || []
+    variables: data.variables || [],
+    content: data.content || '', // For info steps
+    insertId: data.insertId || null, // For insert steps
+    insertContent: data.insertContent || '' // For insert steps
   };
 };
 

@@ -6,19 +6,19 @@ import TemplateEditor from './templates/TemplateEditor.jsx';
 import ItemExecutor from './common/ItemExecutor.jsx';
 import Homepage from './dashboard/Homepage.jsx';
 import WorkflowEditor from './workflows/WorkflowEditor.jsx';
-import SnippetEditor from './snippets/SnippetEditor.jsx';
+import InsertEditor from './inserts/InsertEditor.jsx';
 import defaultTemplates from '../data/defaultTemplates.json';
 import defaultWorkflows from '../data/defaultWorkflows.json';
-import defaultSnippets from '../data/defaultSnippets.json';
+import defaultInserts from '../data/defaultInserts.json';
 
 const PromptTemplateSystem = () => {
   const [currentView, setCurrentView] = useState('home');
   const [templates, setTemplates] = useState(defaultTemplates);
   const [workflows, setWorkflows] = useState(defaultWorkflows);
-  const [snippets, setSnippets] = useState(defaultSnippets);
+  const [inserts, setInserts] = useState(defaultInserts);
   const [editingTemplate, setEditingTemplate] = useState(null);
   const [editingWorkflow, setEditingWorkflow] = useState(null);
-  const [editingSnippet, setEditingSnippet] = useState(null);
+  const [editingInsert, setEditingInsert] = useState(null);
   const [executingItem, setExecutingItem] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('All');
@@ -44,13 +44,13 @@ const PromptTemplateSystem = () => {
     setCurrentView('home');
   };
 
-  const handleSaveSnippet = (snippet) => {
-    if (snippet.id && snippets.find(s => s.id === snippet.id)) {
-      setSnippets(snippets.map(s => s.id === snippet.id ? snippet : s));
+  const handleSaveInsert = (insert) => {
+    if (insert.id && inserts.find(s => s.id === insert.id)) {
+      setInserts(inserts.map(s => s.id === insert.id ? insert : s));
     } else {
-      setSnippets([...snippets, { ...snippet, id: Date.now() }]);
+      setInserts([...inserts, { ...insert, id: Date.now() }]);
     }
-    setEditingSnippet(null);
+    setEditingInsert(null);
     setCurrentView('home');
   };
 
@@ -59,7 +59,7 @@ const PromptTemplateSystem = () => {
       <ItemExecutor
         item={executingItem.item}
         type={executingItem.type}
-        snippets={snippets}
+        inserts={inserts}
         onComplete={() => {
           setExecutingItem(null);
           setCurrentView('home');
@@ -90,6 +90,7 @@ const PromptTemplateSystem = () => {
       <WorkflowEditor
         workflow={editingWorkflow}
         templates={templates}
+        inserts={inserts}
         onSave={handleSaveWorkflow}
         onCancel={() => {
           setEditingWorkflow(null);
@@ -99,13 +100,13 @@ const PromptTemplateSystem = () => {
     );
   }
 
-  if (editingSnippet !== null) {
+  if (editingInsert !== null) {
     return (
-      <SnippetEditor
-        snippet={editingSnippet}
-        onSave={handleSaveSnippet}
+      <InsertEditor
+        insert={editingInsert}
+        onSave={handleSaveInsert}
         onCancel={() => {
-          setEditingSnippet(null);
+          setEditingInsert(null);
           setCurrentView('home');
         }}
       />
@@ -116,18 +117,18 @@ const PromptTemplateSystem = () => {
     <Homepage 
       templates={templates}
       workflows={workflows}
-      snippets={snippets}
+      inserts={inserts}
       searchQuery={searchQuery}
       setSearchQuery={setSearchQuery}
       selectedCategory={selectedCategory}
       setSelectedCategory={setSelectedCategory}
       onEditTemplate={setEditingTemplate}
       onEditWorkflow={setEditingWorkflow}
-      onEditSnippet={setEditingSnippet}
+      onEditInsert={setEditingInsert}
       onExecuteItem={setExecutingItem}
       onDeleteTemplate={(id) => setTemplates(templates.filter(t => t.id !== id))}
       onDeleteWorkflow={(id) => setWorkflows(workflows.filter(w => w.id !== id))}
-      onDeleteSnippet={(id) => setSnippets(snippets.filter(s => s.id !== id))}
+      onDeleteInsert={(id) => setInserts(inserts.filter(s => s.id !== id))}
     />
   );
 };

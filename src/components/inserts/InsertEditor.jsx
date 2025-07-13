@@ -2,31 +2,31 @@ import React, { useState } from 'react';
 import { Save, X, Tag } from 'lucide-react';
 import { DEFAULT_CATEGORIES, validateSnippet } from '../../types/template.types.js';
 
-const SnippetEditor = ({ snippet, onSave, onCancel }) => {
+const InsertEditor = ({ insert, onSave, onCancel }) => {
   const [formData, setFormData] = useState({
-    name: snippet?.name || '',
-    content: snippet?.content || '',
-    category: snippet?.category || 'General',
-    tags: snippet?.tags || []
+    name: insert?.name || '',
+    content: insert?.content || '',
+    category: insert?.category || 'General',
+    tags: insert?.tags || []
   });
   const [tagInput, setTagInput] = useState('');
   const [errors, setErrors] = useState([]);
 
   const handleSave = () => {
-    const snippetData = {
-      id: snippet?.id,
+    const insertData = {
+      id: insert?.id,
       ...formData,
       updatedAt: new Date().toISOString()
     };
 
-    const validation = validateSnippet(snippetData);
+    const validation = validateSnippet(insertData);
     if (!validation.isValid) {
       setErrors(validation.errors);
       return;
     }
 
     setErrors([]);
-    onSave(snippetData);
+    onSave(insertData);
   };
 
   const handleAddTag = () => {
@@ -62,7 +62,7 @@ const SnippetEditor = ({ snippet, onSave, onCancel }) => {
       <div className="bg-gray-900 rounded-xl shadow-lg p-6">
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-2xl font-bold text-gray-100">
-            {snippet ? 'Edit Snippet' : 'Create New Snippet'}
+            {insert ? 'Edit Insert' : 'Create New Insert'}
           </h2>
           <div className="flex gap-2">
             <button
@@ -77,7 +77,7 @@ const SnippetEditor = ({ snippet, onSave, onCancel }) => {
               className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 flex items-center gap-2"
             >
               <Save className="w-4 h-4" />
-              Save Snippet
+              Save Insert
             </button>
           </div>
         </div>
@@ -98,14 +98,14 @@ const SnippetEditor = ({ snippet, onSave, onCancel }) => {
           <div className="space-y-4">
             <div>
               <label className="block text-sm font-medium text-gray-300 mb-2">
-                Snippet Name
+                Insert Name
               </label>
               <input
                 type="text"
                 value={formData.name}
                 onChange={(e) => setFormData({...formData, name: e.target.value})}
                 className="w-full p-3 border border-gray-600 bg-gray-800 text-gray-100 rounded-lg focus:ring-2 focus:ring-green-400 focus:border-transparent"
-                placeholder="Enter snippet name..."
+                placeholder="Enter insert name..."
               />
             </div>
 
@@ -172,7 +172,7 @@ const SnippetEditor = ({ snippet, onSave, onCancel }) => {
                 value={formData.content}
                 onChange={(e) => setFormData({...formData, content: e.target.value})}
                 className="w-full h-48 p-3 border border-gray-600 bg-gray-800 text-gray-100 rounded-lg focus:ring-2 focus:ring-green-400 focus:border-transparent"
-                placeholder="Enter snippet content..."
+                placeholder="Enter insert content..."
               />
             </div>
           </div>
@@ -185,7 +185,7 @@ const SnippetEditor = ({ snippet, onSave, onCancel }) => {
                 <div className="space-y-2">
                   <div>
                     <span className="text-sm font-medium text-gray-300">Name: </span>
-                    <span className="text-gray-100">{formData.name || 'Untitled Snippet'}</span>
+                    <span className="text-gray-100">{formData.name || 'Untitled Insert'}</span>
                   </div>
                   <div>
                     <span className="text-sm font-medium text-gray-300">Category: </span>
@@ -214,12 +214,12 @@ const SnippetEditor = ({ snippet, onSave, onCancel }) => {
             </div>
 
             <div className="bg-blue-900 rounded-lg p-4 border border-blue-700">
-              <h4 className="text-sm font-semibold text-blue-100 mb-2">💡 How to use snippets</h4>
+              <h4 className="text-sm font-semibold text-blue-100 mb-2">💡 How to use inserts</h4>
               <p className="text-sm text-blue-200">
-                Use snippets in templates with the syntax: <code className="bg-blue-800 px-1 rounded">{'{snippet:tagname}'}</code>
+                Use inserts in templates with the syntax: <code className="bg-blue-800 px-1 rounded">{'{insert:tagname}'}</code>
               </p>
               <p className="text-sm text-blue-200 mt-1">
-                For example: <code className="bg-blue-800 px-1 rounded">{'{snippet:mood}'}</code> will show all snippets tagged with "mood"
+                For example: <code className="bg-blue-800 px-1 rounded">{'{insert:mood}'}</code> will show all inserts tagged with "mood"
               </p>
             </div>
           </div>
@@ -229,4 +229,4 @@ const SnippetEditor = ({ snippet, onSave, onCancel }) => {
   );
 };
 
-export default SnippetEditor;
+export default InsertEditor;

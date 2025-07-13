@@ -101,8 +101,8 @@ const TemplateEditor = ({ template, onSave, onCancel }) => {
               />
               <div className="text-sm text-gray-400 mt-2 space-y-1">
                 <p>Use curly braces {'{}'} to create input variables, like {'{topic}'} or {'{audience}'}</p>
-                <p>Use snippet syntax for dropdowns: <code className="bg-gray-700 px-1 rounded">{'{snippet:tagname}'}</code></p>
-                <p>Example: <code className="bg-gray-700 px-1 rounded">{'{snippet:mood}'}</code> shows all snippets tagged with "mood"</p>
+                <p>Use insert syntax for dropdowns: <code className="bg-gray-700 px-1 rounded">{'{insert:tagname}'}</code></p>
+                <p>Example: <code className="bg-gray-700 px-1 rounded">{'{insert:mood}'}</code> shows all inserts tagged with "mood"</p>
               </div>
             </div>
           </div>
@@ -117,7 +117,7 @@ const TemplateEditor = ({ template, onSave, onCancel }) => {
                       {part.match(/\{[^}]+\}/) ? (
                         <span 
                           className={`px-2 py-1 rounded text-sm font-medium ${
-                            part.includes('snippet:') 
+                            part.includes('insert:') 
                               ? 'bg-purple-100 text-purple-800' 
                               : 'bg-blue-100 text-blue-800'
                           }`}
@@ -152,7 +152,7 @@ const TemplateEditor = ({ template, onSave, onCancel }) => {
             {snippetVariables.length > 0 && (
               <div>
                 <h3 className="text-lg font-semibold text-gray-100 mb-3">
-                  Snippet Variables Found ({snippetVariables.length})
+                  Insert Variables Found ({snippetVariables.length})
                 </h3>
                 <div className="space-y-2">
                   {snippetVariables.map((snippetVar, index) => (

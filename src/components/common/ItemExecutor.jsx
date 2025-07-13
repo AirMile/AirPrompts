@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { Copy, ArrowLeft, ArrowRight, Check } from 'lucide-react';
+import { Copy, ArrowLeft, ArrowRight, Check, Info, Tag } from 'lucide-react';
 import { copyToClipboard } from '../../utils/clipboard.js';
 import { extractAllVariables } from '../../types/template.types.js';
 
-const ItemExecutor = ({ item, type, snippets = [], onComplete, onCancel }) => {
+const ItemExecutor = ({ item, type, inserts = [], onComplete, onCancel }) => {
   const [currentStep, setCurrentStep] = useState(0);
   const [variableValues, setVariableValues] = useState({});
   const [stepOutputs, setStepOutputs] = useState([]);
@@ -20,14 +20,14 @@ const ItemExecutor = ({ item, type, snippets = [], onComplete, onCancel }) => {
   const getCurrentTemplate = () => {
     if (!isWorkflow) return currentStepData;
     
-    // If step has multiple template options, get selected one
-    if (currentStepData.templateOptions && currentStepData.templateOptions.length > 0) {
+    // Handle different step types
+    if (currentStepData.type === 'template' && currentStepData.templateOptions && currentStepData.templateOptions.length > 0) {
       const selectedTemplateId = selectedTemplates[currentStepData.id];
       const selectedTemplate = currentStepData.templateOptions.find(t => t.id === selectedTemplateId);
       return selectedTemplate || currentStepData.templateOptions[0]; // Default to first option
     }
     
-    // Legacy single template step
+    // For info and insert steps, or legacy template steps
     return currentStepData;
   };
   
@@ -83,16 +83,32 @@ const ItemExecutor = ({ item, type, snippets = [], onComplete, onCancel }) => {
   const { variables: regularVariables, snippetVariables, sortedVariables } = getAllTemplateVariables();
   const allVariables = sortedVariables.map(v => v.placeholder);
   
+  // Different logic for different step types
+  const getStepType = () => {
+    if (!isWorkflow) return 'template';
+    return currentStepData.type || 'template';
+  };
+  
+  const stepType = getStepType();
+  
   // Auto-focus first input on mount and step changes
   useEffect(() => {
     const timer = setTimeout(() => {
-      const firstInput = document.querySelector('input[data-first-input="true"]');
-      if (firstInput) {
-        firstInput.focus();
+      if (stepType === 'info' || stepType === 'insert') {
+        // For info/insert steps, focus the action button
+        const actionButton = document.querySelector('button[data-action-button="true"]');
+        if (actionButton) {
+          actionButton.focus();
+        }
+      } else {
+        const firstInput = document.querySelector('input[data-first-input="true"]');
+        if (firstInput) {
+          firstInput.focus();
+        }
       }
     }, 100);
     return () => clearTimeout(timer);
-  }, [currentStep]);
+  }, [currentStep, stepType]);
 
   const handleVariableChange = (variable, value) => {
     setVariableValues(prev => ({
@@ -106,16 +122,16 @@ const ItemExecutor = ({ item, type, snippets = [], onComplete, onCancel }) => {
     
     // Replace regular variables
     Object.entries(variableValues).forEach(([key, value]) => {
-      if (!key.startsWith('{snippet:')) {
+      if (!key.startsWith('{insert:')) {
         output = output.replace(new RegExp(`\\{${key}\\}`, 'g'), value);
       }
     });
     
-    // Replace snippet placeholders with selected snippet content
+    // Replace insert placeholders with selected insert content
     snippetVariables.forEach(snippetVar => {
-      const snippetValue = variableValues[snippetVar.placeholder];
-      if (snippetValue) {
-        output = output.replace(new RegExp(`\\{snippet:${snippetVar.tag}\\}`, 'g'), snippetValue);
+      const insertValue = variableValues[snippetVar.placeholder];
+      if (insertValue) {
+        output = output.replace(new RegExp(`\\{insert:${snippetVar.tag}\\}`, 'g'), insertValue);
       }
     });
     
@@ -125,13 +141,14 @@ const ItemExecutor = ({ item, type, snippets = [], onComplete, onCancel }) => {
   const handleKeyDown = (e, isLastInput = false, currentIndex = 0) => {
     if ((e.key === 'Tab' || e.key === 'Enter') && isLastInput && canProceed) {
       // If this is the last input and user tabs/enters, check if we can auto-copy
-      if (currentStepData.variables?.length <= 3) {
+      if (sortedVariables.length <= 3) {
         // Auto-copy for simple templates
         e.preventDefault();
         handleCopyAndNext();
       } else if (e.key === 'Tab') {
-        // For complex templates, let tab naturally move to copy button
-        return;
+        // For complex templates, Tab should also auto-copy
+        e.preventDefault();
+        handleCopyAndNext();
       } else if (e.key === 'Enter') {
         // For complex templates, Enter should still auto-copy
         e.preventDefault();
@@ -147,8 +164,37 @@ const ItemExecutor = ({ item, type, snippets = [], onComplete, onCancel }) => {
     }
   };
 
+  const handleGlobalKeyDown = (e) => {
+    if ((stepType === 'info' || stepType === 'insert') && (e.key === 'Tab' || e.key === 'Enter')) {
+      // For info/insert steps, Tab or Enter should move to next step
+      e.preventDefault();
+      if (stepType === 'info') {
+        handleNextStep();
+      } else {
+        handleCopyAndNext();
+      }
+    }
+  };
+
+  const handleNextStep = () => {
+    // For info steps, just move to next step without copying
+    if (isWorkflow && currentStep < steps.length - 1) {
+      setCurrentStep(currentStep + 1);
+      setVariableValues({});
+    } else {
+      onComplete();
+    }
+  };
+
   const handleCopyAndNext = async () => {
-    const output = generateOutput();
+    let output;
+    
+    if (stepType === 'insert') {
+      output = currentStepData.insertContent || '';
+    } else {
+      output = generateOutput();
+    }
+    
     const success = await copyToClipboard(output);
     
     if (success) {
@@ -179,11 +225,20 @@ const ItemExecutor = ({ item, type, snippets = [], onComplete, onCancel }) => {
     }
   };
 
-  const canProceed = allVariables.every(variable => 
-    variableValues[variable]?.trim()
-  );
+  const canProceed = (() => {
+    if (stepType === 'info') return true; // Info steps don't need variables
+    if (stepType === 'insert') return true; // Insert steps don't need variables
+    return sortedVariables.every(varData => {
+      if (varData.type === 'regular') {
+        return variableValues[varData.variable]?.trim();
+      } else {
+        // For snippet variables, check the placeholder
+        return variableValues[varData.placeholder]?.trim();
+      }
+    });
+  })();
   
-  const hasTemplateOptions = isWorkflow && currentStepData.templateOptions && currentStepData.templateOptions.length > 1;
+  const hasTemplateOptions = isWorkflow && stepType === 'template' && currentStepData.templateOptions && currentStepData.templateOptions.length > 1;
   const needsTemplateSelection = hasTemplateOptions && !selectedTemplates[currentStepData.id];
 
   if (copied) {
@@ -207,7 +262,7 @@ const ItemExecutor = ({ item, type, snippets = [], onComplete, onCancel }) => {
 
   return (
     <div className="max-w-4xl mx-auto p-6">
-      <div className="bg-gray-900 rounded-xl shadow-lg p-6">
+      <div className="bg-gray-900 rounded-xl shadow-lg p-6" onKeyDown={handleGlobalKeyDown} tabIndex={-1}>
         <div className="flex items-center justify-between mb-6">
           <div>
             <h2 className="text-2xl font-bold text-gray-100">{item.name}</h2>
@@ -258,17 +313,25 @@ const ItemExecutor = ({ item, type, snippets = [], onComplete, onCancel }) => {
               </button>
             )}
             <button
-              onClick={handleCopyAndNext}
-              onKeyDown={(e) => e.key === 'Enter' && handleCopyAndNext()}
+              onClick={stepType === 'info' ? handleNextStep : handleCopyAndNext}
+              onKeyDown={(e) => e.key === 'Enter' && (stepType === 'info' ? handleNextStep() : handleCopyAndNext())}
               disabled={!canProceed || needsTemplateSelection}
               className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
               tabIndex={allVariables.length + 1 || 1}
+              data-action-button={stepType === 'info' || stepType === 'insert' ? 'true' : undefined}
             >
-              <Copy className="w-4 h-4" />
-              {isWorkflow && currentStep < steps.length - 1 
-                ? 'Copy & Next Step' 
-                : 'Copy & Complete'
-              }
+              {stepType === 'info' ? (
+                <ArrowRight className="w-4 h-4" />
+              ) : (
+                <Copy className="w-4 h-4" />
+              )}
+              {stepType === 'info' ? (
+                isWorkflow && currentStep < steps.length - 1 ? 'Next Step' : 'Complete'
+              ) : stepType === 'insert' ? (
+                isWorkflow && currentStep < steps.length - 1 ? 'Copy Insert & Next' : 'Copy Insert'
+              ) : (
+                isWorkflow && currentStep < steps.length - 1 ? 'Copy & Next Step' : 'Copy & Complete'
+              )}
             </button>
           </div>
         </div>
@@ -311,13 +374,15 @@ const ItemExecutor = ({ item, type, snippets = [], onComplete, onCancel }) => {
             )}
             
             <div>
-              <h3 className="text-lg font-semibold text-gray-100 mb-3">Fill in Variables</h3>
-              {needsTemplateSelection ? (
-                <p className="text-gray-500 italic">Select a template above to see variables</p>
-              ) : (
+              {stepType === 'template' && (
                 <>
-                  {/* Variables in order of appearance */}
-                  {sortedVariables.map((varData, index) => {
+                  <h3 className="text-lg font-semibold text-gray-100 mb-3">Fill in Variables</h3>
+                  {needsTemplateSelection ? (
+                    <p className="text-gray-500 italic">Select a template above to see variables</p>
+                  ) : (
+                    <>
+                      {/* Variables in order of appearance */}
+                      {sortedVariables.map((varData, index) => {
                     const isFirst = index === 0;
                     const isLast = index === sortedVariables.length - 1;
                     
@@ -356,14 +421,14 @@ const ItemExecutor = ({ item, type, snippets = [], onComplete, onCancel }) => {
                     } else {
                       // Snippet variable
                       const snippetVar = varData.snippetVar;
-                      const filteredSnippets = snippets.filter(snippet => 
-                        snippet.tags.includes(snippetVar.tag)
+                      const filteredInserts = inserts.filter(insert => 
+                        insert.tags.includes(snippetVar.tag)
                       );
                       
                       return (
                         <div key={snippetVar.placeholder} className="mb-4">
                           <label className="block text-sm font-medium text-gray-300 mb-2">
-                            {snippetVar.tag.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())} (Snippet)
+                            {snippetVar.tag.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())} (Insert)
                           </label>
                           <select
                             value={variableValues[snippetVar.placeholder] || ''}
@@ -372,16 +437,16 @@ const ItemExecutor = ({ item, type, snippets = [], onComplete, onCancel }) => {
                             tabIndex={index + 1}
                             data-first-input={isFirst}
                           >
-                            <option value="">Select a {snippetVar.tag} snippet...</option>
-                            {filteredSnippets.map(snippet => (
-                              <option key={snippet.id} value={snippet.content}>
-                                {snippet.name}
+                            <option value="">Select a {snippetVar.tag} insert...</option>
+                            {filteredInserts.map(insert => (
+                              <option key={insert.id} value={insert.content}>
+                                {insert.name}
                               </option>
                             ))}
                           </select>
-                          {filteredSnippets.length === 0 && (
+                          {filteredInserts.length === 0 && (
                             <p className="text-sm text-yellow-400 mt-1">
-                              No snippets found with tag "{snippetVar.tag}"
+                              No inserts found with tag "{snippetVar.tag}"
                             </p>
                           )}
                         </div>
@@ -389,29 +454,57 @@ const ItemExecutor = ({ item, type, snippets = [], onComplete, onCancel }) => {
                     }
                   })}
                   
-                  {sortedVariables.length === 0 && (
-                    <p className="text-gray-500">No variables to fill for this step.</p>
+                      {sortedVariables.length === 0 && (
+                        <p className="text-gray-500">No variables to fill for this step.</p>
+                      )}
+                    </>
                   )}
                 </>
+              )}
+              
+              {stepType === 'info' && (
+                <div className="bg-green-900 rounded-lg p-4 border border-green-700">
+                  <h3 className="text-lg font-semibold text-green-100 mb-3 flex items-center gap-2">
+                    <Info className="w-5 h-5" />
+                    Information Step
+                  </h3>
+                  <div className="text-green-200 whitespace-pre-wrap">
+                    {currentStepData.content || 'No information provided for this step.'}
+                  </div>
+                </div>
+              )}
+              
+              {stepType === 'insert' && (
+                <div className="bg-purple-900 rounded-lg p-4 border border-purple-700">
+                  <h3 className="text-lg font-semibold text-purple-100 mb-3 flex items-center gap-2">
+                    <Tag className="w-5 h-5" />
+                    Insert Step
+                  </h3>
+                  <div className="text-purple-200 whitespace-pre-wrap">
+                    {currentStepData.insertContent || 'No insert selected for this step.'}
+                  </div>
+                </div>
               )}
             </div>
           </div>
 
           <div className="space-y-4">
-            <div>
-              <h3 className="text-lg font-semibold text-gray-100 mb-3">Current Step Preview</h3>
-              <div className="bg-gray-800 rounded-lg p-4 border border-gray-700 min-h-48">
-                <div className="prose prose-sm max-w-none whitespace-pre-wrap">
-                  {needsTemplateSelection ? (
-                    <p className="text-gray-500 italic text-center py-8">
-                      Select a template above to see the preview
-                    </p>
-                  ) : (
-                    generateOutput()
-                  )}
+            {stepType === 'template' && (
+              <div>
+                <h3 className="text-lg font-semibold text-gray-100 mb-3">Current Step Preview</h3>
+                <div className="bg-gray-800 rounded-lg p-4 border border-gray-700 min-h-48">
+                  <div className="prose prose-sm max-w-none whitespace-pre-wrap">
+                    {needsTemplateSelection ? (
+                      <p className="text-gray-500 italic text-center py-8">
+                        Select a template above to see the preview
+                      </p>
+                    ) : (
+                      generateOutput()
+                    )}
+                  </div>
                 </div>
               </div>
-            </div>
+            )}
 
             {isWorkflow && completedSteps.length > 0 && (
               <div>
@@ -443,7 +536,7 @@ const ItemExecutor = ({ item, type, snippets = [], onComplete, onCancel }) => {
               </div>
             )}
 
-            {isWorkflow && (
+            {isWorkflow && stepType !== 'info' && (
               <div className="bg-blue-900 rounded-lg p-4 border border-blue-700">
                 <h4 className="text-sm font-semibold text-blue-100 mb-2">💡 Workflow Tip</h4>
                 <p className="text-sm text-blue-200">
