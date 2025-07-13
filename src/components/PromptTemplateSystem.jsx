@@ -1,20 +1,24 @@
 import React, { useState, useEffect } from 'react';
 import { Plus, Play, Edit, Copy, Trash2, ArrowRight, ArrowLeft, Check, Search, Tag, Workflow, FileText, Star, Clock } from 'lucide-react';
-import { extractVariables, createTemplate, createWorkflow, DEFAULT_CATEGORIES } from '../types/template.types.js';
+import { extractVariables, createTemplate, createWorkflow, createSnippet, DEFAULT_CATEGORIES } from '../types/template.types.js';
 import { copyToClipboard } from '../utils/clipboard.js';
 import TemplateEditor from './templates/TemplateEditor.jsx';
 import ItemExecutor from './common/ItemExecutor.jsx';
 import Homepage from './dashboard/Homepage.jsx';
 import WorkflowEditor from './workflows/WorkflowEditor.jsx';
+import SnippetEditor from './snippets/SnippetEditor.jsx';
 import defaultTemplates from '../data/defaultTemplates.json';
 import defaultWorkflows from '../data/defaultWorkflows.json';
+import defaultSnippets from '../data/defaultSnippets.json';
 
 const PromptTemplateSystem = () => {
   const [currentView, setCurrentView] = useState('home');
   const [templates, setTemplates] = useState(defaultTemplates);
   const [workflows, setWorkflows] = useState(defaultWorkflows);
+  const [snippets, setSnippets] = useState(defaultSnippets);
   const [editingTemplate, setEditingTemplate] = useState(null);
   const [editingWorkflow, setEditingWorkflow] = useState(null);
+  const [editingSnippet, setEditingSnippet] = useState(null);
   const [executingItem, setExecutingItem] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('All');
@@ -40,11 +44,22 @@ const PromptTemplateSystem = () => {
     setCurrentView('home');
   };
 
+  const handleSaveSnippet = (snippet) => {
+    if (snippet.id && snippets.find(s => s.id === snippet.id)) {
+      setSnippets(snippets.map(s => s.id === snippet.id ? snippet : s));
+    } else {
+      setSnippets([...snippets, { ...snippet, id: Date.now() }]);
+    }
+    setEditingSnippet(null);
+    setCurrentView('home');
+  };
+
   if (executingItem) {
     return (
       <ItemExecutor
         item={executingItem.item}
         type={executingItem.type}
+        snippets={snippets}
         onComplete={() => {
           setExecutingItem(null);
           setCurrentView('home');
@@ -84,19 +99,35 @@ const PromptTemplateSystem = () => {
     );
   }
 
+  if (editingSnippet !== null) {
+    return (
+      <SnippetEditor
+        snippet={editingSnippet}
+        onSave={handleSaveSnippet}
+        onCancel={() => {
+          setEditingSnippet(null);
+          setCurrentView('home');
+        }}
+      />
+    );
+  }
+
   return (
     <Homepage 
       templates={templates}
       workflows={workflows}
+      snippets={snippets}
       searchQuery={searchQuery}
       setSearchQuery={setSearchQuery}
       selectedCategory={selectedCategory}
       setSelectedCategory={setSelectedCategory}
       onEditTemplate={setEditingTemplate}
       onEditWorkflow={setEditingWorkflow}
+      onEditSnippet={setEditingSnippet}
       onExecuteItem={setExecutingItem}
       onDeleteTemplate={(id) => setTemplates(templates.filter(t => t.id !== id))}
       onDeleteWorkflow={(id) => setWorkflows(workflows.filter(w => w.id !== id))}
+      onDeleteSnippet={(id) => setSnippets(snippets.filter(s => s.id !== id))}
     />
   );
 };

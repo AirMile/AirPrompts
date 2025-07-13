@@ -1,19 +1,22 @@
 import React from 'react';
-import { Plus, Play, Edit, Trash2, Search, Workflow, FileText, Star, Clock } from 'lucide-react';
+import { Plus, Play, Edit, Trash2, Search, Workflow, FileText, Star, Clock, Tag } from 'lucide-react';
 import { DEFAULT_CATEGORIES } from '../../types/template.types.js';
 
 const Homepage = ({ 
   templates, 
   workflows, 
+  snippets,
   searchQuery,
   setSearchQuery,
   selectedCategory,
   setSelectedCategory,
   onEditTemplate, 
   onEditWorkflow, 
+  onEditSnippet,
   onExecuteItem,
   onDeleteTemplate,
-  onDeleteWorkflow
+  onDeleteWorkflow,
+  onDeleteSnippet
 }) => {
   const categories = ['All', ...DEFAULT_CATEGORIES];
   
@@ -27,6 +30,13 @@ const Homepage = ({
     (selectedCategory === 'All' || workflow.category === selectedCategory) &&
     (workflow.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
      workflow.description.toLowerCase().includes(searchQuery.toLowerCase()))
+  );
+
+  const filteredSnippets = snippets.filter(snippet =>
+    (selectedCategory === 'All' || snippet.category === selectedCategory) &&
+    (snippet.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+     snippet.content.toLowerCase().includes(searchQuery.toLowerCase()) ||
+     snippet.tags.some(tag => tag.toLowerCase().includes(searchQuery.toLowerCase())))
   );
 
   const recentItems = [...templates, ...workflows]
@@ -173,6 +183,66 @@ const Homepage = ({
                 </button>
                 <button
                   onClick={() => onDeleteTemplate(template.id)}
+                  className="px-3 py-2 border border-red-700 text-red-400 rounded hover:bg-red-900"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Snippets Section */}
+      <div className="mb-8">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-xl font-semibold text-gray-100 flex items-center gap-2">
+            <Tag className="w-5 h-5 text-gray-300" />
+            Snippets ({filteredSnippets.length})
+          </h2>
+          <button
+            onClick={() => onEditSnippet({})}
+            className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 flex items-center gap-2 font-semibold"
+          >
+            <Plus className="w-4 h-4" />
+            New Snippet
+          </button>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {filteredSnippets.map(snippet => (
+            <div key={snippet.id} className="bg-gray-800 rounded-lg shadow-md border border-gray-700 p-4 hover:shadow-lg transition-shadow">
+              <div className="flex items-start justify-between mb-3">
+                <div className="flex-1">
+                  <h3 className="font-semibold text-gray-100 mb-1">{snippet.name}</h3>
+                  <p className="text-sm text-gray-300 mb-2 line-clamp-2">{snippet.content}</p>
+                  <div className="flex items-center gap-2 mb-2">
+                    <span className="px-2 py-1 bg-gray-700 text-gray-200 text-xs rounded">{snippet.category}</span>
+                  </div>
+                  <div className="flex flex-wrap gap-1">
+                    {snippet.tags.slice(0, 3).map((tag, index) => (
+                      <span key={index} className="px-2 py-1 bg-purple-900 text-purple-100 text-xs rounded">
+                        {tag}
+                      </span>
+                    ))}
+                    {snippet.tags.length > 3 && (
+                      <span className="px-2 py-1 bg-gray-600 text-gray-300 text-xs rounded">
+                        +{snippet.tags.length - 3}
+                      </span>
+                    )}
+                  </div>
+                </div>
+              </div>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => onEditSnippet(snippet)}
+                  className="flex-1 px-3 py-2 border border-gray-600 text-gray-200 rounded hover:bg-gray-700 flex items-center justify-center gap-2"
+                >
+                  <Edit className="w-4 h-4" />
+                  Edit
+                </button>
+                <button
+                  onClick={() => onDeleteSnippet(snippet.id)}
                   className="px-3 py-2 border border-red-700 text-red-400 rounded hover:bg-red-900"
                 >
                   <Trash2 className="w-4 h-4" />

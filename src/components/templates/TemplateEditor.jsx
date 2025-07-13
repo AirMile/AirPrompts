@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Tag } from 'lucide-react';
-import { extractVariables, DEFAULT_CATEGORIES } from '../../types/template.types.js';
+import { extractAllVariables, DEFAULT_CATEGORIES } from '../../types/template.types.js';
 
 const TemplateEditor = ({ template, onSave, onCancel }) => {
   const [formData, setFormData] = useState({
@@ -10,7 +10,7 @@ const TemplateEditor = ({ template, onSave, onCancel }) => {
     category: template?.category || 'General'
   });
 
-  const variables = extractVariables(formData.content);
+  const { variables, snippetVariables } = extractAllVariables(formData.content);
 
   const handleSave = () => {
     const newTemplate = {
@@ -99,9 +99,11 @@ const TemplateEditor = ({ template, onSave, onCancel }) => {
                 className="w-full h-48 p-3 border border-gray-600 bg-gray-800 text-gray-100 rounded-lg focus:ring-2 focus:ring-blue-400 focus:border-transparent font-mono text-sm"
                 placeholder="Write your template here. Use {variable_name} for input fields..."
               />
-              <p className="text-sm text-gray-400 mt-2">
-                Use curly braces {'{}'} to create input variables, like {'{topic}'} or {'{audience}'}
-              </p>
+              <div className="text-sm text-gray-400 mt-2 space-y-1">
+                <p>Use curly braces {'{}'} to create input variables, like {'{topic}'} or {'{audience}'}</p>
+                <p>Use snippet syntax for dropdowns: <code className="bg-gray-700 px-1 rounded">{'{snippet:tagname}'}</code></p>
+                <p>Example: <code className="bg-gray-700 px-1 rounded">{'{snippet:mood}'}</code> shows all snippets tagged with "mood"</p>
+              </div>
             </div>
           </div>
 
@@ -113,7 +115,13 @@ const TemplateEditor = ({ template, onSave, onCancel }) => {
                   {formData.content.split(/(\{[^}]+\})/).map((part, index) => (
                     <span key={index}>
                       {part.match(/\{[^}]+\}/) ? (
-                        <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded text-sm font-medium">
+                        <span 
+                          className={`px-2 py-1 rounded text-sm font-medium ${
+                            part.includes('snippet:') 
+                              ? 'bg-purple-100 text-purple-800' 
+                              : 'bg-blue-100 text-blue-800'
+                          }`}
+                        >
                           {part}
                         </span>
                       ) : (
@@ -135,6 +143,24 @@ const TemplateEditor = ({ template, onSave, onCancel }) => {
                     <div key={index} className="flex items-center gap-2 p-2 bg-blue-900 rounded-lg">
                       <Tag className="w-4 h-4 text-blue-300" />
                       <span className="text-sm font-medium text-blue-100">{variable}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {snippetVariables.length > 0 && (
+              <div>
+                <h3 className="text-lg font-semibold text-gray-100 mb-3">
+                  Snippet Variables Found ({snippetVariables.length})
+                </h3>
+                <div className="space-y-2">
+                  {snippetVariables.map((snippetVar, index) => (
+                    <div key={index} className="flex items-center gap-2 p-2 bg-purple-900 rounded-lg">
+                      <Tag className="w-4 h-4 text-purple-300" />
+                      <span className="text-sm font-medium text-purple-100">
+                        {snippetVar.placeholder} → tag: "{snippetVar.tag}"
+                      </span>
                     </div>
                   ))}
                 </div>

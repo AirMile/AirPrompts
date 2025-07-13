@@ -1,13 +1,47 @@
 // Template type definitions and utility functions
 
 /**
- * Extract variables from template content
+ * Extract snippet variables from template content
+ * @param {string} content - Template content with {snippet:tagname} placeholders
+ * @returns {Object[]} Array of snippet variable objects
+ */
+export const extractSnippetVariables = (content) => {
+  const snippetMatches = content.match(/\{snippet:([^}]+)\}/g);
+  return snippetMatches ? snippetMatches.map(match => {
+    const tag = match.match(/\{snippet:([^}]+)\}/)[1];
+    return {
+      type: 'snippet',
+      tag,
+      placeholder: match
+    };
+  }) : [];
+};
+
+/**
+ * Extract regular variables from template content (excluding snippets)
  * @param {string} content - Template content with {variable} placeholders
  * @returns {string[]} Array of variable names
  */
 export const extractVariables = (content) => {
   const matches = content.match(/\{([^}]+)\}/g);
-  return matches ? matches.map(match => match.slice(1, -1)) : [];
+  if (!matches) return [];
+  
+  // Filter out snippet variables
+  return matches
+    .map(match => match.slice(1, -1))
+    .filter(variable => !variable.startsWith('snippet:'));
+};
+
+/**
+ * Extract all variables (both regular and snippet) from template content
+ * @param {string} content - Template content
+ * @returns {Object} Object with regular variables and snippet variables
+ */
+export const extractAllVariables = (content) => {
+  return {
+    variables: extractVariables(content),
+    snippetVariables: extractSnippetVariables(content)
+  };
 };
 
 /**
@@ -128,6 +162,74 @@ export const validateTemplate = (template) => {
   }
   
   if (!template.category || !DEFAULT_CATEGORIES.includes(template.category)) {
+    errors.push('Valid category is required');
+  }
+  
+  return {
+    isValid: errors.length === 0,
+    errors
+  };
+};
+
+/**
+ * Create a new snippet with default values
+ * @param {Object} data - Snippet data
+ * @returns {Object} Complete snippet object
+ */
+export const createSnippet = (data = {}) => {
+  const now = new Date().toISOString();
+  
+  return {
+    id: data.id || Date.now(),
+    name: data.name || '',
+    content: data.content || '',
+    tags: data.tags || [],
+    category: data.category || 'General',
+    createdAt: data.createdAt || now,
+    updatedAt: data.updatedAt || now
+  };
+};
+
+/**
+ * Snippet validation rules
+ */
+export const SNIPPET_VALIDATION = {
+  name: {
+    required: true,
+    minLength: 1,
+    maxLength: 100
+  },
+  content: {
+    required: true,
+    minLength: 1
+  },
+  category: {
+    required: true,
+    allowedValues: DEFAULT_CATEGORIES
+  }
+};
+
+/**
+ * Validate snippet data
+ * @param {Object} snippet - Snippet to validate
+ * @returns {Object} Validation result with isValid boolean and errors array
+ */
+export const validateSnippet = (snippet) => {
+  const errors = [];
+  
+  if (!snippet.name || snippet.name.trim().length === 0) {
+    errors.push('Snippet name is required');
+  }
+  
+  if (snippet.name && snippet.name.length > SNIPPET_VALIDATION.name.maxLength) {
+    errors.push(`Snippet name must be less than ${SNIPPET_VALIDATION.name.maxLength} characters`);
+  }
+  
+  if (!snippet.content || snippet.content.trim().length === 0) {
+    errors.push('Snippet content is required');
+  }
+  
+  if (!snippet.category || !DEFAULT_CATEGORIES.includes(snippet.category)) {
     errors.push('Valid category is required');
   }
   

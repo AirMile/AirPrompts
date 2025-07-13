@@ -1,0 +1,50 @@
+[
+  {
+    "id": 1,
+    "name": "Creative Mood",
+    "content": "Be creative and think outside the box. Use vivid language and metaphors.",
+    "tags": ["mood", "creative"],
+    "category": "General",
+    "createdAt": "2025-01-13T00:00:00.000Z"
+  },
+  {
+    "id": 2,
+    "name": "Precise Mood", 
+    "content": "Be exact and factual. Stick to the requirements without deviation.",
+    "tags": ["mood", "precise"],
+    "category": "General",
+    "createdAt": "2025-01-13T00:00:00.000Z"
+  },
+  {
+    "id": 3,
+    "name": "Professional Tone",
+    "content": "Maintain a professional, business-appropriate tone throughout.",
+    "tags": ["tone", "professional"],
+    "category": "Business",
+    "createdAt": "2025-01-13T00:00:00.000Z"
+  },
+  {
+    "id": 4,
+    "name": "Casual Tone",
+    "content": "Use a friendly, conversational and approachable tone.",
+    "tags": ["tone", "casual"],
+    "category": "General",
+    "createdAt": "2025-01-13T00:00:00.000Z"
+  },
+  {
+    "id": 5,
+    "name": "Technical Focus",
+    "content": "Focus on technical details, specifications, and implementation aspects.",
+    "tags": ["focus", "technical"],
+    "category": "Development",
+    "createdAt": "2025-01-13T00:00:00.000Z"
+  },
+  {
+    "id": 6,
+    "name": "User-Friendly Focus",
+    "content": "Prioritize clarity and accessibility for non-technical users.",
+    "tags": ["focus", "user-friendly"],
+    "category": "General",
+    "createdAt": "2025-01-13T00:00:00.000Z"
+  }
+]

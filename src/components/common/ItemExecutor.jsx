@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { Copy, ArrowLeft, ArrowRight, Check } from 'lucide-react';
 import { copyToClipboard } from '../../utils/clipboard.js';
+import { extractAllVariables } from '../../types/template.types.js';
 
-const ItemExecutor = ({ item, type, onComplete, onCancel }) => {
+const ItemExecutor = ({ item, type, snippets = [], onComplete, onCancel }) => {
   const [currentStep, setCurrentStep] = useState(0);
   const [variableValues, setVariableValues] = useState({});
   const [stepOutputs, setStepOutputs] = useState([]);
@@ -32,6 +33,56 @@ const ItemExecutor = ({ item, type, onComplete, onCancel }) => {
   
   const currentTemplate = getCurrentTemplate();
   
+  // Extract all variables including snippets from current template and sort by position
+  const getAllTemplateVariables = () => {
+    if (!currentTemplate.content) return { variables: [], snippetVariables: [], sortedVariables: [] };
+    
+    const { variables: regularVariables, snippetVariables } = extractAllVariables(currentTemplate.content);
+    
+    // Find all variables with their positions in the template
+    const allMatches = [];
+    const content = currentTemplate.content;
+    
+    // Find regular variables
+    const regularMatches = content.match(/\{([^}]+)\}/g) || [];
+    regularMatches.forEach(match => {
+      const variable = match.slice(1, -1);
+      if (!variable.startsWith('snippet:')) {
+        const position = content.indexOf(match);
+        allMatches.push({
+          type: 'regular',
+          variable,
+          placeholder: match,
+          position
+        });
+      }
+    });
+    
+    // Find snippet variables
+    snippetVariables.forEach(snippetVar => {
+      const position = content.indexOf(snippetVar.placeholder);
+      allMatches.push({
+        type: 'snippet',
+        variable: snippetVar.tag,
+        placeholder: snippetVar.placeholder,
+        position,
+        snippetVar
+      });
+    });
+    
+    // Sort by position in template
+    const sortedVariables = allMatches.sort((a, b) => a.position - b.position);
+    
+    return { 
+      variables: regularVariables, 
+      snippetVariables, 
+      sortedVariables 
+    };
+  };
+  
+  const { variables: regularVariables, snippetVariables, sortedVariables } = getAllTemplateVariables();
+  const allVariables = sortedVariables.map(v => v.placeholder);
+  
   // Auto-focus first input on mount and step changes
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -52,9 +103,22 @@ const ItemExecutor = ({ item, type, onComplete, onCancel }) => {
 
   const generateOutput = () => {
     let output = currentTemplate.content;
+    
+    // Replace regular variables
     Object.entries(variableValues).forEach(([key, value]) => {
-      output = output.replace(new RegExp(`\\{${key}\\}`, 'g'), value);
+      if (!key.startsWith('{snippet:')) {
+        output = output.replace(new RegExp(`\\{${key}\\}`, 'g'), value);
+      }
     });
+    
+    // Replace snippet placeholders with selected snippet content
+    snippetVariables.forEach(snippetVar => {
+      const snippetValue = variableValues[snippetVar.placeholder];
+      if (snippetValue) {
+        output = output.replace(new RegExp(`\\{snippet:${snippetVar.tag}\\}`, 'g'), snippetValue);
+      }
+    });
+    
     return output;
   };
 
@@ -115,9 +179,9 @@ const ItemExecutor = ({ item, type, onComplete, onCancel }) => {
     }
   };
 
-  const canProceed = currentTemplate.variables?.every(variable => 
+  const canProceed = allVariables.every(variable => 
     variableValues[variable]?.trim()
-  ) ?? true;
+  );
   
   const hasTemplateOptions = isWorkflow && currentStepData.templateOptions && currentStepData.templateOptions.length > 1;
   const needsTemplateSelection = hasTemplateOptions && !selectedTemplates[currentStepData.id];
@@ -179,7 +243,7 @@ const ItemExecutor = ({ item, type, onComplete, onCancel }) => {
             <button
               onClick={onCancel}
               className="px-4 py-2 text-gray-300 border border-gray-600 rounded-lg hover:bg-gray-700"
-              tabIndex={currentStepData.variables?.length + 2 || 2}
+              tabIndex={allVariables.length + 2 || 2}
             >
               Cancel
             </button>
@@ -187,7 +251,7 @@ const ItemExecutor = ({ item, type, onComplete, onCancel }) => {
               <button
                 onClick={handlePrevious}
                 className="px-4 py-2 bg-gray-800 text-gray-100 rounded-lg hover:bg-gray-700 flex items-center gap-2"
-                tabIndex={currentStepData.variables?.length + 3 || 3}
+                tabIndex={allVariables.length + 3 || 3}
               >
                 <ArrowLeft className="w-4 h-4" />
                 Previous Step
@@ -198,7 +262,7 @@ const ItemExecutor = ({ item, type, onComplete, onCancel }) => {
               onKeyDown={(e) => e.key === 'Enter' && handleCopyAndNext()}
               disabled={!canProceed || needsTemplateSelection}
               className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
-              tabIndex={currentTemplate.variables?.length + 1 || 1}
+              tabIndex={allVariables.length + 1 || 1}
             >
               <Copy className="w-4 h-4" />
               {isWorkflow && currentStep < steps.length - 1 
@@ -251,41 +315,84 @@ const ItemExecutor = ({ item, type, onComplete, onCancel }) => {
               {needsTemplateSelection ? (
                 <p className="text-gray-500 italic">Select a template above to see variables</p>
               ) : (
-                currentTemplate.variables?.map((variable, index) => {
-                  const isFirst = index === 0;
-                  const isLast = index === currentTemplate.variables.length - 1;
-                
-                return (
-                  <div key={variable} className="mb-4">
-                    <label className="block text-sm font-medium text-gray-300 mb-2">
-                      {variable.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
-                    </label>
-                    {variable === 'previous_output' ? (
-                      <textarea
-                        value={variableValues[variable] || ''}
-                        onChange={(e) => handleVariableChange(variable, e.target.value)}
-                        onKeyDown={(e) => handleKeyDown(e, isLast, index)}
-                        className="w-full h-24 p-3 border border-gray-600 bg-gray-800 text-gray-100 rounded-lg focus:ring-2 focus:ring-blue-400 focus:border-transparent"
-                        placeholder="Output from previous step..."
-                        readOnly={variable === 'previous_output' && stepOutputs.length > 0}
-                        tabIndex={index + 1}
-                        data-first-input={isFirst}
-                      />
-                    ) : (
-                      <input
-                        type="text"
-                        value={variableValues[variable] || ''}
-                        onChange={(e) => handleVariableChange(variable, e.target.value)}
-                        onKeyDown={(e) => handleKeyDown(e, isLast, index)}
-                        className="w-full p-3 border border-gray-600 bg-gray-800 text-gray-100 rounded-lg focus:ring-2 focus:ring-blue-400 focus:border-transparent"
-                        placeholder={`Enter ${variable.replace(/_/g, ' ')}...`}
-                        tabIndex={index + 1}
-                        data-first-input={isFirst}
-                      />
-                    )}
-                  </div>
-                );
-                }) || <p className="text-gray-500">No variables to fill for this step.</p>
+                <>
+                  {/* Variables in order of appearance */}
+                  {sortedVariables.map((varData, index) => {
+                    const isFirst = index === 0;
+                    const isLast = index === sortedVariables.length - 1;
+                    
+                    if (varData.type === 'regular') {
+                      const variable = varData.variable;
+                      return (
+                        <div key={variable} className="mb-4">
+                          <label className="block text-sm font-medium text-gray-300 mb-2">
+                            {variable.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                          </label>
+                          {variable === 'previous_output' ? (
+                            <textarea
+                              value={variableValues[variable] || ''}
+                              onChange={(e) => handleVariableChange(variable, e.target.value)}
+                              onKeyDown={(e) => handleKeyDown(e, isLast, index)}
+                              className="w-full h-24 p-3 border border-gray-600 bg-gray-800 text-gray-100 rounded-lg focus:ring-2 focus:ring-blue-400 focus:border-transparent"
+                              placeholder="Output from previous step..."
+                              readOnly={variable === 'previous_output' && stepOutputs.length > 0}
+                              tabIndex={index + 1}
+                              data-first-input={isFirst}
+                            />
+                          ) : (
+                            <input
+                              type="text"
+                              value={variableValues[variable] || ''}
+                              onChange={(e) => handleVariableChange(variable, e.target.value)}
+                              onKeyDown={(e) => handleKeyDown(e, isLast, index)}
+                              className="w-full p-3 border border-gray-600 bg-gray-800 text-gray-100 rounded-lg focus:ring-2 focus:ring-blue-400 focus:border-transparent"
+                              placeholder={`Enter ${variable.replace(/_/g, ' ')}...`}
+                              tabIndex={index + 1}
+                              data-first-input={isFirst}
+                            />
+                          )}
+                        </div>
+                      );
+                    } else {
+                      // Snippet variable
+                      const snippetVar = varData.snippetVar;
+                      const filteredSnippets = snippets.filter(snippet => 
+                        snippet.tags.includes(snippetVar.tag)
+                      );
+                      
+                      return (
+                        <div key={snippetVar.placeholder} className="mb-4">
+                          <label className="block text-sm font-medium text-gray-300 mb-2">
+                            {snippetVar.tag.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())} (Snippet)
+                          </label>
+                          <select
+                            value={variableValues[snippetVar.placeholder] || ''}
+                            onChange={(e) => handleVariableChange(snippetVar.placeholder, e.target.value)}
+                            className="w-full p-3 border border-gray-600 bg-gray-800 text-gray-100 rounded-lg focus:ring-2 focus:ring-purple-400 focus:border-transparent"
+                            tabIndex={index + 1}
+                            data-first-input={isFirst}
+                          >
+                            <option value="">Select a {snippetVar.tag} snippet...</option>
+                            {filteredSnippets.map(snippet => (
+                              <option key={snippet.id} value={snippet.content}>
+                                {snippet.name}
+                              </option>
+                            ))}
+                          </select>
+                          {filteredSnippets.length === 0 && (
+                            <p className="text-sm text-yellow-400 mt-1">
+                              No snippets found with tag "{snippetVar.tag}"
+                            </p>
+                          )}
+                        </div>
+                      );
+                    }
+                  })}
+                  
+                  {sortedVariables.length === 0 && (
+                    <p className="text-gray-500">No variables to fill for this step.</p>
+                  )}
+                </>
               )}
             </div>
           </div>
