@@ -295,7 +295,13 @@ const ItemExecutor = ({ item, type, onComplete, onCancel }) => {
               <h3 className="text-lg font-semibold text-gray-100 mb-3">Current Step Preview</h3>
               <div className="bg-gray-800 rounded-lg p-4 border border-gray-700 min-h-48">
                 <div className="prose prose-sm max-w-none whitespace-pre-wrap">
-                  {generateOutput()}
+                  {needsTemplateSelection ? (
+                    <p className="text-gray-500 italic text-center py-8">
+                      Select a template above to see the preview
+                    </p>
+                  ) : (
+                    generateOutput()
+                  )}
                 </div>
               </div>
             </div>
