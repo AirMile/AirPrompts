@@ -4,20 +4,11 @@ import { DEFAULT_CATEGORIES, createWorkflowStep } from '../../types/template.typ
 
 const WorkflowEditor = ({ workflow, templates, inserts = [], onSave, onCancel }) => {
   const [formData, setFormData] = useState(() => {
-    // For new workflows, start with one empty template step
-    const initialSteps = workflow?.steps || [
-      createWorkflowStep({
-        name: 'Step 1',
-        type: 'template',
-        templateOptions: []
-      })
-    ];
-    
     return {
       name: workflow?.name || '',
       description: workflow?.description || '',
       category: workflow?.category || 'General',
-      steps: initialSteps
+      steps: workflow?.steps || []
     };
   });
 
@@ -202,39 +193,40 @@ const WorkflowEditor = ({ workflow, templates, inserts = [], onSave, onCancel })
 
           {/* Workflow Steps */}
           <div className="lg:col-span-2">
-            <div className="flex items-center justify-between mb-3">
+            <div className="mb-3">
               <h3 className="text-lg font-semibold text-gray-100">
                 Workflow Steps ({formData.steps.length})
               </h3>
-              <div className="flex gap-2">
-                <button
-                  onClick={() => addNewStep('template')}
-                  className="px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center gap-2"
-                >
-                  <FileText className="w-4 h-4" />
-                  Template Step
-                </button>
-                <button
-                  onClick={() => addNewStep('info')}
-                  className="px-3 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 flex items-center gap-2"
-                >
-                  <Info className="w-4 h-4" />
-                  Info Step
-                </button>
-                <button
-                  onClick={() => addNewStep('insert')}
-                  className="px-3 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 flex items-center gap-2"
-                >
-                  <Tag className="w-4 h-4" />
-                  Insert Step
-                </button>
-              </div>
             </div>
             
             {formData.steps.length === 0 ? (
               <div className="text-center py-12 border-2 border-dashed border-gray-600 rounded-lg">
                 <Workflow className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                <p className="text-gray-500">Click "Add Step" to start building your workflow</p>
+                <h4 className="text-lg font-medium text-gray-300 mb-2">Create Your First Step</h4>
+                <p className="text-gray-500 mb-4">Choose the type of step to add to your workflow:</p>
+                <div className="flex justify-center gap-3">
+                  <button
+                    onClick={() => addNewStep('template')}
+                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center gap-2"
+                  >
+                    <FileText className="w-4 h-4" />
+                    Template Step
+                  </button>
+                  <button
+                    onClick={() => addNewStep('info')}
+                    className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 flex items-center gap-2"
+                  >
+                    <Info className="w-4 h-4" />
+                    Info Step
+                  </button>
+                  <button
+                    onClick={() => addNewStep('insert')}
+                    className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 flex items-center gap-2"
+                  >
+                    <Tag className="w-4 h-4" />
+                    Insert Step
+                  </button>
+                </div>
               </div>
             ) : (
               <div className="space-y-4">
@@ -401,14 +393,37 @@ const WorkflowEditor = ({ workflow, templates, inserts = [], onSave, onCancel })
                         </div>
                       )}
                     </div>
-
-                    {index < formData.steps.length - 1 && (
-                      <div className="flex justify-center mt-3">
-                        <ArrowRight className="w-5 h-5 text-gray-400" />
-                      </div>
-                    )}
                   </div>
                 ))}
+                
+                {/* Add Next Step Section */}
+                <div className="text-center py-8 border-2 border-dashed border-gray-600 rounded-lg">
+                  <h4 className="text-md font-medium text-gray-300 mb-2">Add Next Step</h4>
+                  <p className="text-gray-500 mb-4">Choose the type of step to add to your workflow:</p>
+                  <div className="flex justify-center gap-3">
+                    <button
+                      onClick={() => addNewStep('template')}
+                      className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center gap-2"
+                    >
+                      <FileText className="w-4 h-4" />
+                      Template Step
+                    </button>
+                    <button
+                      onClick={() => addNewStep('info')}
+                      className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 flex items-center gap-2"
+                    >
+                      <Info className="w-4 h-4" />
+                      Info Step
+                    </button>
+                    <button
+                      onClick={() => addNewStep('insert')}
+                      className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 flex items-center gap-2"
+                    >
+                      <Tag className="w-4 h-4" />
+                      Insert Step
+                    </button>
+                  </div>
+                </div>
               </div>
             )}
           </div>

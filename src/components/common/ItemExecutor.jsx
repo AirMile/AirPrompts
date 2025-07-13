@@ -93,8 +93,9 @@ const ItemExecutor = ({ item, type, inserts = [], onComplete, onCancel }) => {
   
   // Auto-focus first input on mount and step changes
   useEffect(() => {
+    const currentStepType = getStepType();
     const timer = setTimeout(() => {
-      if (stepType === 'info' || stepType === 'insert') {
+      if (currentStepType === 'info' || currentStepType === 'insert') {
         // For info/insert steps, focus the action button
         const actionButton = document.querySelector('button[data-action-button="true"]');
         if (actionButton) {
@@ -108,7 +109,7 @@ const ItemExecutor = ({ item, type, inserts = [], onComplete, onCancel }) => {
       }
     }, 100);
     return () => clearTimeout(timer);
-  }, [currentStep, stepType]);
+  }, [currentStep]);
 
   const handleVariableChange = (variable, value) => {
     setVariableValues(prev => ({
