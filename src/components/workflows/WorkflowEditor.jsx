@@ -158,33 +158,6 @@ const WorkflowEditor = ({ workflow, templates, onSave, onCancel }) => {
               </select>
             </div>
 
-            <div>
-              <div className="flex items-center justify-between mb-3">
-                <h3 className="text-lg font-semibold text-gray-100">Workflow Steps</h3>
-                <button
-                  onClick={addNewStep}
-                  className="px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center gap-2"
-                >
-                  <Plus className="w-4 h-4" />
-                  Add Step
-                </button>
-              </div>
-              
-              <div className="space-y-2 max-h-80 overflow-y-auto">
-                <h4 className="text-sm font-medium text-gray-300 mb-2">Available Templates</h4>
-                {templates.map(template => (
-                  <div key={template.id} className="p-3 border border-gray-600 bg-gray-800 text-gray-100 rounded-lg hover:bg-gray-700">
-                    <div className="flex items-center justify-between">
-                      <div className="flex-1">
-                        <h4 className="font-medium text-gray-100">{template.name}</h4>
-                        <p className="text-sm text-gray-300">{template.description}</p>
-                        <p className="text-xs text-gray-400">{template.variables.length} variables</p>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
           </div>
 
           {/* Workflow Steps */}
@@ -193,6 +166,13 @@ const WorkflowEditor = ({ workflow, templates, onSave, onCancel }) => {
               <h3 className="text-lg font-semibold text-gray-100">
                 Workflow Steps ({formData.steps.length})
               </h3>
+              <button
+                onClick={addNewStep}
+                className="px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center gap-2"
+              >
+                <Plus className="w-4 h-4" />
+                Add Step
+              </button>
             </div>
             
             {formData.steps.length === 0 ? (
