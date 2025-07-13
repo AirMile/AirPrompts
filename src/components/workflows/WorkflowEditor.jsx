@@ -87,7 +87,20 @@ const WorkflowEditor = ({ workflow, templates, onSave, onCancel }) => {
     const newIndex = direction === 'up' ? currentIndex - 1 : currentIndex + 1;
     
     if (newIndex >= 0 && newIndex < steps.length) {
-      [steps[currentIndex], steps[newIndex]] = [steps[newIndex], steps[currentIndex]];
+      // Only swap the template content, not the entire step objects
+      const currentTemplateOptions = steps[currentIndex].templateOptions;
+      const targetTemplateOptions = steps[newIndex].templateOptions;
+      
+      steps[currentIndex] = {
+        ...steps[currentIndex],
+        templateOptions: targetTemplateOptions
+      };
+      
+      steps[newIndex] = {
+        ...steps[newIndex],
+        templateOptions: currentTemplateOptions
+      };
+      
       setFormData({ ...formData, steps });
     }
   };
