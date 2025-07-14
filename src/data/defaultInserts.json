@@ -5,7 +5,7 @@
     "content": "Focus op code kwaliteit: clean code principes, SOLID principes, DRY, KISS, en maintainability. Geef concrete voorbeelden van verbetering.",
     "tags": ["code-quality", "focus", "clean-code"],
     "category": "Development",
-    "folderId": "moods",
+    "folderId": "development",
     "createdAt": "2025-01-13T00:00:00.000Z",
     "updatedAt": "2025-01-13T00:00:00.000Z"
   },
@@ -25,7 +25,7 @@
     "content": "Optimaliseer voor performance: algoritme efficiency, geheugen gebruik, database queries, caching strategies, lazy loading.",
     "tags": ["performance", "optimization", "efficiency"],
     "category": "Development",
-    "folderId": "moods",
+    "folderId": "development",
     "createdAt": "2025-01-13T00:00:00.000Z", 
     "updatedAt": "2025-01-13T00:00:00.000Z"
   },
@@ -35,7 +35,7 @@
     "content": "Maak production-ready code: error handling, logging, monitoring, graceful degradation, rollback strategies, health checks.",
     "tags": ["production", "robust", "enterprise"],
     "category": "Development",
-    "folderId": "moods",
+    "folderId": "development",
     "createdAt": "2025-01-13T00:00:00.000Z",
     "updatedAt": "2025-01-13T00:00:00.000Z"
   },
@@ -45,7 +45,7 @@
     "content": "Gebruik test-driven development: schrijf tests eerst, focus op test coverage, mocking strategies, edge cases, regression prevention.",
     "tags": ["testing", "tdd", "quality"],
     "category": "Development",
-    "folderId": "moods", 
+    "folderId": "development", 
     "createdAt": "2025-01-13T00:00:00.000Z",
     "updatedAt": "2025-01-13T00:00:00.000Z"
   },
@@ -55,7 +55,7 @@
     "content": "Ontwerp voor schaalbaarheid: microservices, horizontal scaling, load balancing, database sharding, caching layers.",
     "tags": ["scalability", "architecture", "design"],
     "category": "Architecture",
-    "folderId": "moods",
+    "folderId": "architecture",
     "createdAt": "2025-01-13T00:00:00.000Z",
     "updatedAt": "2025-01-13T00:00:00.000Z"
   },
@@ -65,7 +65,7 @@
     "content": "Leg uit alsof je het aan een beginner vertelt: gebruik eenvoudige taal, geef stap-voor-stap uitleg, veel voorbeelden, vermijd jargon.",
     "tags": ["beginner", "educational", "simple"],
     "category": "General",
-    "folderId": "moods",
+    "folderId": "general",
     "createdAt": "2025-01-13T00:00:00.000Z",
     "updatedAt": "2025-01-13T00:00:00.000Z"
   },
@@ -75,7 +75,7 @@
     "content": "Geef advanced technische details: design patterns, algoritme complexiteit, trade-offs, edge cases, performance implications.",
     "tags": ["expert", "advanced", "technical"],
     "category": "General",
-    "folderId": "moods",
+    "folderId": "general",
     "createdAt": "2025-01-13T00:00:00.000Z",
     "updatedAt": "2025-01-13T00:00:00.000Z"
   },
@@ -85,7 +85,7 @@
     "content": "Geef gedetailleerde stap-voor-stap instructies: genummerde stappen, verificatie punten, troubleshooting tips, verwachte output.",
     "tags": ["tutorial", "steps", "detailed"],
     "category": "General",
-    "folderId": "moods",
+    "folderId": "general",
     "createdAt": "2025-01-13T00:00:00.000Z",
     "updatedAt": "2025-01-13T00:00:00.000Z"
   },
@@ -105,7 +105,7 @@
     "content": "Behandel error scenarios uitgebreid: exception handling, graceful failures, user-friendly error messages, logging strategies.",
     "tags": ["errors", "exceptions", "robust"],
     "category": "Development",
-    "folderId": "moods",
+    "folderId": "development",
     "createdAt": "2025-01-13T00:00:00.000Z",
     "updatedAt": "2025-01-13T00:00:00.000Z"
   },
@@ -115,7 +115,7 @@
     "content": "Genereer uitgebreide documentatie: inline comments, API docs, usage examples, troubleshooting guides, installation instructies.",
     "tags": ["documentation", "comments", "guides"],
     "category": "Documentation",
-    "folderId": "moods",
+    "folderId": "documentation",
     "createdAt": "2025-01-13T00:00:00.000Z",
     "updatedAt": "2025-01-13T00:00:00.000Z"
   },
@@ -125,7 +125,7 @@
     "content": "Overweeg cross-platform compatibility: OS differences, browser compatibility, mobile responsiveness, device limitations.",
     "tags": ["cross-platform", "compatibility", "responsive"],
     "category": "Development",
-    "folderId": "moods",
+    "folderId": "development",
     "createdAt": "2025-01-13T00:00:00.000Z",
     "updatedAt": "2025-01-13T00:00:00.000Z"
   },
@@ -135,7 +135,7 @@
     "content": "Ontwerp API-first: RESTful principles, OpenAPI specifications, versioning strategy, rate limiting, authentication.",
     "tags": ["api", "rest", "design"],
     "category": "Development",
-    "folderId": "moods",
+    "folderId": "development",
     "createdAt": "2025-01-13T00:00:00.000Z",
     "updatedAt": "2025-01-13T00:00:00.000Z"
   },
@@ -145,7 +145,7 @@
     "content": "Optimaliseer database interacties: query optimization, indexing strategies, connection pooling, transaction management.",
     "tags": ["database", "optimization", "queries"],
     "category": "Development",
-    "folderId": "moods",
+    "folderId": "development",
     "createdAt": "2025-01-13T00:00:00.000Z",
     "updatedAt": "2025-01-13T00:00:00.000Z"
   },
@@ -155,7 +155,7 @@
     "content": "Denk aan deployment en operations: CI/CD pipelines, containerization, monitoring, logging, infrastructure as code.",
     "tags": ["devops", "deployment", "operations"],
     "category": "Development",
-    "folderId": "moods",
+    "folderId": "development",
     "createdAt": "2025-01-13T00:00:00.000Z",
     "updatedAt": "2025-01-13T00:00:00.000Z"
   },
@@ -165,7 +165,7 @@
     "content": "Prioriteer accessibility: screen reader support, keyboard navigation, color contrast, semantic HTML, ARIA labels.",
     "tags": ["accessibility", "a11y", "inclusive"],
     "category": "Development",
-    "folderId": "moods",
+    "folderId": "development",
     "createdAt": "2025-01-13T00:00:00.000Z",
     "updatedAt": "2025-01-13T00:00:00.000Z"
   },
@@ -175,7 +175,7 @@
     "content": "Ontwerp mobile-first: responsive design, touch interactions, performance op mobiel, offline capabilities.",
     "tags": ["mobile", "responsive", "touch"],
     "category": "Development",
-    "folderId": "moods",
+    "folderId": "development",
     "createdAt": "2025-01-13T00:00:00.000Z",
     "updatedAt": "2025-01-13T00:00:00.000Z"
   },
@@ -185,7 +185,7 @@
     "content": "Maak toekomstbestendige code: modulair design, loose coupling, configurable behavior, easy to extend.",
     "tags": ["future-proof", "modular", "extensible"],
     "category": "Development",
-    "folderId": "moods",
+    "folderId": "development",
     "createdAt": "2025-01-13T00:00:00.000Z",
     "updatedAt": "2025-01-13T00:00:00.000Z"
   },
@@ -195,7 +195,7 @@
     "content": "Optimaliseer voor kosten: resource efficiency, cloud cost optimization, serverless waar mogelijk, auto-scaling.",
     "tags": ["cost", "efficiency", "optimization"],
     "category": "Architecture",
-    "folderId": "moods",
+    "folderId": "architecture",
     "createdAt": "2025-01-13T00:00:00.000Z",
     "updatedAt": "2025-01-13T00:00:00.000Z"
   }

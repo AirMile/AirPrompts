@@ -5,7 +5,7 @@
     "description": "Provides additional context and background information",
     "content": "Please provide additional context and background information that would help understand the topic better. Include relevant details, examples, or explanations that enhance comprehension.",
     "tags": ["enhancement", "context", "detailed"],
-    "folderId": "general",
+    "folderId": "enhancement",
     "enabled": true,
     "createdAt": "2024-01-01T00:00:00.000Z",
     "updatedAt": "2024-01-01T00:00:00.000Z"
@@ -16,7 +16,7 @@
     "description": "Breaks down complex processes into clear, actionable steps",
     "content": "Please break this down into clear, numbered steps with actionable instructions. Each step should be specific and easy to follow, with any necessary sub-steps or considerations included.",
     "tags": ["formatting", "structured", "guide"],
-    "folderId": "general",
+    "folderId": "formatting",
     "enabled": true,
     "createdAt": "2024-01-01T00:00:00.000Z",
     "updatedAt": "2024-01-01T00:00:00.000Z"
@@ -27,7 +27,7 @@
     "description": "Requests practical examples to illustrate concepts",
     "content": "Please provide concrete, practical examples that demonstrate this concept or process. Include at least 2-3 different examples that show various applications or scenarios.",
     "tags": ["enhancement", "examples", "practical"],
-    "folderId": "general",
+    "folderId": "enhancement",
     "enabled": true,
     "createdAt": "2024-01-01T00:00:00.000Z",
     "updatedAt": "2024-01-01T00:00:00.000Z"
@@ -38,7 +38,7 @@
     "description": "Emphasizes industry best practices and standards",
     "content": "Focus on industry best practices and established standards. Highlight what experts recommend and why these approaches are considered optimal. Include any common pitfalls to avoid.",
     "tags": ["quality", "standards", "professional"],
-    "folderId": "general",
+    "folderId": "quality",
     "enabled": true,
     "createdAt": "2024-01-01T00:00:00.000Z",
     "updatedAt": "2024-01-01T00:00:00.000Z"
@@ -49,7 +49,7 @@
     "description": "Adapts content for beginners with simple explanations",
     "content": "Please explain this in beginner-friendly terms. Avoid jargon and technical terms where possible, or explain them clearly when used. Use simple language and analogies that make concepts easy to understand.",
     "tags": ["accessibility", "beginner", "simple"],
-    "folderId": "general",
+    "folderId": "accessibility",
     "enabled": true,
     "createdAt": "2024-01-01T00:00:00.000Z",
     "updatedAt": "2024-01-01T00:00:00.000Z"
@@ -60,7 +60,7 @@
     "description": "Provides deeper, more technical analysis for experts",
     "content": "Provide an advanced, technical analysis suitable for experts. Include detailed explanations, technical considerations, edge cases, and sophisticated approaches. Assume deep knowledge of the subject matter.",
     "tags": ["technical", "advanced", "expert"],
-    "folderId": "general",
+    "folderId": "technical",
     "enabled": true,
     "createdAt": "2024-01-01T00:00:00.000Z",
     "updatedAt": "2024-01-01T00:00:00.000Z"
@@ -71,7 +71,7 @@
     "description": "Analyzes advantages and disadvantages of different approaches",
     "content": "Please provide a balanced analysis of pros and cons. List the advantages and disadvantages of different approaches or options. Include potential trade-offs and considerations for decision-making.",
     "tags": ["analysis", "comparison", "balanced"],
-    "folderId": "general",
+    "folderId": "analysis",
     "enabled": true,
     "createdAt": "2024-01-01T00:00:00.000Z",
     "updatedAt": "2024-01-01T00:00:00.000Z"
@@ -82,7 +82,7 @@
     "description": "Emphasizes urgency and quick implementation",
     "content": "Focus on quick, immediate solutions that can be implemented right away. Prioritize speed and efficiency over perfection. Highlight the most important actions to take first.",
     "tags": ["urgency", "quick", "immediate"],
-    "folderId": "general",
+    "folderId": "urgency",
     "enabled": true,
     "createdAt": "2024-01-01T00:00:00.000Z",
     "updatedAt": "2024-01-01T00:00:00.000Z"
@@ -93,7 +93,7 @@
     "description": "Focuses on budget-friendly and cost-effective solutions",
     "content": "Please prioritize cost-effective solutions and budget-friendly approaches. Consider the financial implications and suggest ways to minimize costs while maintaining quality and effectiveness.",
     "tags": ["financial", "budget", "cost-effective"],
-    "folderId": "general",
+    "folderId": "financial",
     "enabled": true,
     "createdAt": "2024-01-01T00:00:00.000Z",
     "updatedAt": "2024-01-01T00:00:00.000Z"
@@ -104,7 +104,7 @@
     "description": "Encourages innovative and creative solutions",
     "content": "Think outside the box and provide creative, innovative solutions. Explore unconventional approaches and unique perspectives. Encourage experimentation and original thinking.",
     "tags": ["creativity", "innovative", "unique"],
-    "folderId": "general",
+    "folderId": "creativity",
     "enabled": true,
     "createdAt": "2024-01-01T00:00:00.000Z",
     "updatedAt": "2024-01-01T00:00:00.000Z"
@@ -115,7 +115,7 @@
     "description": "Identifies potential risks and mitigation strategies",
     "content": "Please identify potential risks and challenges that might arise. Suggest mitigation strategies and contingency plans. Consider what could go wrong and how to prepare for or prevent issues.",
     "tags": ["analysis", "risk", "planning"],
-    "folderId": "general",
+    "folderId": "analysis",
     "enabled": true,
     "createdAt": "2024-01-01T00:00:00.000Z",
     "updatedAt": "2024-01-01T00:00:00.000Z"
@@ -126,7 +126,7 @@
     "description": "Emphasizes concrete, actionable results",
     "content": "Focus on concrete, actionable outcomes and deliverables. Provide specific tasks, deadlines, and measurable results. Make sure everything can be implemented and tracked effectively.",
     "tags": ["productivity", "actionable", "results"],
-    "folderId": "general",
+    "folderId": "productivity",
     "enabled": true,
     "createdAt": "2024-01-01T00:00:00.000Z",
     "updatedAt": "2024-01-01T00:00:00.000Z"
