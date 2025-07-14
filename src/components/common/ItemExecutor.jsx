@@ -47,7 +47,7 @@ const ItemExecutor = ({ item, type, inserts = [], onComplete, onCancel }) => {
     const regularMatches = content.match(/\{([^}]+)\}/g) || [];
     regularMatches.forEach(match => {
       const variable = match.slice(1, -1);
-      if (!variable.startsWith('snippet:')) {
+      if (!variable.startsWith('insert:')) {
         const position = content.indexOf(match);
         allMatches.push({
           type: 'regular',
@@ -102,20 +102,279 @@ const ItemExecutor = ({ item, type, inserts = [], onComplete, onCancel }) => {
           actionButton.focus();
         }
       } else {
-        const firstInput = document.querySelector('input[data-first-input="true"]');
+        const firstInput = document.querySelector('input[data-first-input="true"], select[data-first-input="true"]');
         if (firstInput) {
           firstInput.focus();
+          // Auto-expand dropdown if it's a select element
+          if (firstInput.tagName === 'SELECT' && !firstInput.disabled) {
+            const optionCount = firstInput.options.length;
+            firstInput.size = Math.min(optionCount, 8);
+            firstInput.style.zIndex = '1000';
+            firstInput.style.maxHeight = '200px';
+            firstInput.style.overflowY = 'auto';
+            
+            // Do NOT auto-select when initially focusing - let user navigate with arrow keys
+          }
         }
       }
     }, 100);
     return () => clearTimeout(timer);
   }, [currentStep]);
 
+  // Auto-fill single option inserts
+  useEffect(() => {
+    if (snippetVariables.length === 0) return;
+    
+    const updatedValues = { ...variableValues };
+    let hasUpdates = false;
+    let autoFilledIndexes = [];
+    
+    snippetVariables.forEach((snippetVar, index) => {
+      const filteredInserts = inserts.filter(insert => 
+        insert.tags.includes(snippetVar.tag)
+      );
+      
+      // Auto-fill if exactly one option and not already filled
+      if (filteredInserts.length === 1 && !variableValues[snippetVar.placeholder]) {
+        updatedValues[snippetVar.placeholder] = filteredInserts[0].content;
+        hasUpdates = true;
+        autoFilledIndexes.push(index);
+      }
+    });
+    
+    if (hasUpdates) {
+      setVariableValues(updatedValues);
+      
+      // Auto-advance focus if the first field was auto-filled
+      if (autoFilledIndexes.length > 0) {
+        setTimeout(() => {
+          const sortedVars = getAllTemplateVariables().sortedVariables;
+          
+          // Check if the first field (index 0) was auto-filled
+          const firstFieldAutoFilled = sortedVars.length > 0 && 
+            sortedVars[0].type === 'snippet' && 
+            autoFilledIndexes.some(idx => 
+              snippetVariables[idx].placeholder === sortedVars[0].placeholder
+            );
+          
+          if (firstFieldAutoFilled) {
+            focusNextField(0);
+          }
+        }, 150);
+      }
+    }
+  }, [snippetVariables, inserts, variableValues]);
+
   const handleVariableChange = (variable, value) => {
     setVariableValues(prev => ({
       ...prev,
       [variable]: value
     }));
+  };
+
+  // Special handler for dropdown changes that also handles auto-advance
+  const handleDropdownChange = (variable, value, currentIndex) => {
+    handleVariableChange(variable, value);
+    
+    // Auto-advance to next field when a selection is made
+    if (value) {
+      setTimeout(() => {
+        focusNextField(currentIndex);
+      }, 100);
+    }
+  };
+
+  // Enhanced keyboard handler for dropdowns
+  const handleDropdownKeyDown = (e, variable, currentIndex, isLast) => {
+    if (e.key === 'Enter' || e.key === 'Tab') {
+      // Stop keyboard navigation mode
+      setKeyboardNavigating(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(variable);
+        return newSet;
+      });
+      
+      // If a value is selected (not placeholder), advance to next field or complete
+      const currentValue = variableValues[variable];
+      if (currentValue && currentValue !== '') {
+        e.preventDefault();
+        
+        // Close dropdown first
+        const dropdown = e.target;
+        dropdown.size = 1;
+        dropdown.style.zIndex = '';
+        dropdown.style.maxHeight = '';
+        dropdown.style.overflowY = '';
+        
+        if (isLast && canProceed) {
+          if (e.key === 'Enter') {
+            handleCopyAndNext();
+          } else if (e.key === 'Tab') {
+            handleCopyAndNext();
+          }
+        } else {
+          focusNextField(currentIndex);
+        }
+      }
+    } else if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+      e.preventDefault();
+      
+      // Start keyboard navigation mode
+      setKeyboardNavigating(prev => {
+        const newSet = new Set(prev);
+        newSet.add(variable);
+        return newSet;
+      });
+      
+      // Handle circular navigation
+      const dropdown = e.target;
+      const allOptions = Array.from(dropdown.options);
+      const validOptions = allOptions.filter(option => !option.disabled && option.value !== '');
+      
+      // Find current position in valid options
+      let currentIndex = -1;
+      const currentlySelected = allOptions.find(option => option.selected);
+      if (currentlySelected && currentlySelected.value !== '') {
+        currentIndex = validOptions.findIndex(option => option.value === currentlySelected.value);
+      }
+      
+      let newIndex;
+      if (e.key === 'ArrowDown') {
+        // If placeholder is selected or we're at the end, go to first valid option
+        if (currentIndex === -1 || currentIndex >= validOptions.length - 1) {
+          newIndex = 0;
+        } else {
+          newIndex = currentIndex + 1;
+        }
+      } else if (e.key === 'ArrowUp') {
+        // If placeholder is selected or we're at the beginning, go to last valid option
+        if (currentIndex === -1 || currentIndex <= 0) {
+          newIndex = validOptions.length - 1;
+        } else {
+          newIndex = currentIndex - 1;
+        }
+      }
+      
+      // Change selection without triggering onChange
+      const selectedOption = validOptions[newIndex];
+      dropdown.selectedIndex = selectedOption.index;
+      
+      // Manually update the variable value without triggering dropdown close
+      handleVariableChange(variable, selectedOption.value);
+      
+      return;
+    } else if (e.key === 'Escape') {
+      // Stop keyboard navigation mode
+      setKeyboardNavigating(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(variable);
+        return newSet;
+      });
+      
+      // Escape closes dropdown without selection
+      const dropdown = e.target;
+      dropdown.size = 1;
+      dropdown.style.zIndex = '';
+      dropdown.style.maxHeight = '';
+      dropdown.style.overflowY = '';
+      dropdown.blur();
+    } else if (e.key === ' ') {
+      // Space bar for dropdown interaction
+      return;
+    }
+  };
+
+  // Handler for dropdown focus - auto-open dropdown using size attribute
+  const handleDropdownFocus = (e) => {
+    const dropdown = e.target;
+    if (dropdown.tagName === 'SELECT' && !dropdown.disabled) {
+      // Expand dropdown by setting size attribute
+      const optionCount = dropdown.options.length;
+      dropdown.size = Math.min(optionCount, 8); // Show max 8 options
+      dropdown.style.zIndex = '1000';
+      dropdown.style.maxHeight = '200px';
+      dropdown.style.overflowY = 'auto';
+      
+      // Do NOT auto-select when focusing - let user navigate with arrow keys
+      // The placeholder option will be selected by default, which is fine
+    }
+  };
+
+  // Handler for dropdown blur to close dropdown
+  const handleDropdownBlur = (e) => {
+    const dropdown = e.target;
+    if (dropdown.tagName === 'SELECT') {
+      // Stop keyboard navigation mode for this dropdown
+      const variable = dropdown.getAttribute('data-variable');
+      if (variable) {
+        setKeyboardNavigating(prev => {
+          const newSet = new Set(prev);
+          newSet.delete(variable);
+          return newSet;
+        });
+      }
+      
+      // Close dropdown by resetting size
+      dropdown.size = 1;
+      dropdown.style.zIndex = '';
+      dropdown.style.maxHeight = '';
+      dropdown.style.overflowY = '';
+    }
+  };
+
+  // Track if we're in keyboard navigation mode
+  const [keyboardNavigating, setKeyboardNavigating] = useState(new Set());
+
+  // Track programmatic changes to prevent unwanted closing
+  const [programmaticChange, setProgrammaticChange] = useState(new Set());
+
+  // Handler for dropdown selection - only close if not keyboard navigating or programmatic
+  const handleDropdownSelect = (variable, value, currentIndex) => {
+    // Check if this is keyboard navigation or programmatic change
+    if (keyboardNavigating.has(variable) || programmaticChange.has(variable)) {
+      // Just update the value, don't close dropdown or advance
+      handleVariableChange(variable, value);
+      // Remove from programmatic change set
+      setProgrammaticChange(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(variable);
+        return newSet;
+      });
+      return;
+    }
+    
+    // This is mouse click - handle normally
+    handleDropdownChange(variable, value, currentIndex);
+    
+    // Close the dropdown
+    setTimeout(() => {
+      const dropdown = document.querySelector(`select[tabindex="${currentIndex + 1}"]`);
+      if (dropdown) {
+        dropdown.size = 1;
+        dropdown.style.zIndex = '';
+        dropdown.style.maxHeight = '';
+        dropdown.style.overflowY = '';
+      }
+    }, 100);
+  };
+
+  // Helper function to focus next field
+  const focusNextField = (currentIndex) => {
+    const nextTabIndex = currentIndex + 2; // tabIndex starts at 1, so next is current + 1 + 1
+    const nextInput = document.querySelector(`input[tabindex="${nextTabIndex}"], select[tabindex="${nextTabIndex}"]`);
+    if (nextInput) {
+      nextInput.focus();
+      // Auto-expand dropdown if it's a select element
+      if (nextInput.tagName === 'SELECT' && !nextInput.disabled) {
+        const optionCount = nextInput.options.length;
+        nextInput.size = Math.min(optionCount, 8);
+        nextInput.style.zIndex = '1000';
+        nextInput.style.maxHeight = '200px';
+        nextInput.style.overflowY = 'auto';
+        
+        // Do NOT auto-select when focusing next field - let user navigate with arrow keys
+      }
+    }
   };
 
   const generateOutput = () => {
@@ -427,23 +686,46 @@ const ItemExecutor = ({ item, type, inserts = [], onComplete, onCancel }) => {
                       );
                       
                       return (
-                        <div key={snippetVar.placeholder} className="mb-4">
+                        <div key={snippetVar.placeholder} className="mb-4 relative">
                           <label className="block text-sm font-medium text-gray-300 mb-2">
                             {snippetVar.tag.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())} (Insert)
+                            {filteredInserts.length === 1 && (
+                              <span className="ml-2 text-sm text-green-400">(Auto-filled)</span>
+                            )}
+                            {filteredInserts.length > 1 && (
+                              <span className="ml-2 text-xs text-gray-500">(Use ↑↓ arrows, Enter/Tab to select)</span>
+                            )}
                           </label>
                           <select
                             value={variableValues[snippetVar.placeholder] || ''}
-                            onChange={(e) => handleVariableChange(snippetVar.placeholder, e.target.value)}
-                            className="w-full p-3 border border-gray-600 bg-gray-800 text-gray-100 rounded-lg focus:ring-2 focus:ring-purple-400 focus:border-transparent"
+                            onChange={(e) => handleDropdownSelect(snippetVar.placeholder, e.target.value, index)}
+                            onKeyDown={(e) => handleDropdownKeyDown(e, snippetVar.placeholder, index, isLast)}
+                            onFocus={handleDropdownFocus}
+                            onBlur={handleDropdownBlur}
+                            className="w-full p-3 border border-gray-600 bg-gray-800 text-gray-100 rounded-lg focus:ring-2 focus:ring-purple-400 focus:border-transparent cursor-pointer transition-all duration-200"
                             tabIndex={index + 1}
                             data-first-input={isFirst}
+                            data-variable={snippetVar.placeholder}
+                            disabled={filteredInserts.length === 1}
                           >
-                            <option value="">Select a {snippetVar.tag} insert...</option>
-                            {filteredInserts.map(insert => (
-                              <option key={insert.id} value={insert.content}>
-                                {insert.name}
+                            {filteredInserts.length === 0 && (
+                              <option value="">No inserts found with tag "{snippetVar.tag}"</option>
+                            )}
+                            {filteredInserts.length === 1 && (
+                              <option value={filteredInserts[0].content}>
+                                {filteredInserts[0].name}
                               </option>
-                            ))}
+                            )}
+                            {filteredInserts.length > 1 && (
+                              <>
+                                <option value="" disabled>Select a {snippetVar.tag} insert...</option>
+                                {filteredInserts.map(insert => (
+                                  <option key={insert.id} value={insert.content}>
+                                    {insert.name}
+                                  </option>
+                                ))}
+                              </>
+                            )}
                           </select>
                           {filteredInserts.length === 0 && (
                             <p className="text-sm text-yellow-400 mt-1">
