@@ -8,7 +8,8 @@ const TemplateEditor = ({ template, folders = [], onSave, onCancel }) => {
     name: template?.name || '',
     description: template?.description || '',
     content: template?.content || '',
-    folderId: template?.folderId || 'general'
+    folderId: template?.folderId || 'general',
+    addonTags: template?.addonTags || []
   });
 
   const { variables, snippetVariables } = extractAllVariables(formData.content);
@@ -90,6 +91,24 @@ const TemplateEditor = ({ template, folders = [], onSave, onCancel }) => {
               />
             </div>
 
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-2">
+                Addon Tags
+              </label>
+              <input
+                type="text"
+                value={formData.addonTags.join(', ')}
+                onChange={(e) => {
+                  const tags = e.target.value.split(',').map(tag => tag.trim()).filter(tag => tag);
+                  setFormData({...formData, addonTags: tags});
+                }}
+                className="w-full p-3 border border-gray-600 bg-gray-800 text-gray-100 rounded-lg focus:ring-2 focus:ring-blue-400 focus:border-transparent"
+                placeholder="Enter addon tags separated by commas (e.g., enhancement, quality, technical)"
+              />
+              <p className="mt-1 text-sm text-gray-400">
+                Only addons with these tags will be shown when using this template
+              </p>
+            </div>
 
             <div>
               <label htmlFor="templateContent" className="block text-sm font-medium text-gray-300 mb-2">

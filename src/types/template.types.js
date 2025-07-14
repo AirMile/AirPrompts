@@ -60,6 +60,7 @@ export const createTemplate = (data = {}) => {
     content,
     folderId: data.folderId || 'general',
     variables: data.variables || extractVariables(content),
+    addonTags: data.addonTags || [],
     lastUsed: data.lastUsed || now,
     favorite: data.favorite || false,
     createdAt: data.createdAt || now,
@@ -100,6 +101,7 @@ export const createWorkflow = (data = {}) => {
     description: data.description || '',
     steps: data.steps || [],
     folderId: data.folderId || 'workflows',
+    addonTags: data.addonTags || [],
     lastUsed: data.lastUsed || now,
     favorite: data.favorite || false,
     createdAt: data.createdAt || now,
@@ -259,7 +261,7 @@ export const createAddon = (data = {}) => {
     name: data.name || '',
     description: data.description || '',
     content: data.content || '',
-    category: data.category || 'general',
+    tags: data.tags || [],
     folderId: data.folderId || 'general',
     enabled: data.enabled !== undefined ? data.enabled : true,
     createdAt: data.createdAt || now,
@@ -281,6 +283,10 @@ export const ADDON_VALIDATION = {
     maxLength: 500
   },
   content: {
+    required: true,
+    minLength: 1
+  },
+  tags: {
     required: true,
     minLength: 1
   },
@@ -308,6 +314,10 @@ export const validateAddon = (addon) => {
   
   if (addon.description && addon.description.length > ADDON_VALIDATION.description.maxLength) {
     errors.push(`Addon description must be less than ${ADDON_VALIDATION.description.maxLength} characters`);
+  }
+  
+  if (!addon.tags || !Array.isArray(addon.tags) || addon.tags.length === 0) {
+    errors.push('At least one tag is required');
   }
   
   return {

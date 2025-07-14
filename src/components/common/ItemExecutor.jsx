@@ -4,6 +4,26 @@ import { copyToClipboard } from '../../utils/clipboard.js';
 import { extractAllVariables } from '../../types/template.types.js';
 
 const ItemExecutor = ({ item, type, inserts = [], addons = [], onComplete, onCancel }) => {
+  // Filter addons based on item's addon tags
+  const getFilteredAddons = () => {
+    if (!item.addonTags || item.addonTags.length === 0) {
+      return addons.filter(addon => addon.enabled);
+    }
+    
+    return addons.filter(addon => {
+      if (!addon.enabled) return false;
+      if (!addon.tags || addon.tags.length === 0) return false;
+      
+      // Check if addon has any of the item's tags
+      return item.addonTags.some(itemTag => 
+        addon.tags.some(addonTag => 
+          addonTag.toLowerCase() === itemTag.toLowerCase()
+        )
+      );
+    });
+  };
+
+  const filteredAddons = getFilteredAddons();
   const [currentStep, setCurrentStep] = useState(0);
   const [variableValues, setVariableValues] = useState({});
   const [stepOutputs] = useState([]);
@@ -407,7 +427,7 @@ const ItemExecutor = ({ item, type, inserts = [], addons = [], onComplete, onCan
     // Append selected addons content
     const addonContent = Array.from(selectedAddons)
       .map(addonId => {
-        const addon = addons.find(a => a.id === addonId);
+        const addon = filteredAddons.find(a => a.id === addonId);
         return addon ? addon.content : '';
       })
       .filter(content => content.trim() !== '')
@@ -482,7 +502,7 @@ const ItemExecutor = ({ item, type, inserts = [], addons = [], onComplete, onCan
     if (stepType === 'insert' && selectedAddons.size > 0) {
       const addonContent = Array.from(selectedAddons)
         .map(addonId => {
-          const addon = addons.find(a => a.id === addonId);
+          const addon = filteredAddons.find(a => a.id === addonId);
           return addon ? addon.content : '';
         })
         .filter(content => content.trim() !== '')
@@ -838,16 +858,14 @@ const ItemExecutor = ({ item, type, inserts = [], addons = [], onComplete, onCan
           {/* Right Column - Addons and other content */}
           <div className={`space-y-4 ${stepType === 'template' ? 'lg:col-span-3' : ''}`}>
             {/* Addon Selection - Show for all step types */}
-            {addons.filter(addon => addon.enabled).length > 0 && (
+            {filteredAddons.length > 0 && (
               <div>
                 <h3 className="text-lg font-semibold text-gray-100 mb-3 flex items-center gap-2">
                   <Plus className="w-5 h-5 text-orange-400" />
                   Add-ons
                 </h3>
                 <div className="space-y-2">
-                  {addons
-                    .filter(addon => addon.enabled)
-                    .map((addon) => (
+                  {filteredAddons.map((addon) => (
                       <div
                         key={addon.id}
                         className={`p-3 border rounded-lg cursor-pointer transition-colors ${
@@ -897,7 +915,7 @@ const ItemExecutor = ({ item, type, inserts = [], addons = [], onComplete, onCan
                 </h3>
                 <div className="space-y-2 max-h-48 overflow-y-auto">
                   {Array.from(selectedAddons).map((addonId) => {
-                    const addon = addons.find(a => a.id === addonId);
+                    const addon = filteredAddons.find(a => a.id === addonId);
                     if (!addon) return null;
                     
                     return (
