@@ -1,16 +1,17 @@
 import React, { useState, useEffect } from 'react';
-import { Copy, ArrowLeft, ArrowRight, Check, Info, Tag } from 'lucide-react';
+import { Copy, ArrowLeft, ArrowRight, Check, Info, Tag, Plus } from 'lucide-react';
 import { copyToClipboard } from '../../utils/clipboard.js';
 import { extractAllVariables } from '../../types/template.types.js';
 
-const ItemExecutor = ({ item, type, inserts = [], onComplete, onCancel }) => {
+const ItemExecutor = ({ item, type, inserts = [], addons = [], onComplete, onCancel }) => {
   const [currentStep, setCurrentStep] = useState(0);
   const [variableValues, setVariableValues] = useState({});
-  const [stepOutputs, setStepOutputs] = useState([]);
+  const [stepOutputs] = useState([]);
   const [copied, setCopied] = useState(false);
   const [completedSteps, setCompletedSteps] = useState([]);
   const [copiedAgainId, setCopiedAgainId] = useState(null);
   const [selectedTemplates, setSelectedTemplates] = useState({}); // stepId -> templateId
+  const [selectedAddons, setSelectedAddons] = useState(new Set()); // Set of addon IDs
 
   const isWorkflow = type === 'workflow';
   const steps = isWorkflow ? item.steps : [{ content: item.content, variables: item.variables }];
@@ -37,7 +38,7 @@ const ItemExecutor = ({ item, type, inserts = [], onComplete, onCancel }) => {
   const getAllTemplateVariables = () => {
     if (!currentTemplate.content) return { variables: [], snippetVariables: [], sortedVariables: [] };
     
-    const { variables: regularVariables, snippetVariables } = extractAllVariables(currentTemplate.content);
+    const { snippetVariables } = extractAllVariables(currentTemplate.content);
     
     // Find all variables with their positions in the template
     const allMatches = [];
@@ -45,9 +46,11 @@ const ItemExecutor = ({ item, type, inserts = [], onComplete, onCancel }) => {
     
     // Find regular variables
     const regularMatches = content.match(/\{([^}]+)\}/g) || [];
+    const regularVariables = [];
     regularMatches.forEach(match => {
       const variable = match.slice(1, -1);
       if (!variable.startsWith('insert:')) {
+        regularVariables.push(variable);
         const position = content.indexOf(match);
         allMatches.push({
           type: 'regular',
@@ -80,7 +83,7 @@ const ItemExecutor = ({ item, type, inserts = [], onComplete, onCancel }) => {
     };
   };
   
-  const { variables: regularVariables, snippetVariables, sortedVariables } = getAllTemplateVariables();
+  const { snippetVariables, sortedVariables } = getAllTemplateVariables();
   const allVariables = sortedVariables.map(v => v.placeholder);
   
   // Different logic for different step types
@@ -398,6 +401,19 @@ const ItemExecutor = ({ item, type, inserts = [], onComplete, onCancel }) => {
       }
     });
     
+    // Append selected addons content
+    const addonContent = Array.from(selectedAddons)
+      .map(addonId => {
+        const addon = addons.find(a => a.id === addonId);
+        return addon ? addon.content : '';
+      })
+      .filter(content => content.trim() !== '')
+      .join('\n\n');
+    
+    if (addonContent) {
+      output += '\n\n' + addonContent;
+    }
+    
     return output;
   };
 
@@ -444,6 +460,7 @@ const ItemExecutor = ({ item, type, inserts = [], onComplete, onCancel }) => {
     if (isWorkflow && currentStep < steps.length - 1) {
       setCurrentStep(currentStep + 1);
       setVariableValues({});
+      setSelectedAddons(new Set()); // Reset addon selection for new step
     } else {
       onComplete();
     }
@@ -456,6 +473,21 @@ const ItemExecutor = ({ item, type, inserts = [], onComplete, onCancel }) => {
       output = currentStepData.insertContent || '';
     } else {
       output = generateOutput();
+    }
+    
+    // Append selected addons content for insert steps too
+    if (stepType === 'insert' && selectedAddons.size > 0) {
+      const addonContent = Array.from(selectedAddons)
+        .map(addonId => {
+          const addon = addons.find(a => a.id === addonId);
+          return addon ? addon.content : '';
+        })
+        .filter(content => content.trim() !== '')
+        .join('\n\n');
+      
+      if (addonContent) {
+        output += '\n\n' + addonContent;
+      }
     }
     
     const success = await copyToClipboard(output);
@@ -471,6 +503,7 @@ const ItemExecutor = ({ item, type, inserts = [], onComplete, onCancel }) => {
           // Move to next step in workflow
           setCurrentStep(currentStep + 1);
           setVariableValues({});
+          setSelectedAddons(new Set()); // Reset addon selection for new step
         } else {
           // Complete the execution
           onComplete();
@@ -483,6 +516,7 @@ const ItemExecutor = ({ item, type, inserts = [], onComplete, onCancel }) => {
     if (currentStep > 0) {
       setCurrentStep(currentStep - 1);
       setVariableValues({});
+      setSelectedAddons(new Set()); // Reset addon selection when going back
       // Remove the completed step we're going back to
       setCompletedSteps(completedSteps.filter(step => step.stepIndex !== currentStep - 1));
     }
@@ -524,7 +558,7 @@ const ItemExecutor = ({ item, type, inserts = [], onComplete, onCancel }) => {
   }
 
   return (
-    <div className="max-w-4xl mx-auto p-6">
+    <div className="max-w-6xl mx-auto p-6">
       <div className="bg-gray-900 rounded-xl shadow-lg p-6" onKeyDown={handleGlobalKeyDown} tabIndex={-1}>
         <div className="flex items-center justify-between mb-6">
           <div>
@@ -599,8 +633,118 @@ const ItemExecutor = ({ item, type, inserts = [], onComplete, onCancel }) => {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <div className="space-y-4">
+        <div className={`grid gap-6 ${stepType === 'template' ? 'grid-cols-1 lg:grid-cols-12' : 'grid-cols-1 lg:grid-cols-2'}`}>
+          <div className={`space-y-4 ${stepType === 'template' ? 'lg:col-span-3' : ''}`}>{stepType === 'template' && (
+            <>
+              <h3 className="text-lg font-semibold text-gray-100 mb-3">Fill in Variables</h3>
+              {needsTemplateSelection ? (
+                <p className="text-gray-500 italic">Select a template above to see variables</p>
+              ) : (
+                <>
+                  {/* Variables in order of appearance */}
+                  {sortedVariables.map((varData, index) => {
+                const isFirst = index === 0;
+                const isLast = index === sortedVariables.length - 1;
+                
+                if (varData.type === 'regular') {
+                  const variable = varData.variable;
+                  return (
+                    <div key={variable} className="mb-4">
+                      <label className="block text-sm font-medium text-gray-300 mb-2">
+                        {variable.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                      </label>
+                      {variable === 'previous_output' ? (
+                        <textarea
+                          value={variableValues[variable] || ''}
+                          onChange={(e) => handleVariableChange(variable, e.target.value)}
+                          onKeyDown={(e) => handleKeyDown(e, isLast, index)}
+                          className="w-full h-24 p-3 border border-gray-600 bg-gray-800 text-gray-100 rounded-lg focus:ring-2 focus:ring-blue-400 focus:border-transparent"
+                          placeholder="Output from previous step..."
+                          readOnly={variable === 'previous_output' && stepOutputs.length > 0}
+                          tabIndex={index + 1}
+                          data-first-input={isFirst}
+                        />
+                      ) : (
+                        <input
+                          type="text"
+                          value={variableValues[variable] || ''}
+                          onChange={(e) => handleVariableChange(variable, e.target.value)}
+                          onKeyDown={(e) => handleKeyDown(e, isLast, index)}
+                          className="w-full p-3 border border-gray-600 bg-gray-800 text-gray-100 rounded-lg focus:ring-2 focus:ring-blue-400 focus:border-transparent"
+                          placeholder={`Enter ${variable.replace(/_/g, ' ')}...`}
+                          tabIndex={index + 1}
+                          data-first-input={isFirst}
+                        />
+                      )}
+                    </div>
+                  );
+                } else {
+                  // Snippet variable
+                  const snippetVar = varData.snippetVar;
+                  const filteredInserts = inserts.filter(insert => 
+                    insert.tags.includes(snippetVar.tag)
+                  );
+                  
+                  return (
+                    <div key={snippetVar.placeholder} className="mb-4 relative">
+                      <label className="block text-sm font-medium text-gray-300 mb-2">
+                        {snippetVar.tag.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())} (Insert)
+                        {filteredInserts.length === 1 && (
+                          <span className="ml-2 text-sm text-green-400">(Auto-filled)</span>
+                        )}
+                        {filteredInserts.length > 1 && (
+                          <span className="ml-2 text-xs text-gray-500">(↑↓ arrows to navigate, Enter/Tab to select)</span>
+                        )}
+                      </label>
+                      <select
+                        value={variableValues[snippetVar.placeholder] || ''}
+                        onChange={(e) => handleDropdownSelect(snippetVar.placeholder, e.target.value, index)}
+                        onKeyDown={(e) => handleDropdownKeyDown(e, snippetVar.placeholder, index, isLast)}
+                        onFocus={handleDropdownFocus}
+                        onBlur={handleDropdownBlur}
+                        className="w-full p-3 border border-gray-600 bg-gray-800 text-gray-100 rounded-lg focus:ring-2 focus:ring-purple-400 focus:border-transparent cursor-pointer transition-all duration-200"
+                        tabIndex={index + 1}
+                        data-first-input={isFirst}
+                        data-variable={snippetVar.placeholder}
+                        disabled={filteredInserts.length === 1}
+                      >
+                        {filteredInserts.length === 0 && (
+                          <option value="">No inserts found with tag "{snippetVar.tag}"</option>
+                        )}
+                        {filteredInserts.length === 1 && (
+                          <option value={filteredInserts[0].content}>
+                            {filteredInserts[0].name}
+                          </option>
+                        )}
+                        {filteredInserts.length > 1 && (
+                          <>
+                            <option value="">🚫 Geen insert gebruiken</option>
+                            {filteredInserts.map(insert => (
+                              <option key={insert.id} value={insert.content}>
+                                {insert.name}
+                              </option>
+                            ))}
+                          </>
+                        )}
+                      </select>
+                      {filteredInserts.length === 0 && (
+                        <p className="text-sm text-yellow-400 mt-1">
+                          No inserts found with tag "{snippetVar.tag}"
+                        </p>
+                      )}
+                    </div>
+                  );
+                }
+              })}
+              
+                  {sortedVariables.length === 0 && (
+                    <p className="text-gray-500">No variables to fill for this step.</p>
+                  )}
+                </>
+              )}
+            </>
+          )}
+            
             {/* Template Selection */}
             {hasTemplateOptions && (
               <div>
@@ -620,6 +764,7 @@ const ItemExecutor = ({ item, type, inserts = [], onComplete, onCancel }) => {
                           [currentStepData.id]: template.id
                         });
                         setVariableValues({}); // Reset variables when template changes
+                        // Keep addons selection when template changes
                       }}
                     >
                       <h4 className="font-medium text-gray-100 mb-1">{template.name}</h4>
@@ -635,149 +780,43 @@ const ItemExecutor = ({ item, type, inserts = [], onComplete, onCancel }) => {
                 </div>
               </div>
             )}
+            {stepType === 'info' && (
+              <div className="bg-green-900 rounded-lg p-4 border border-green-700">
+                <h3 className="text-lg font-semibold text-green-100 mb-3 flex items-center gap-2">
+                  <Info className="w-5 h-5" />
+                  Information Step
+                </h3>
+                <div className="text-green-200 whitespace-pre-wrap">
+                  {currentStepData.content || 'No information provided for this step.'}
+                </div>
+              </div>
+            )}
             
-            <div>
-              {stepType === 'template' && (
-                <>
-                  <h3 className="text-lg font-semibold text-gray-100 mb-3">Fill in Variables</h3>
-                  {needsTemplateSelection ? (
-                    <p className="text-gray-500 italic">Select a template above to see variables</p>
-                  ) : (
-                    <>
-                      {/* Variables in order of appearance */}
-                      {sortedVariables.map((varData, index) => {
-                    const isFirst = index === 0;
-                    const isLast = index === sortedVariables.length - 1;
-                    
-                    if (varData.type === 'regular') {
-                      const variable = varData.variable;
-                      return (
-                        <div key={variable} className="mb-4">
-                          <label className="block text-sm font-medium text-gray-300 mb-2">
-                            {variable.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
-                          </label>
-                          {variable === 'previous_output' ? (
-                            <textarea
-                              value={variableValues[variable] || ''}
-                              onChange={(e) => handleVariableChange(variable, e.target.value)}
-                              onKeyDown={(e) => handleKeyDown(e, isLast, index)}
-                              className="w-full h-24 p-3 border border-gray-600 bg-gray-800 text-gray-100 rounded-lg focus:ring-2 focus:ring-blue-400 focus:border-transparent"
-                              placeholder="Output from previous step..."
-                              readOnly={variable === 'previous_output' && stepOutputs.length > 0}
-                              tabIndex={index + 1}
-                              data-first-input={isFirst}
-                            />
-                          ) : (
-                            <input
-                              type="text"
-                              value={variableValues[variable] || ''}
-                              onChange={(e) => handleVariableChange(variable, e.target.value)}
-                              onKeyDown={(e) => handleKeyDown(e, isLast, index)}
-                              className="w-full p-3 border border-gray-600 bg-gray-800 text-gray-100 rounded-lg focus:ring-2 focus:ring-blue-400 focus:border-transparent"
-                              placeholder={`Enter ${variable.replace(/_/g, ' ')}...`}
-                              tabIndex={index + 1}
-                              data-first-input={isFirst}
-                            />
-                          )}
-                        </div>
-                      );
-                    } else {
-                      // Snippet variable
-                      const snippetVar = varData.snippetVar;
-                      const filteredInserts = inserts.filter(insert => 
-                        insert.tags.includes(snippetVar.tag)
-                      );
-                      
-                      return (
-                        <div key={snippetVar.placeholder} className="mb-4 relative">
-                          <label className="block text-sm font-medium text-gray-300 mb-2">
-                            {snippetVar.tag.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())} (Insert)
-                            {filteredInserts.length === 1 && (
-                              <span className="ml-2 text-sm text-green-400">(Auto-filled)</span>
-                            )}
-                            {filteredInserts.length > 1 && (
-                              <span className="ml-2 text-xs text-gray-500">(↑↓ arrows to navigate, Enter/Tab to select)</span>
-                            )}
-                          </label>
-                          <select
-                            value={variableValues[snippetVar.placeholder] || ''}
-                            onChange={(e) => handleDropdownSelect(snippetVar.placeholder, e.target.value, index)}
-                            onKeyDown={(e) => handleDropdownKeyDown(e, snippetVar.placeholder, index, isLast)}
-                            onFocus={handleDropdownFocus}
-                            onBlur={handleDropdownBlur}
-                            className="w-full p-3 border border-gray-600 bg-gray-800 text-gray-100 rounded-lg focus:ring-2 focus:ring-purple-400 focus:border-transparent cursor-pointer transition-all duration-200"
-                            tabIndex={index + 1}
-                            data-first-input={isFirst}
-                            data-variable={snippetVar.placeholder}
-                            disabled={filteredInserts.length === 1}
-                          >
-                            {filteredInserts.length === 0 && (
-                              <option value="">No inserts found with tag "{snippetVar.tag}"</option>
-                            )}
-                            {filteredInserts.length === 1 && (
-                              <option value={filteredInserts[0].content}>
-                                {filteredInserts[0].name}
-                              </option>
-                            )}
-                            {filteredInserts.length > 1 && (
-                              <>
-                                <option value="">🚫 Geen insert gebruiken</option>
-                                {filteredInserts.map(insert => (
-                                  <option key={insert.id} value={insert.content}>
-                                    {insert.name}
-                                  </option>
-                                ))}
-                              </>
-                            )}
-                          </select>
-                          {filteredInserts.length === 0 && (
-                            <p className="text-sm text-yellow-400 mt-1">
-                              No inserts found with tag "{snippetVar.tag}"
-                            </p>
-                          )}
-                        </div>
-                      );
-                    }
-                  })}
-                  
-                      {sortedVariables.length === 0 && (
-                        <p className="text-gray-500">No variables to fill for this step.</p>
-                      )}
-                    </>
-                  )}
-                </>
-              )}
-              
-              {stepType === 'info' && (
-                <div className="bg-green-900 rounded-lg p-4 border border-green-700">
-                  <h3 className="text-lg font-semibold text-green-100 mb-3 flex items-center gap-2">
-                    <Info className="w-5 h-5" />
-                    Information Step
-                  </h3>
-                  <div className="text-green-200 whitespace-pre-wrap">
-                    {currentStepData.content || 'No information provided for this step.'}
-                  </div>
+            {stepType === 'insert' && (
+              <div className="bg-purple-900 rounded-lg p-4 border border-purple-700">
+                <h3 className="text-lg font-semibold text-purple-100 mb-3 flex items-center gap-2">
+                  <Tag className="w-5 h-5" />
+                  Insert Step
+                </h3>
+                <div className="text-purple-200 whitespace-pre-wrap">
+                  {currentStepData.insertContent || 'No insert selected for this step.'}
                 </div>
-              )}
-              
-              {stepType === 'insert' && (
-                <div className="bg-purple-900 rounded-lg p-4 border border-purple-700">
-                  <h3 className="text-lg font-semibold text-purple-100 mb-3 flex items-center gap-2">
-                    <Tag className="w-5 h-5" />
-                    Insert Step
-                  </h3>
-                  <div className="text-purple-200 whitespace-pre-wrap">
-                    {currentStepData.insertContent || 'No insert selected for this step.'}
+                {selectedAddons.size > 0 && (
+                  <div className="mt-3 pt-3 border-t border-purple-700">
+                    <p className="text-sm text-purple-300 mb-2">
+                      + {selectedAddons.size} add-on{selectedAddons.size > 1 ? 's' : ''} will be appended
+                    </p>
                   </div>
-                </div>
-              )}
-            </div>
+                )}
+              </div>
+            )}
           </div>
 
-          <div className="space-y-4">
-            {stepType === 'template' && (
+          {/* Middle Column - Preview (only for template steps) */}
+          {stepType === 'template' && (
+            <div className="space-y-4 lg:col-span-6">
               <div>
-                <h3 className="text-lg font-semibold text-gray-100 mb-3">Current Step Preview</h3>
+                <h3 className="text-lg font-semibold text-gray-100 mb-3">{isWorkflow ? 'Current Step Preview' : 'Preview'}</h3>
                 <div className="bg-gray-800 rounded-lg p-4 border border-gray-700 min-h-48">
                   <div className="prose prose-sm max-w-none whitespace-pre-wrap">
                     {needsTemplateSelection ? (
@@ -788,6 +827,99 @@ const ItemExecutor = ({ item, type, inserts = [], onComplete, onCancel }) => {
                       generateOutput()
                     )}
                   </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Right Column - Addons and other content */}
+          <div className={`space-y-4 ${stepType === 'template' ? 'lg:col-span-3' : ''}`}>
+            {/* Addon Selection - Show for all step types */}
+            {addons.filter(addon => addon.enabled).length > 0 && (
+              <div>
+                <h3 className="text-lg font-semibold text-gray-100 mb-3 flex items-center gap-2">
+                  <Plus className="w-5 h-5 text-orange-400" />
+                  Add-ons
+                </h3>
+                <div className="space-y-2">
+                  {addons
+                    .filter(addon => addon.enabled)
+                    .map((addon) => (
+                      <div
+                        key={addon.id}
+                        className={`p-3 border rounded-lg cursor-pointer transition-colors ${
+                          selectedAddons.has(addon.id)
+                            ? 'border-orange-500 bg-orange-900/30'
+                            : 'border-gray-600 bg-gray-800 hover:bg-gray-700'
+                        }`}
+                        onClick={() => {
+                          const newSelected = new Set(selectedAddons);
+                          if (newSelected.has(addon.id)) {
+                            newSelected.delete(addon.id);
+                          } else {
+                            newSelected.add(addon.id);
+                          }
+                          setSelectedAddons(newSelected);
+                        }}
+                      >
+                        <div className="flex items-start gap-3">
+                          <div className="flex-shrink-0 mt-1">
+                            <div className={`w-4 h-4 rounded border-2 flex items-center justify-center ${
+                              selectedAddons.has(addon.id)
+                                ? 'bg-orange-500 border-orange-500'
+                                : 'border-gray-400'
+                            }`}>
+                              {selectedAddons.has(addon.id) && (
+                                <Check className="w-3 h-3 text-white" />
+                              )}
+                            </div>
+                          </div>
+                          <div className="flex-1">
+                            <h4 className="font-medium text-gray-100 mb-1">{addon.name}</h4>
+                            <p className="text-sm text-gray-300">{addon.description}</p>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                </div>
+              </div>
+            )}
+
+            {/* Selected Addons Preview - Show for all step types */}
+            {selectedAddons.size > 0 && (
+              <div>
+                <h3 className="text-lg font-semibold text-gray-100 mb-3 flex items-center gap-2">
+                  <Plus className="w-5 h-5 text-orange-400" />
+                  Selected Add-ons ({selectedAddons.size})
+                </h3>
+                <div className="space-y-2 max-h-48 overflow-y-auto">
+                  {Array.from(selectedAddons).map((addonId) => {
+                    const addon = addons.find(a => a.id === addonId);
+                    if (!addon) return null;
+                    
+                    return (
+                      <div key={addonId} className="bg-orange-900 rounded-lg p-3 border border-orange-700">
+                        <div className="flex items-center justify-between mb-1">
+                          <p className="text-sm font-medium text-orange-100">
+                            {addon.name}
+                          </p>
+                          <button
+                            onClick={() => {
+                              const newSelected = new Set(selectedAddons);
+                              newSelected.delete(addonId);
+                              setSelectedAddons(newSelected);
+                            }}
+                            className="text-xs text-orange-300 hover:text-orange-100"
+                          >
+                            Remove
+                          </button>
+                        </div>
+                        <div className="text-xs text-orange-200">
+                          {addon.description}
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
             )}

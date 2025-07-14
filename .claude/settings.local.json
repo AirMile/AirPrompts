@@ -11,7 +11,8 @@
       "Bash(ls:*)",
       "Bash(find:*)",
       "Bash(rm:*)",
-      "Bash(node:*)"
+      "Bash(node:*)",
+      "Bash(timeout 10 npm run dev)"
     ],
     "deny": []
   }

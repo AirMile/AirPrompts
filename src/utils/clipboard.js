@@ -10,7 +10,7 @@ export const copyToClipboard = async (text) => {
     // Modern approach using Clipboard API
     await navigator.clipboard.writeText(text);
     return true;
-  } catch (err) {
+  } catch {
     // Fallback for older browsers
     try {
       const textArea = document.createElement('textarea');

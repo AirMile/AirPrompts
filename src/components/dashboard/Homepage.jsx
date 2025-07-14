@@ -1,5 +1,5 @@
 import React from 'react';
-import { Plus, Play, Edit, Trash2, Search, Workflow, FileText, Star, Tag } from 'lucide-react';
+import { Plus, Play, Edit, Trash2, Search, Workflow, FileText, Star, Tag, Puzzle } from 'lucide-react';
 import FolderTree from '../folders/FolderTree.jsx';
 import FolderBreadcrumb from '../folders/FolderBreadcrumb.jsx';
 
@@ -7,6 +7,7 @@ const Homepage = ({
   templates, 
   workflows, 
   inserts,
+  addons,
   folders,
   searchQuery,
   setSearchQuery,
@@ -15,10 +16,12 @@ const Homepage = ({
   onEditTemplate, 
   onEditWorkflow, 
   onEditInsert,
+  onEditAddon,
   onExecuteItem,
   onDeleteTemplate,
   onDeleteWorkflow,
   onDeleteInsert,
+  onDeleteAddon,
   onCreateFolder
 }) => {
   
@@ -56,6 +59,14 @@ const Homepage = ({
     (insert.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
      insert.content.toLowerCase().includes(searchQuery.toLowerCase()) ||
      (insert.tags || []).some(tag => tag.toLowerCase().includes(searchQuery.toLowerCase())))
+  );
+
+  const filteredAddons = (addons || []).filter(addon =>
+    (!selectedFolderId || selectedFolderId === 'root' || currentFolderIds.has(addon.folderId)) &&
+    (addon.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+     addon.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
+     addon.content.toLowerCase().includes(searchQuery.toLowerCase()) ||
+     (addon.tags || []).some(tag => tag.toLowerCase().includes(searchQuery.toLowerCase())))
   );
 
 
@@ -97,7 +108,7 @@ const Homepage = ({
             type="text"
             id="searchQuery"
             name="searchQuery"
-            placeholder="Search templates, workflows, and inserts..."
+            placeholder="Search templates, workflows, inserts, and addons..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="w-full pl-10 pr-4 py-3 border border-gray-600 bg-gray-800 text-gray-100 rounded-lg focus:ring-2 focus:ring-blue-400 focus:border-transparent placeholder-gray-400"
@@ -208,6 +219,72 @@ const Homepage = ({
                 </button>
                 <button
                   onClick={() => onDeleteInsert(insert.id)}
+                  className="px-3 py-2 border border-red-700 text-red-400 rounded hover:bg-red-900"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Addons Section */}
+      <div className="mb-8">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-xl font-semibold text-gray-100 flex items-center gap-2">
+            <Puzzle className="w-5 h-5 text-gray-300" />
+            Addons ({filteredAddons.length})
+          </h2>
+          <button
+            onClick={() => onEditAddon({})}
+            className="px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 flex items-center gap-2 font-semibold"
+          >
+            <Plus className="w-4 h-4" />
+            New Addon
+          </button>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {filteredAddons.map(addon => (
+            <div key={addon.id} className="bg-gray-800 rounded-lg shadow-md border border-gray-700 p-4 hover:shadow-lg transition-shadow">
+              <div className="flex items-start justify-between mb-3">
+                <div className="flex-1">
+                  <h3 className="font-semibold text-gray-100 mb-1">{addon.name}</h3>
+                  <p className="text-sm text-gray-300 mb-2">{addon.description}</p>
+                  <div className="flex items-center gap-2 mb-2">
+                    {addon.favorite && <Star className="w-4 h-4 text-yellow-300 fill-current" />}
+                  </div>
+                  <div className="flex flex-wrap gap-1">
+                    {(addon.tags || []).slice(0, 3).map((tag, index) => (
+                      <span key={index} className="px-2 py-1 bg-orange-900 text-orange-100 text-xs rounded">
+                        {tag}
+                      </span>
+                    ))}
+                    {(addon.tags || []).length > 3 && (
+                      <span className="px-2 py-1 bg-gray-600 text-gray-300 text-xs rounded">
+                        +{(addon.tags || []).length - 3}
+                      </span>
+                    )}
+                  </div>
+                </div>
+              </div>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => onExecuteItem({item: addon, type: 'addon'})}
+                  className="flex-1 px-3 py-2 bg-orange-600 text-white rounded hover:bg-orange-700 flex items-center justify-center gap-2 font-semibold"
+                >
+                  <Play className="w-4 h-4" />
+                  Use
+                </button>
+                <button
+                  onClick={() => onEditAddon(addon)}
+                  className="px-3 py-2 border border-gray-600 text-gray-200 rounded hover:bg-gray-700"
+                >
+                  <Edit className="w-4 h-4" />
+                </button>
+                <button
+                  onClick={() => onDeleteAddon(addon.id)}
                   className="px-3 py-2 border border-red-700 text-red-400 rounded hover:bg-red-900"
                 >
                   <Trash2 className="w-4 h-4" />

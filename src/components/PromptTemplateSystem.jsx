@@ -4,19 +4,23 @@ import ItemExecutor from './common/ItemExecutor.jsx';
 import Homepage from './dashboard/Homepage.jsx';
 import WorkflowEditor from './workflows/WorkflowEditor.jsx';
 import InsertEditor from './inserts/InsertEditor.jsx';
+import AddonEditor from './addons/AddonEditor.jsx';
 import defaultTemplates from '../data/defaultTemplates.json';
 import defaultWorkflows from '../data/defaultWorkflows.json';
 import defaultInserts from '../data/defaultInserts.json';
+import defaultAddons from '../data/defaultAddons.json';
 import defaultFolders from '../data/defaultFolders.json';
 
 const PromptTemplateSystem = () => {
   const [templates, setTemplates] = useState(defaultTemplates);
   const [workflows, setWorkflows] = useState(defaultWorkflows);
   const [inserts, setInserts] = useState(defaultInserts);
+  const [addons, setAddons] = useState(defaultAddons);
   const [folders, setFolders] = useState(defaultFolders);
   const [editingTemplate, setEditingTemplate] = useState(null);
   const [editingWorkflow, setEditingWorkflow] = useState(null);
   const [editingInsert, setEditingInsert] = useState(null);
+  const [editingAddon, setEditingAddon] = useState(null);
   const [executingItem, setExecutingItem] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedFolderId, setSelectedFolderId] = useState(null);
@@ -49,6 +53,15 @@ const PromptTemplateSystem = () => {
     setEditingInsert(null);
   };
 
+  const handleSaveAddon = (addon) => {
+    if (addon.id && addons.find(a => a.id === addon.id)) {
+      setAddons(addons.map(a => a.id === addon.id ? addon : a));
+    } else {
+      setAddons([...addons, { ...addon, id: Date.now() }]);
+    }
+    setEditingAddon(null);
+  };
+
   const handleCreateFolder = (parentId = 'root') => {
     const folderName = prompt('Enter folder name:');
     if (folderName) {
@@ -70,6 +83,7 @@ const PromptTemplateSystem = () => {
         item={executingItem.item}
         type={executingItem.type}
         inserts={inserts}
+        addons={addons}
         onComplete={() => {
           setExecutingItem(null);
         }}
@@ -99,6 +113,7 @@ const PromptTemplateSystem = () => {
         workflow={editingWorkflow}
         templates={templates}
         inserts={inserts}
+        addons={addons}
         folders={folders}
         onSave={handleSaveWorkflow}
         onCancel={() => {
@@ -121,11 +136,25 @@ const PromptTemplateSystem = () => {
     );
   }
 
+  if (editingAddon !== null) {
+    return (
+      <AddonEditor
+        addon={editingAddon}
+        folders={folders}
+        onSave={handleSaveAddon}
+        onCancel={() => {
+          setEditingAddon(null);
+        }}
+      />
+    );
+  }
+
   return (
     <Homepage 
       templates={templates}
       workflows={workflows}
       inserts={inserts}
+      addons={addons}
       folders={folders}
       searchQuery={searchQuery}
       setSearchQuery={setSearchQuery}
@@ -134,10 +163,12 @@ const PromptTemplateSystem = () => {
       onEditTemplate={setEditingTemplate}
       onEditWorkflow={setEditingWorkflow}
       onEditInsert={setEditingInsert}
+      onEditAddon={setEditingAddon}
       onExecuteItem={setExecutingItem}
       onDeleteTemplate={(id) => setTemplates(templates.filter(t => t.id !== id))}
       onDeleteWorkflow={(id) => setWorkflows(workflows.filter(w => w.id !== id))}
       onDeleteInsert={(id) => setInserts(inserts.filter(s => s.id !== id))}
+      onDeleteAddon={(id) => setAddons(addons.filter(a => a.id !== id))}
       onCreateFolder={handleCreateFolder}
     />
   );

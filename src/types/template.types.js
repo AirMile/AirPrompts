@@ -245,3 +245,73 @@ export const validateSnippet = (snippet) => {
     errors
   };
 };
+
+/**
+ * Create a new addon with default values
+ * @param {Object} data - Addon data
+ * @returns {Object} Complete addon object
+ */
+export const createAddon = (data = {}) => {
+  const now = new Date().toISOString();
+  
+  return {
+    id: data.id || Date.now(),
+    name: data.name || '',
+    description: data.description || '',
+    content: data.content || '',
+    category: data.category || 'general',
+    folderId: data.folderId || 'general',
+    enabled: data.enabled !== undefined ? data.enabled : true,
+    createdAt: data.createdAt || now,
+    updatedAt: data.updatedAt || now
+  };
+};
+
+/**
+ * Addon validation rules
+ */
+export const ADDON_VALIDATION = {
+  name: {
+    required: true,
+    minLength: 1,
+    maxLength: 100
+  },
+  description: {
+    required: false,
+    maxLength: 500
+  },
+  content: {
+    required: true,
+    minLength: 1
+  },
+};
+
+/**
+ * Validate addon data
+ * @param {Object} addon - Addon to validate
+ * @returns {Object} Validation result with isValid boolean and errors array
+ */
+export const validateAddon = (addon) => {
+  const errors = [];
+  
+  if (!addon.name || addon.name.trim().length === 0) {
+    errors.push('Addon name is required');
+  }
+  
+  if (addon.name && addon.name.length > ADDON_VALIDATION.name.maxLength) {
+    errors.push(`Addon name must be less than ${ADDON_VALIDATION.name.maxLength} characters`);
+  }
+  
+  if (!addon.content || addon.content.trim().length === 0) {
+    errors.push('Addon content is required');
+  }
+  
+  if (addon.description && addon.description.length > ADDON_VALIDATION.description.maxLength) {
+    errors.push(`Addon description must be less than ${ADDON_VALIDATION.description.maxLength} characters`);
+  }
+  
+  return {
+    isValid: errors.length === 0,
+    errors
+  };
+};
