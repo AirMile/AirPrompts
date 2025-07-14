@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { ArrowRight, Workflow, Trash2, Plus, X, FileText, Info, Tag } from 'lucide-react';
 import { createWorkflowStep } from '../../types/template.types.js';
+import FolderSelector from '../common/FolderSelector.jsx';
 
 const WorkflowEditor = ({ workflow, templates, inserts = [], folders = [], onSave, onCancel }) => {
   const [formData, setFormData] = useState(() => {
@@ -150,11 +151,13 @@ const WorkflowEditor = ({ workflow, templates, inserts = [], folders = [], onSav
           {/* Workflow Details */}
           <div className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">
+              <label htmlFor="workflowName" className="block text-sm font-medium text-gray-300 mb-2">
                 Workflow Name
               </label>
               <input
                 type="text"
+                id="workflowName"
+                name="workflowName"
                 value={formData.name}
                 onChange={(e) => setFormData({...formData, name: e.target.value})}
                 className="w-full p-3 border border-gray-600 bg-gray-800 text-gray-100 rounded-lg focus:ring-2 focus:ring-green-400 focus:border-transparent"
@@ -163,30 +166,31 @@ const WorkflowEditor = ({ workflow, templates, inserts = [], folders = [], onSav
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">
+              <label htmlFor="workflowDescription" className="block text-sm font-medium text-gray-300 mb-2">
                 Description
               </label>
               <textarea
+                id="workflowDescription"
+                name="workflowDescription"
                 value={formData.description}
                 onChange={(e) => setFormData({...formData, description: e.target.value})}
-                className="w-full h-24 p-3 border border-gray-600 bg-gray-800 text-gray-100 rounded-lg focus:ring-2 focus:ring-green-400 focus:border-transparent"
+                className="w-full h-32 p-3 border border-gray-600 bg-gray-800 text-gray-100 rounded-lg focus:ring-2 focus:ring-green-400 focus:border-transparent"
                 placeholder="Brief description..."
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">
+              <label htmlFor="workflowFolder" className="block text-sm font-medium text-gray-300 mb-2">
                 Folder
               </label>
-              <select
-                value={formData.folderId}
-                onChange={(e) => setFormData({...formData, folderId: e.target.value})}
-                className="w-full p-3 border border-gray-600 bg-gray-800 text-gray-100 rounded-lg focus:ring-2 focus:ring-green-400 focus:border-transparent"
-              >
-                {folders.filter(f => f.id !== 'root').map(folder => (
-                  <option key={folder.id} value={folder.id}>{folder.name}</option>
-                ))}
-              </select>
+              <FolderSelector
+                id="workflowFolder"
+                name="workflowFolder"
+                folders={folders}
+                selectedFolderId={formData.folderId}
+                onFolderSelect={(folderId) => setFormData({...formData, folderId})}
+                focusRingColor="green"
+              />
             </div>
 
 
@@ -245,6 +249,8 @@ const WorkflowEditor = ({ workflow, templates, inserts = [], folders = [], onSav
                             {step.type === 'insert' && <Tag className="w-4 h-4 text-purple-400" />}
                             <input
                               type="text"
+                              id={`stepName-${step.id}`}
+                              name={`stepName-${step.id}`}
                               value={step.name}
                               onChange={(e) => {
                                 setFormData({
@@ -343,6 +349,8 @@ const WorkflowEditor = ({ workflow, templates, inserts = [], folders = [], onSav
                         <div className="border-2 border-dashed border-green-600 rounded-lg p-3">
                           <p className="text-sm text-green-400 mb-2">Information content:</p>
                           <textarea
+                            id={`infoContent-${step.id}`}
+                            name={`infoContent-${step.id}`}
                             value={step.content || ''}
                             onChange={(e) => {
                               setFormData({

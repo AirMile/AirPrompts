@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Tag } from 'lucide-react';
 import { extractAllVariables } from '../../types/template.types.js';
+import FolderSelector from '../common/FolderSelector.jsx';
 
 const TemplateEditor = ({ template, folders = [], onSave, onCancel }) => {
   const [formData, setFormData] = useState({
@@ -49,11 +50,13 @@ const TemplateEditor = ({ template, folders = [], onSave, onCancel }) => {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <div className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">
+              <label htmlFor="templateName" className="block text-sm font-medium text-gray-300 mb-2">
                 Template Name
               </label>
               <input
                 type="text"
+                id="templateName"
+                name="templateName"
                 value={formData.name}
                 onChange={(e) => setFormData({...formData, name: e.target.value})}
                 className="w-full p-3 border border-gray-600 bg-gray-800 text-gray-100 rounded-lg focus:ring-2 focus:ring-blue-400 focus:border-transparent"
@@ -62,14 +65,15 @@ const TemplateEditor = ({ template, folders = [], onSave, onCancel }) => {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">
+              <label htmlFor="templateDescription" className="block text-sm font-medium text-gray-300 mb-2">
                 Description
               </label>
-              <input
-                type="text"
+              <textarea
+                id="templateDescription"
+                name="templateDescription"
                 value={formData.description}
                 onChange={(e) => setFormData({...formData, description: e.target.value})}
-                className="w-full p-3 border border-gray-600 bg-gray-800 text-gray-100 rounded-lg focus:ring-2 focus:ring-blue-400 focus:border-transparent"
+                className="w-full h-32 p-3 border border-gray-600 bg-gray-800 text-gray-100 rounded-lg focus:ring-2 focus:ring-blue-400 focus:border-transparent"
                 placeholder="Brief description..."
               />
             </div>
@@ -78,23 +82,22 @@ const TemplateEditor = ({ template, folders = [], onSave, onCancel }) => {
               <label className="block text-sm font-medium text-gray-300 mb-2">
                 Folder
               </label>
-              <select
-                value={formData.folderId}
-                onChange={(e) => setFormData({...formData, folderId: e.target.value})}
-                className="w-full p-3 border border-gray-600 bg-gray-800 text-gray-100 rounded-lg focus:ring-2 focus:ring-blue-400 focus:border-transparent"
-              >
-                {folders.filter(f => f.id !== 'root').map(folder => (
-                  <option key={folder.id} value={folder.id}>{folder.name}</option>
-                ))}
-              </select>
+              <FolderSelector
+                folders={folders}
+                selectedFolderId={formData.folderId}
+                onFolderSelect={(folderId) => setFormData({...formData, folderId})}
+                focusRingColor="blue"
+              />
             </div>
 
 
             <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">
+              <label htmlFor="templateContent" className="block text-sm font-medium text-gray-300 mb-2">
                 Template Content
               </label>
               <textarea
+                id="templateContent"
+                name="templateContent"
                 value={formData.content}
                 onChange={(e) => setFormData({...formData, content: e.target.value})}
                 className="w-full h-48 p-3 border border-gray-600 bg-gray-800 text-gray-100 rounded-lg focus:ring-2 focus:ring-blue-400 focus:border-transparent font-mono text-sm"

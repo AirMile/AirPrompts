@@ -8,7 +8,6 @@
     "folderId": "general",
     "variables": ["language", "project_name", "functionality_description", "code", "specific_questions"],
     "lastUsed": "2025-01-13T00:00:00.000Z",
-    "favorite": true,
     "createdAt": "2025-01-13T00:00:00.000Z",
     "updatedAt": "2025-01-13T00:00:00.000Z"
   },
@@ -21,7 +20,6 @@
     "folderId": "general",
     "variables": ["bug_description", "expected_behavior", "actual_behavior", "error_messages", "language", "code", "platform", "dependencies"],
     "lastUsed": "2025-01-13T00:00:00.000Z",
-    "favorite": true,
     "createdAt": "2025-01-13T00:00:00.000Z",
     "updatedAt": "2025-01-13T00:00:00.000Z"
   },
@@ -34,7 +32,6 @@
     "folderId": "general",
     "variables": ["feature_description", "http_method", "endpoint_path", "auth_type", "required_headers", "query_params", "request_body", "success_codes", "error_codes", "response_schema", "business_logic", "language"],
     "lastUsed": "2025-01-13T00:00:00.000Z",
-    "favorite": false,
     "createdAt": "2025-01-13T00:00:00.000Z",
     "updatedAt": "2025-01-13T00:00:00.000Z"
   },
@@ -47,7 +44,6 @@
     "folderId": "general",
     "variables": ["project_description", "database_type", "main_entities", "relationships", "data_volume", "query_patterns", "performance_requirements", "consistency_level", "backup_strategy", "use_cases"],
     "lastUsed": "2025-01-13T00:00:00.000Z",
-    "favorite": false,
     "createdAt": "2025-01-13T00:00:00.000Z",
     "updatedAt": "2025-01-13T00:00:00.000Z"
   },
@@ -60,7 +56,6 @@
     "folderId": "general",
     "variables": ["language", "code_to_test", "test_framework", "test_types", "coverage_target", "mock_dependencies", "happy_path_scenarios", "edge_cases", "error_scenarios", "performance_requirements"],
     "lastUsed": "2025-01-13T00:00:00.000Z",
-    "favorite": false,
     "createdAt": "2025-01-13T00:00:00.000Z",
     "updatedAt": "2025-01-13T00:00:00.000Z"
   },
@@ -73,7 +68,6 @@
     "folderId": "general",
     "variables": ["decision_context", "problem_description", "budget_constraints", "timeline_constraints", "team_expertise", "scalability_needs", "performance_needs", "options_to_consider", "criteria_1", "criteria_2", "criteria_3"],
     "lastUsed": "2025-01-13T00:00:00.000Z",
-    "favorite": false,
     "createdAt": "2025-01-13T00:00:00.000Z",
     "updatedAt": "2025-01-13T00:00:00.000Z"
   },
@@ -86,7 +80,6 @@
     "folderId": "general",
     "variables": ["language", "code", "performance_issues", "current_response_time", "target_response_time", "current_throughput", "target_throughput", "memory_usage", "platform", "hardware_constraints", "optimization_goals"],
     "lastUsed": "2025-01-13T00:00:00.000Z",
-    "favorite": false,
     "createdAt": "2025-01-13T00:00:00.000Z",
     "updatedAt": "2025-01-13T00:00:00.000Z"
   },
@@ -99,7 +92,6 @@
     "folderId": "general",
     "variables": ["component_type", "language", "code", "documentation_type", "target_audience", "section_1", "section_2", "section_3", "include_examples", "include_api_ref", "include_troubleshooting", "include_diagrams"],
     "lastUsed": "2025-01-13T00:00:00.000Z",
-    "favorite": false,
     "createdAt": "2025-01-13T00:00:00.000Z",
     "updatedAt": "2025-01-13T00:00:00.000Z"
   }

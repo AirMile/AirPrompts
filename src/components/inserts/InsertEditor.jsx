@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
 import { Save, X, Tag } from 'lucide-react';
 import { validateSnippet } from '../../types/template.types.js';
+import FolderSelector from '../common/FolderSelector.jsx';
 
 const InsertEditor = ({ insert, folders = [], onSave, onCancel }) => {
   const [formData, setFormData] = useState({
     name: insert?.name || '',
+    description: insert?.description || '',
     content: insert?.content || '',
     folderId: insert?.folderId || 'moods',
     tags: insert?.tags || []
@@ -97,11 +99,13 @@ const InsertEditor = ({ insert, folders = [], onSave, onCancel }) => {
           {/* Form Fields */}
           <div className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">
+              <label htmlFor="insertName" className="block text-sm font-medium text-gray-300 mb-2">
                 Insert Name
               </label>
               <input
                 type="text"
+                id="insertName"
+                name="insertName"
                 value={formData.name}
                 onChange={(e) => setFormData({...formData, name: e.target.value})}
                 className="w-full p-3 border border-gray-600 bg-gray-800 text-gray-100 rounded-lg focus:ring-2 focus:ring-green-400 focus:border-transparent"
@@ -110,18 +114,31 @@ const InsertEditor = ({ insert, folders = [], onSave, onCancel }) => {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">
+              <label htmlFor="insertDescription" className="block text-sm font-medium text-gray-300 mb-2">
+                Description
+              </label>
+              <textarea
+                id="insertDescription"
+                name="insertDescription"
+                value={formData.description}
+                onChange={(e) => setFormData({...formData, description: e.target.value})}
+                className="w-full h-32 p-3 border border-gray-600 bg-gray-800 text-gray-100 rounded-lg focus:ring-2 focus:ring-green-400 focus:border-transparent"
+                placeholder="Brief description..."
+              />
+            </div>
+
+            <div>
+              <label htmlFor="insertFolder" className="block text-sm font-medium text-gray-300 mb-2">
                 Folder
               </label>
-              <select
-                value={formData.folderId}
-                onChange={(e) => setFormData({...formData, folderId: e.target.value})}
-                className="w-full p-3 border border-gray-600 bg-gray-800 text-gray-100 rounded-lg focus:ring-2 focus:ring-green-400 focus:border-transparent"
-              >
-                {folders.filter(f => f.id !== 'root').map(folder => (
-                  <option key={folder.id} value={folder.id}>{folder.name}</option>
-                ))}
-              </select>
+              <FolderSelector
+                id="insertFolder"
+                name="insertFolder"
+                folders={folders}
+                selectedFolderId={formData.folderId}
+                onFolderSelect={(folderId) => setFormData({...formData, folderId})}
+                focusRingColor="green"
+              />
             </div>
 
 
@@ -133,6 +150,8 @@ const InsertEditor = ({ insert, folders = [], onSave, onCancel }) => {
                 <div className="flex gap-2">
                   <input
                     type="text"
+                    id="insertTags"
+                    name="insertTags"
                     value={tagInput}
                     onChange={(e) => setTagInput(e.target.value)}
                     onKeyDown={handleKeyPress}
@@ -166,10 +185,12 @@ const InsertEditor = ({ insert, folders = [], onSave, onCancel }) => {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">
+              <label htmlFor="insertContent" className="block text-sm font-medium text-gray-300 mb-2">
                 Content
               </label>
               <textarea
+                id="insertContent"
+                name="insertContent"
                 value={formData.content}
                 onChange={(e) => setFormData({...formData, content: e.target.value})}
                 className="w-full h-48 p-3 border border-gray-600 bg-gray-800 text-gray-100 rounded-lg focus:ring-2 focus:ring-green-400 focus:border-transparent"
