@@ -194,9 +194,10 @@ const ItemExecutor = ({ item, type, inserts = [], onComplete, onCancel }) => {
         return newSet;
       });
       
-      // If a value is selected (not placeholder), advance to next field or complete
+      // Always allow selection now, including empty value (no insert)
       const currentValue = variableValues[variable];
-      if (currentValue && currentValue !== '') {
+      // Check if we actually have a selection (not undefined)
+      if (currentValue !== undefined) {
         e.preventDefault();
         
         // Close dropdown first
@@ -229,25 +230,25 @@ const ItemExecutor = ({ item, type, inserts = [], onComplete, onCancel }) => {
       // Handle circular navigation
       const dropdown = e.target;
       const allOptions = Array.from(dropdown.options);
-      const validOptions = allOptions.filter(option => !option.disabled && option.value !== '');
+      const validOptions = allOptions.filter(option => !option.disabled); // All options are now valid, including empty value
       
       // Find current position in valid options
       let currentIndex = -1;
       const currentlySelected = allOptions.find(option => option.selected);
-      if (currentlySelected && currentlySelected.value !== '') {
+      if (currentlySelected) {
         currentIndex = validOptions.findIndex(option => option.value === currentlySelected.value);
       }
       
       let newIndex;
       if (e.key === 'ArrowDown') {
-        // If placeholder is selected or we're at the end, go to first valid option
+        // If no selection or we're at the end, go to first option
         if (currentIndex === -1 || currentIndex >= validOptions.length - 1) {
           newIndex = 0;
         } else {
           newIndex = currentIndex + 1;
         }
       } else if (e.key === 'ArrowUp') {
-        // If placeholder is selected or we're at the beginning, go to last valid option
+        // If no selection or we're at the beginning, go to last option
         if (currentIndex === -1 || currentIndex <= 0) {
           newIndex = validOptions.length - 1;
         } else {
@@ -390,8 +391,10 @@ const ItemExecutor = ({ item, type, inserts = [], onComplete, onCancel }) => {
     // Replace insert placeholders with selected insert content
     snippetVariables.forEach(snippetVar => {
       const insertValue = variableValues[snippetVar.placeholder];
-      if (insertValue) {
-        output = output.replace(new RegExp(`\\{insert:${snippetVar.tag}\\}`, 'g'), insertValue);
+      if (insertValue !== undefined) {
+        // If insertValue is empty string, remove the placeholder entirely
+        const replacementValue = insertValue === '' ? '' : insertValue;
+        output = output.replace(new RegExp(`\\{insert:${snippetVar.tag}\\}`, 'g'), replacementValue);
       }
     });
     
@@ -693,7 +696,7 @@ const ItemExecutor = ({ item, type, inserts = [], onComplete, onCancel }) => {
                               <span className="ml-2 text-sm text-green-400">(Auto-filled)</span>
                             )}
                             {filteredInserts.length > 1 && (
-                              <span className="ml-2 text-xs text-gray-500">(Use ↑↓ arrows, Enter/Tab to select)</span>
+                              <span className="ml-2 text-xs text-gray-500">(↑↓ arrows to navigate, Enter/Tab to select)</span>
                             )}
                           </label>
                           <select
@@ -718,7 +721,7 @@ const ItemExecutor = ({ item, type, inserts = [], onComplete, onCancel }) => {
                             )}
                             {filteredInserts.length > 1 && (
                               <>
-                                <option value="" disabled>Select a {snippetVar.tag} insert...</option>
+                                <option value="">🚫 Geen insert gebruiken</option>
                                 {filteredInserts.map(insert => (
                                   <option key={insert.id} value={insert.content}>
                                     {insert.name}
