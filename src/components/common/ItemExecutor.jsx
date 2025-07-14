@@ -299,8 +299,11 @@ const ItemExecutor = ({ item, type, inserts = [], addons = [], onComplete, onCan
       dropdown.style.maxHeight = '200px';
       dropdown.style.overflowY = 'auto';
       
-      // Do NOT auto-select when focusing - let user navigate with arrow keys
-      // The placeholder option will be selected by default, which is fine
+      // Set the current value if it's not already set (to support default empty string)
+      const variable = dropdown.getAttribute('data-variable');
+      if (variable && variableValues[variable] === undefined) {
+        handleVariableChange(variable, dropdown.value);
+      }
     }
   };
 
@@ -529,8 +532,8 @@ const ItemExecutor = ({ item, type, inserts = [], addons = [], onComplete, onCan
       if (varData.type === 'regular') {
         return variableValues[varData.variable]?.trim();
       } else {
-        // For snippet variables, check the placeholder
-        return variableValues[varData.placeholder]?.trim();
+        // For snippet variables, allow empty selection (no insert)
+        return variableValues[varData.placeholder] !== undefined;
       }
     });
   })();
@@ -718,7 +721,7 @@ const ItemExecutor = ({ item, type, inserts = [], addons = [], onComplete, onCan
                         )}
                         {filteredInserts.length > 1 && (
                           <>
-                            <option value="">🚫 Geen insert gebruiken</option>
+                            <option value="">🚫 No insert</option>
                             {filteredInserts.map(insert => (
                               <option key={insert.id} value={insert.content}>
                                 {insert.name}
