@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 
 const FolderTree = ({ 
   folders = [], 
@@ -8,12 +8,47 @@ const FolderTree = ({
   className = '' 
 }) => {
   const [expandedFolders, setExpandedFolders] = useState(new Set(['root', 'general']));
+  const [searchTerm, setSearchTerm] = useState('');
+  const [isCompactView, setIsCompactView] = useState(false);
+  const [favoriteFolders, setFavoriteFolders] = useState(new Set());
+
+  // Filter folders based on search
+  const filteredFolders = useMemo(() => {
+    if (!searchTerm.trim()) return folders;
+    
+    const searchLower = searchTerm.toLowerCase();
+    const matchingFolders = folders.filter(folder => 
+      folder.name.toLowerCase().includes(searchLower)
+    );
+    
+    // Include parent folders of matching folders for proper hierarchy
+    const folderIdsToInclude = new Set();
+    matchingFolders.forEach(folder => {
+      folderIdsToInclude.add(folder.id);
+      // Add all parent folders
+      let parentId = folder.parentId;
+      while (parentId && !folderIdsToInclude.has(parentId)) {
+        folderIdsToInclude.add(parentId);
+        const parent = folders.find(f => f.id === parentId);
+        parentId = parent?.parentId;
+      }
+    });
+    
+    return folders.filter(folder => folderIdsToInclude.has(folder.id));
+  }, [folders, searchTerm]);
 
   // Build folder hierarchy
   const buildFolderTree = (parentId = null) => {
-    return folders
+    return filteredFolders
       .filter(folder => folder.parentId === parentId)
-      .sort((a, b) => a.name.localeCompare(b.name));
+      .sort((a, b) => {
+        // Prioritize favorite folders
+        const aIsFav = favoriteFolders.has(a.id);
+        const bIsFav = favoriteFolders.has(b.id);
+        if (aIsFav && !bIsFav) return -1;
+        if (!aIsFav && bIsFav) return 1;
+        return a.name.localeCompare(b.name);
+      });
   };
 
   const toggleFolder = (folderId) => {
@@ -27,22 +62,54 @@ const FolderTree = ({
   };
 
   const hasChildren = (folderId) => {
-    return folders.some(folder => folder.parentId === folderId);
+    return filteredFolders.some(folder => folder.parentId === folderId);
   };
+
+  const toggleFavorite = (folderId, e) => {
+    e.stopPropagation();
+    const newFavorites = new Set(favoriteFolders);
+    if (newFavorites.has(folderId)) {
+      newFavorites.delete(folderId);
+    } else {
+      newFavorites.add(folderId);
+    }
+    setFavoriteFolders(newFavorites);
+  };
+
+  const expandAll = () => {
+    const allFolderIds = new Set(filteredFolders.map(f => f.id));
+    setExpandedFolders(allFolderIds);
+  };
+
+  const collapseAll = () => {
+    setExpandedFolders(new Set(['root']));
+  };
+
+  // Auto-expand folders when searching
+  React.useEffect(() => {
+    if (searchTerm.trim()) {
+      const allMatchingIds = new Set(filteredFolders.map(f => f.id));
+      setExpandedFolders(allMatchingIds);
+    }
+  }, [searchTerm, filteredFolders]);
 
   const renderFolder = (folder, level = 0) => {
     const isExpanded = expandedFolders.has(folder.id);
     const isSelected = selectedFolderId === folder.id;
+    const isFavorite = favoriteFolders.has(folder.id);
     const children = buildFolderTree(folder.id);
     const folderHasChildren = hasChildren(folder.id);
+    const isHighlighted = searchTerm.trim() && folder.name.toLowerCase().includes(searchTerm.toLowerCase());
 
     return (
       <div key={folder.id} className="select-none">
         <div
           className={`
-            flex items-center px-2 py-1 cursor-pointer rounded-md text-sm
+            flex items-center px-2 cursor-pointer rounded-md text-sm group
             hover:bg-gray-100 dark:hover:bg-gray-800
             ${isSelected ? 'bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300' : 'text-gray-700 dark:text-gray-300'}
+            ${isHighlighted ? 'bg-yellow-50 dark:bg-yellow-900/20' : ''}
+            ${isCompactView ? 'py-0.5' : 'py-1'}
           `}
           style={{ paddingLeft: `${level * 12 + 8}px` }}
           onClick={() => onFolderSelect(folder.id)}
@@ -70,7 +137,22 @@ const FolderTree = ({
             <path d="M2 6a2 2 0 012-2h5l2 2h5a2 2 0 012 2v6a2 2 0 01-2 2H4a2 2 0 01-2-2V6z" />
           </svg>
           
-          <span className="truncate">{folder.name}</span>
+          <span className="truncate flex-1">{folder.name}</span>
+          
+          <button
+            onClick={(e) => toggleFavorite(folder.id, e)}
+            className={`ml-1 p-0.5 rounded opacity-0 group-hover:opacity-100 transition-opacity ${isFavorite ? 'opacity-100' : ''}`}
+            title={isFavorite ? 'Remove from favorites' : 'Add to favorites'}
+          >
+            <svg 
+              className={`w-3 h-3 ${isFavorite ? 'text-yellow-500 fill-current' : 'text-gray-400'}`}
+              fill={isFavorite ? 'currentColor' : 'none'}
+              stroke="currentColor" 
+              viewBox="0 0 24 24"
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
+            </svg>
+          </button>
         </div>
 
         {isExpanded && children.length > 0 && (
@@ -92,22 +174,113 @@ const FolderTree = ({
           <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300">
             Folders
           </h3>
-          {onCreateFolder && (
+          <div className="flex items-center gap-1">
             <button
-              onClick={() => onCreateFolder(selectedFolderId || 'root')}
+              onClick={() => setIsCompactView(!isCompactView)}
               className="p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-400"
-              title="Create new folder"
+              title={isCompactView ? 'Normal view' : 'Compact view'}
             >
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                {isCompactView ? (
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 10h16M4 14h16M4 18h16" />
+                ) : (
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8h16M4 16h16" />
+                )}
               </svg>
             </button>
-          )}
+            {onCreateFolder && (
+              <button
+                onClick={() => onCreateFolder(selectedFolderId || 'root')}
+                className="p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-400"
+                title="Create new folder"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                </svg>
+              </button>
+            )}
+          </div>
         </div>
+
+        {/* Search Bar */}
+        <div className="mb-3">
+          <div className="relative">
+            <input
+              type="text"
+              placeholder="Search folders..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            />
+            <svg className="absolute right-3 top-2.5 w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
+          </div>
+        </div>
+
+        {/* Expand/Collapse All Buttons */}
+        {!searchTerm.trim() && (
+          <div className="flex gap-1 mb-3">
+            <button
+              onClick={expandAll}
+              className="flex-1 px-2 py-1 text-xs border border-gray-300 dark:border-gray-600 rounded text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800"
+            >
+              Expand All
+            </button>
+            <button
+              onClick={collapseAll}
+              className="flex-1 px-2 py-1 text-xs border border-gray-300 dark:border-gray-600 rounded text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800"
+            >
+              Collapse All
+            </button>
+          </div>
+        )}
+
+        {/* Favorites Section */}
+        {favoriteFolders.size > 0 && !searchTerm.trim() && (
+          <div className="mb-4">
+            <h4 className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-2 uppercase tracking-wide">
+              Favorites
+            </h4>
+            <div className="space-y-1 border-b border-gray-200 dark:border-gray-700 pb-3 mb-3">
+              {Array.from(favoriteFolders)
+                .map(id => folders.find(f => f.id === id))
+                .filter(Boolean)
+                .map(folder => (
+                  <div
+                    key={`fav-${folder.id}`}
+                    className={`
+                      flex items-center px-2 py-1 cursor-pointer rounded-md text-sm group
+                      hover:bg-gray-100 dark:hover:bg-gray-800
+                      ${selectedFolderId === folder.id ? 'bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300' : 'text-gray-700 dark:text-gray-300'}
+                    `}
+                    onClick={() => onFolderSelect(folder.id)}
+                  >
+                    <svg className="w-3 h-3 text-yellow-500 fill-current mr-2" viewBox="0 0 24 24">
+                      <path d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
+                    </svg>
+                    <svg className="w-4 h-4 mr-2 text-yellow-600 dark:text-yellow-500" fill="currentColor" viewBox="0 0 20 20">
+                      <path d="M2 6a2 2 0 012-2h5l2 2h5a2 2 0 012 2v6a2 2 0 01-2 2H4a2 2 0 01-2-2V6z" />
+                    </svg>
+                    <span className="truncate">{folder.name}</span>
+                  </div>
+                ))}
+            </div>
+          </div>
+        )}
 
         <div className="space-y-1">
           {topLevelFolders.map(folder => renderFolder(folder))}
         </div>
+
+        {searchTerm.trim() && topLevelFolders.length === 0 && (
+          <div className="text-center py-8 text-gray-500 dark:text-gray-400">
+            <svg className="w-8 h-8 mx-auto mb-2 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
+            <p className="text-sm">No folders found</p>
+          </div>
+        )}
       </div>
     </div>
   );
