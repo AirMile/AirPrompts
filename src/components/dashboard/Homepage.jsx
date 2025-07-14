@@ -6,8 +6,7 @@ import FolderBreadcrumb from '../folders/FolderBreadcrumb.jsx';
 const Homepage = ({ 
   templates, 
   workflows, 
-  inserts,
-  addons,
+  snippets,
   folders,
   searchQuery,
   setSearchQuery,
@@ -15,13 +14,11 @@ const Homepage = ({
   setSelectedFolderId,
   onEditTemplate, 
   onEditWorkflow, 
-  onEditInsert,
-  onEditAddon,
+  onEditSnippet,
   onExecuteItem,
   onDeleteTemplate,
   onDeleteWorkflow,
-  onDeleteInsert,
-  onDeleteAddon,
+  onDeleteSnippet,
   onCreateFolder
 }) => {
   // Get all descendant folder IDs for the selected folder
@@ -77,16 +74,13 @@ const Homepage = ({
 
   const filteredWorkflows = getFilteredItems(workflows, (item) => [item.name, item.description]);
 
-  const filteredInserts = getFilteredItems(inserts, (item) => [item.name, item.content, ...(item.tags || [])]);
-
-  const filteredAddons = getFilteredItems(addons, (item) => [item.name, item.description, item.content, ...(item.tags || [])]);
+  const filteredSnippets = getFilteredItems(snippets, (item) => [item.name, item.description, item.content, ...(item.tags || [])]);
 
   // Create sections with their data and default order
   const sections = [
     { type: 'workflows', data: filteredWorkflows, defaultOrder: 1 },
     { type: 'templates', data: filteredTemplates, defaultOrder: 2 },
-    { type: 'inserts', data: filteredInserts, defaultOrder: 3 },
-    { type: 'addons', data: filteredAddons, defaultOrder: 4 }
+    { type: 'snippets', data: filteredSnippets, defaultOrder: 3 }
   ];
 
   // Sort sections - if in Home folder, use fixed order, otherwise sort by count
@@ -219,61 +213,61 @@ const Homepage = ({
           </div>
         );
 
-      case 'inserts':
+      case 'snippets':
         return (
-          <div className={isLast ? '' : 'mb-8'} key="inserts">
+          <div className={isLast ? '' : 'mb-8'} key="snippets">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-xl font-semibold text-gray-100 flex items-center gap-2">
                 <Tag className="w-5 h-5 text-gray-300" />
-                Inserts ({data.length})
+                Snippets ({data.length})
               </h2>
               <button
-                onClick={() => onEditInsert({})}
+                onClick={() => onEditSnippet({})}
                 className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 flex items-center gap-2 font-semibold"
               >
                 <Plus className="w-4 h-4" />
-                New Insert
+                New Snippet
               </button>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {data.map(insert => (
-                <div key={insert.id} className="bg-gray-800 rounded-lg shadow-md border border-gray-700 p-4 hover:shadow-lg transition-shadow">
+              {data.map(snippet => (
+                <div key={snippet.id} className="bg-gray-800 rounded-lg shadow-md border border-gray-700 p-4 hover:shadow-lg transition-shadow">
                   <div className="mb-3">
                     <div className="flex items-start justify-between">
-                      <h3 className="font-semibold text-gray-100 mb-1">{insert.name}</h3>
+                      <h3 className="font-semibold text-gray-100 mb-1">{snippet.name}</h3>
                       <div className="flex items-center gap-1">
-                        {insert.favorite && <Star className="w-4 h-4 text-yellow-300 fill-current" />}
+                        {snippet.favorite && <Star className="w-4 h-4 text-yellow-300 fill-current" />}
                       </div>
                     </div>
                     <div className="flex flex-wrap gap-1 mb-2">
-                      {(insert.tags || []).slice(0, 3).map((tag, index) => (
-                        <span key={index} className="px-2 py-1 bg-purple-800 text-purple-200 rounded text-xs">
+                      {(snippet.tags || []).slice(0, 3).map((tag, index) => (
+                        <span key={index} className="px-2 py-1 bg-gray-800 text-gray-300 border border-amber-600 rounded text-xs">
                           {tag}
                         </span>
                       ))}
-                      {(insert.tags || []).length > 3 && (
+                      {(snippet.tags || []).length > 3 && (
                         <span className="px-2 py-1 bg-gray-700 text-gray-300 rounded text-xs">
-                          +{(insert.tags || []).length - 3}
+                          +{(snippet.tags || []).length - 3}
                         </span>
                       )}
                     </div>
                   </div>
                   <div className="flex gap-2">
                     <button
-                      onClick={() => onExecuteItem({item: insert, type: 'insert'})}
+                      onClick={() => onExecuteItem({item: snippet, type: 'snippet'})}
                       className="flex-1 px-3 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 flex items-center justify-center gap-2 text-sm font-medium"
                     >
                       <Play className="w-4 h-4" />
                       Execute
                     </button>
                     <button
-                      onClick={() => onEditInsert(insert)}
+                      onClick={() => onEditSnippet(snippet)}
                       className="px-3 py-2 text-gray-300 border border-gray-600 rounded-md hover:bg-gray-700 flex items-center justify-center"
                     >
                       <Edit className="w-4 h-4" />
                     </button>
                     <button
-                      onClick={() => onDeleteInsert(insert.id)}
+                      onClick={() => onDeleteSnippet(snippet.id)}
                       className="px-3 py-2 text-red-400 border border-red-600 rounded-md hover:bg-red-900 flex items-center justify-center"
                     >
                       <Trash2 className="w-4 h-4" />
@@ -285,72 +279,6 @@ const Homepage = ({
           </div>
         );
 
-      case 'addons':
-        return (
-          <div className={isLast ? '' : 'mb-8'} key="addons">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-xl font-semibold text-gray-100 flex items-center gap-2">
-                <Puzzle className="w-5 h-5 text-gray-300" />
-                Add-ons ({data.length})
-              </h2>
-              <button
-                onClick={() => onEditAddon({})}
-                className="px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 flex items-center gap-2 font-semibold"
-              >
-                <Plus className="w-4 h-4" />
-                New Add-on
-              </button>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {data.map(addon => (
-                <div key={addon.id} className="bg-gray-800 rounded-lg shadow-md border border-gray-700 p-4 hover:shadow-lg transition-shadow">
-                  <div className="mb-3">
-                    <div className="flex items-start justify-between">
-                      <h3 className="font-semibold text-gray-100 mb-1">{addon.name}</h3>
-                      <div className="flex items-center gap-1">
-                        {addon.favorite && <Star className="w-4 h-4 text-yellow-300 fill-current" />}
-                      </div>
-                    </div>
-                    <p className="text-sm text-gray-300 mb-2">{addon.description}</p>
-                    <div className="flex flex-wrap gap-1 mb-2">
-                      {(addon.tags || []).slice(0, 3).map((tag, index) => (
-                        <span key={index} className="px-2 py-1 bg-orange-800 text-orange-200 rounded text-xs">
-                          {tag}
-                        </span>
-                      ))}
-                      {(addon.tags || []).length > 3 && (
-                        <span className="px-2 py-1 bg-gray-700 text-gray-300 rounded text-xs">
-                          +{(addon.tags || []).length - 3}
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                  <div className="flex gap-2">
-                    <button
-                      onClick={() => onExecuteItem({item: addon, type: 'addon'})}
-                      className="flex-1 px-3 py-2 bg-orange-600 text-white rounded-md hover:bg-orange-700 flex items-center justify-center gap-2 text-sm font-medium"
-                    >
-                      <Play className="w-4 h-4" />
-                      Execute
-                    </button>
-                    <button
-                      onClick={() => onEditAddon(addon)}
-                      className="px-3 py-2 text-gray-300 border border-gray-600 rounded-md hover:bg-gray-700 flex items-center justify-center"
-                    >
-                      <Edit className="w-4 h-4" />
-                    </button>
-                    <button
-                      onClick={() => onDeleteAddon(addon.id)}
-                      className="px-3 py-2 text-red-400 border border-red-600 rounded-md hover:bg-red-900 flex items-center justify-center"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        );
 
       default:
         return null;
@@ -395,7 +323,7 @@ const Homepage = ({
                 type="text"
                 id="searchQuery"
                 name="searchQuery"
-                placeholder="Search templates, workflows, inserts, and addons..."
+                placeholder="Search templates, workflows, and snippets..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="w-full pl-10 pr-4 py-3 border border-gray-600 bg-gray-800 text-gray-100 rounded-lg focus:ring-2 focus:ring-blue-400 focus:border-transparent placeholder-gray-400"

@@ -9,7 +9,7 @@ const TemplateEditor = ({ template, folders = [], onSave, onCancel }) => {
     description: template?.description || '',
     content: template?.content || '',
     folderId: template?.folderId || 'general',
-    addonTags: template?.addonTags || []
+    snippetTags: template?.snippetTags || []
   });
 
   const { variables, snippetVariables } = extractAllVariables(formData.content);
@@ -93,20 +93,20 @@ const TemplateEditor = ({ template, folders = [], onSave, onCancel }) => {
 
             <div>
               <label className="block text-sm font-medium text-gray-300 mb-2">
-                Addon Tags
+                Snippet Tags
               </label>
               <input
                 type="text"
-                value={formData.addonTags.join(', ')}
+                value={formData.snippetTags.join(', ')}
                 onChange={(e) => {
                   const tags = e.target.value.split(',').map(tag => tag.trim()).filter(tag => tag);
-                  setFormData({...formData, addonTags: tags});
+                  setFormData({...formData, snippetTags: tags});
                 }}
                 className="w-full p-3 border border-gray-600 bg-gray-800 text-gray-100 rounded-lg focus:ring-2 focus:ring-blue-400 focus:border-transparent"
-                placeholder="Enter addon tags separated by commas (e.g., enhancement, quality, technical)"
+                placeholder="Enter snippet tags separated by commas (e.g., enhancement, quality, technical)"
               />
               <p className="mt-1 text-sm text-gray-400">
-                Only addons with these tags will be shown when using this template
+                Only snippets with these tags will be shown when using this template
               </p>
             </div>
 
@@ -120,12 +120,12 @@ const TemplateEditor = ({ template, folders = [], onSave, onCancel }) => {
                 value={formData.content}
                 onChange={(e) => setFormData({...formData, content: e.target.value})}
                 className="w-full h-48 p-3 border border-gray-600 bg-gray-800 text-gray-100 rounded-lg focus:ring-2 focus:ring-blue-400 focus:border-transparent font-mono text-sm"
-                placeholder="Write your template here. Use {variable_name} for input fields..."
+                placeholder="Write your template here. Use {variable_name} for input fields and {{tagname}} for snippet dropdowns..."
               />
               <div className="text-sm text-gray-400 mt-2 space-y-1">
-                <p>Use curly braces {'{}'} to create input variables, like {'{topic}'} or {'{audience}'}</p>
-                <p>Use insert syntax for dropdowns: <code className="bg-gray-700 px-1 rounded">{'{insert:tagname}'}</code></p>
-                <p>Example: <code className="bg-gray-700 px-1 rounded">{'{insert:mood}'}</code> shows all inserts tagged with "mood"</p>
+                <p>Use single curly braces {'{}'} to create input variables, like <code className="bg-gray-700 px-1 rounded">{'{topic}'}</code> or <code className="bg-gray-700 px-1 rounded">{'{audience}'}</code></p>
+                <p>Use double curly braces for snippet dropdowns: <code className="bg-gray-700 px-1 rounded">{'{{tagname}}'}</code></p>
+                <p>Example: <code className="bg-gray-700 px-1 rounded">{'{{mood}}'}</code> shows all snippets tagged with "mood"</p>
               </div>
             </div>
           </div>

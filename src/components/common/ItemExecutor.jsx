@@ -1,41 +1,58 @@
 import React, { useState, useEffect } from 'react';
-import { Copy, ArrowLeft, ArrowRight, Check, Info, Tag, Plus } from 'lucide-react';
+import { Copy, ArrowLeft, ArrowRight, Check, Info, Tag, Plus, Edit } from 'lucide-react';
 import { copyToClipboard } from '../../utils/clipboard.js';
 import { extractAllVariables } from '../../types/template.types.js';
 
-const ItemExecutor = ({ item, type, inserts = [], addons = [], onComplete, onCancel }) => {
-  // Filter addons based on item's addon tags
-  const getFilteredAddons = () => {
-    if (!item.addonTags || item.addonTags.length === 0) {
-      return addons.filter(addon => addon.enabled);
+const ItemExecutor = ({ item, type, snippets = [], onComplete, onCancel, onEdit }) => {
+  const isWorkflow = type === 'workflow';
+  const steps = isWorkflow ? item.steps : [{ content: item.content, variables: item.variables }];
+  
+  // State voor huidige step
+  const [currentStep, setCurrentStep] = useState(0);
+  const currentStepData = steps[currentStep];
+  
+  // Different logic for different step types
+  const getStepType = () => {
+    if (!isWorkflow) return type; // Use the passed type prop for non-workflows
+    return currentStepData.type || 'template';
+  };
+  
+  const stepType = getStepType();
+  
+  // Filter snippets based on item's snippet tags (for auto-append functionality)
+  const getFilteredSnippets = () => {
+    // For info steps, never show snippets
+    if (stepType === 'info') {
+      return [];
     }
     
-    return addons.filter(addon => {
-      if (!addon.enabled) return false;
-      if (!addon.tags || addon.tags.length === 0) return false;
+    // If no tags are specified, don't show any snippets
+    if (!item.snippetTags || item.snippetTags.length === 0) {
+      return [];
+    }
+    
+    return snippets.filter(snippet => {
+      if (!snippet.enabled) return false;
+      if (!snippet.tags || snippet.tags.length === 0) return false;
       
-      // Check if addon has any of the item's tags
-      return item.addonTags.some(itemTag => 
-        addon.tags.some(addonTag => 
-          addonTag.toLowerCase() === itemTag.toLowerCase()
+      // Check if snippet has any of the item's tags
+      return item.snippetTags.some(itemTag => 
+        snippet.tags.some(snippetTag => 
+          snippetTag.toLowerCase() === itemTag.toLowerCase()
         )
       );
     });
   };
 
-  const filteredAddons = getFilteredAddons();
-  const [currentStep, setCurrentStep] = useState(0);
+  const filteredSnippets = getFilteredSnippets();
   const [variableValues, setVariableValues] = useState({});
   const [stepOutputs] = useState([]);
   const [copied, setCopied] = useState(false);
   const [completedSteps, setCompletedSteps] = useState([]);
   const [copiedAgainId, setCopiedAgainId] = useState(null);
   const [selectedTemplates, setSelectedTemplates] = useState({}); // stepId -> templateId
-  const [selectedAddons, setSelectedAddons] = useState(new Set()); // Set of addon IDs
+  const [selectedSnippets, setSelectedSnippets] = useState(new Set()); // Set of snippet IDs
 
-  const isWorkflow = type === 'workflow';
-  const steps = isWorkflow ? item.steps : [{ content: item.content, variables: item.variables }];
-  const currentStepData = steps[currentStep];
   
   // Get the current template for this step
   const getCurrentTemplate = () => {
@@ -58,30 +75,27 @@ const ItemExecutor = ({ item, type, inserts = [], addons = [], onComplete, onCan
   const getAllTemplateVariables = () => {
     if (!currentTemplate.content) return { variables: [], snippetVariables: [], sortedVariables: [] };
     
-    const { snippetVariables } = extractAllVariables(currentTemplate.content);
+    const { variables, snippetVariables } = extractAllVariables(currentTemplate.content);
     
     // Find all variables with their positions in the template
     const allMatches = [];
     const content = currentTemplate.content;
     
-    // Find regular variables
-    const regularMatches = content.match(/\{([^}]+)\}/g) || [];
-    const regularVariables = [];
-    regularMatches.forEach(match => {
-      const variable = match.slice(1, -1);
-      if (!variable.startsWith('insert:')) {
-        regularVariables.push(variable);
-        const position = content.indexOf(match);
+    // Find regular variables (single braces)
+    variables.forEach(variable => {
+      const placeholder = `{${variable}}`;
+      const position = content.indexOf(placeholder);
+      if (position !== -1) {
         allMatches.push({
           type: 'regular',
           variable,
-          placeholder: match,
+          placeholder,
           position
         });
       }
     });
     
-    // Find snippet variables
+    // Find snippet variables (double braces)
     snippetVariables.forEach(snippetVar => {
       const position = content.indexOf(snippetVar.placeholder);
       allMatches.push({
@@ -97,7 +111,7 @@ const ItemExecutor = ({ item, type, inserts = [], addons = [], onComplete, onCan
     const sortedVariables = allMatches.sort((a, b) => a.position - b.position);
     
     return { 
-      variables: regularVariables, 
+      variables, 
       snippetVariables, 
       sortedVariables 
     };
@@ -105,14 +119,6 @@ const ItemExecutor = ({ item, type, inserts = [], addons = [], onComplete, onCan
   
   const { snippetVariables, sortedVariables } = getAllTemplateVariables();
   const allVariables = sortedVariables.map(v => v.placeholder);
-  
-  // Different logic for different step types
-  const getStepType = () => {
-    if (!isWorkflow) return 'template';
-    return currentStepData.type || 'template';
-  };
-  
-  const stepType = getStepType();
   
   // Auto-focus first input on mount and step changes
   useEffect(() => {
@@ -144,7 +150,7 @@ const ItemExecutor = ({ item, type, inserts = [], addons = [], onComplete, onCan
     return () => clearTimeout(timer);
   }, [currentStep]);
 
-  // Auto-fill single option inserts
+  // Auto-fill single option snippets
   useEffect(() => {
     if (snippetVariables.length === 0) return;
     
@@ -153,13 +159,13 @@ const ItemExecutor = ({ item, type, inserts = [], addons = [], onComplete, onCan
     let autoFilledIndexes = [];
     
     snippetVariables.forEach((snippetVar, index) => {
-      const filteredInserts = inserts.filter(insert => 
-        insert.tags.includes(snippetVar.tag)
+      const filteredSnippets = snippets.filter(snippet => 
+        snippet.tags.includes(snippetVar.tag)
       );
       
       // Auto-fill if exactly one option and not already filled
-      if (filteredInserts.length === 1 && !variableValues[snippetVar.placeholder]) {
-        updatedValues[snippetVar.placeholder] = filteredInserts[0].content;
+      if (filteredSnippets.length === 1 && !variableValues[snippetVar.placeholder]) {
+        updatedValues[snippetVar.placeholder] = filteredSnippets[0].content;
         hasUpdates = true;
         autoFilledIndexes.push(index);
       }
@@ -186,7 +192,20 @@ const ItemExecutor = ({ item, type, inserts = [], addons = [], onComplete, onCan
         }, 150);
       }
     }
-  }, [snippetVariables, inserts, variableValues]);
+  }, [snippetVariables, snippets, variableValues]);
+
+  // Focus container for snippets without variables to enable Tab handling
+  useEffect(() => {
+    if (stepType === 'snippet' && sortedVariables.length === 0) {
+      const timer = setTimeout(() => {
+        const container = document.querySelector('div[tabindex="-1"]');
+        if (container) {
+          container.focus();
+        }
+      }, 100);
+      return () => clearTimeout(timer);
+    }
+  }, [stepType, sortedVariables.length]);
 
   const handleVariableChange = (variable, value) => {
     setVariableValues(prev => ({
@@ -420,21 +439,21 @@ const ItemExecutor = ({ item, type, inserts = [], addons = [], onComplete, onCan
       if (insertValue !== undefined) {
         // If insertValue is empty string, remove the placeholder entirely
         const replacementValue = insertValue === '' ? '' : insertValue;
-        output = output.replace(new RegExp(`\\{insert:${snippetVar.tag}\\}`, 'g'), replacementValue);
+        output = output.replace(new RegExp(`\\{\\{${snippetVar.tag}\\}\\}`, 'g'), replacementValue);
       }
     });
     
-    // Append selected addons content
-    const addonContent = Array.from(selectedAddons)
-      .map(addonId => {
-        const addon = filteredAddons.find(a => a.id === addonId);
-        return addon ? addon.content : '';
+    // Append selected snippets content (for auto-append functionality)
+    const snippetContent = Array.from(selectedSnippets)
+      .map(snippetId => {
+        const snippet = filteredSnippets.find(s => s.id === snippetId);
+        return snippet ? snippet.content : '';
       })
       .filter(content => content.trim() !== '')
       .join('\n\n');
     
-    if (addonContent) {
-      output += '\n\n' + addonContent;
+    if (snippetContent) {
+      output += '\n\n' + snippetContent;
     }
     
     return output;
@@ -442,20 +461,13 @@ const ItemExecutor = ({ item, type, inserts = [], addons = [], onComplete, onCan
 
   const handleKeyDown = (e, isLastInput = false, currentIndex = 0) => {
     if ((e.key === 'Tab' || e.key === 'Enter') && isLastInput && canProceed) {
-      // If this is the last input and user tabs/enters, check if we can auto-copy
-      if (sortedVariables.length <= 3) {
-        // Auto-copy for simple templates
-        e.preventDefault();
-        handleCopyAndNext();
-      } else if (e.key === 'Tab') {
-        // For complex templates, Tab should also auto-copy
-        e.preventDefault();
-        handleCopyAndNext();
-      } else if (e.key === 'Enter') {
-        // For complex templates, Enter should still auto-copy
-        e.preventDefault();
-        handleCopyAndNext();
-      }
+      // If this is the last input and user tabs/enters, auto-copy (especially for snippets)
+      e.preventDefault();
+      handleCopyAndNext();
+    } else if ((e.key === 'Tab' || e.key === 'Enter') && stepType === 'snippet' && canProceed) {
+      // For snippets, always auto-copy on Tab/Enter regardless of position
+      e.preventDefault();
+      handleCopyAndNext();
     } else if (e.key === 'Enter' && !isLastInput) {
       // Move to next input field on Enter
       e.preventDefault();
@@ -467,8 +479,8 @@ const ItemExecutor = ({ item, type, inserts = [], addons = [], onComplete, onCan
   };
 
   const handleGlobalKeyDown = (e) => {
-    if ((stepType === 'info' || stepType === 'insert') && (e.key === 'Tab' || e.key === 'Enter')) {
-      // For info/insert steps, Tab or Enter should move to next step
+    if ((stepType === 'info' || stepType === 'insert' || stepType === 'snippet') && (e.key === 'Tab' || e.key === 'Enter')) {
+      // For info/insert/snippet steps, Tab or Enter should move to next step or copy
       e.preventDefault();
       if (stepType === 'info') {
         handleNextStep();
@@ -483,7 +495,7 @@ const ItemExecutor = ({ item, type, inserts = [], addons = [], onComplete, onCan
     if (isWorkflow && currentStep < steps.length - 1) {
       setCurrentStep(currentStep + 1);
       setVariableValues({});
-      setSelectedAddons(new Set()); // Reset addon selection for new step
+      setSelectedSnippets(new Set()); // Reset addon selection for new step
     } else {
       onComplete();
     }
@@ -498,18 +510,18 @@ const ItemExecutor = ({ item, type, inserts = [], addons = [], onComplete, onCan
       output = generateOutput();
     }
     
-    // Append selected addons content for insert steps too
-    if (stepType === 'insert' && selectedAddons.size > 0) {
-      const addonContent = Array.from(selectedAddons)
-        .map(addonId => {
-          const addon = filteredAddons.find(a => a.id === addonId);
-          return addon ? addon.content : '';
+    // Append selected snippets content for insert steps too
+    if (stepType === 'insert' && selectedSnippets.size > 0) {
+      const snippetContent = Array.from(selectedSnippets)
+        .map(snippetId => {
+          const snippet = filteredSnippets.find(s => s.id === snippetId);
+          return snippet ? snippet.content : '';
         })
         .filter(content => content.trim() !== '')
         .join('\n\n');
       
-      if (addonContent) {
-        output += '\n\n' + addonContent;
+      if (snippetContent) {
+        output += '\n\n' + snippetContent;
       }
     }
     
@@ -526,7 +538,7 @@ const ItemExecutor = ({ item, type, inserts = [], addons = [], onComplete, onCan
           // Move to next step in workflow
           setCurrentStep(currentStep + 1);
           setVariableValues({});
-          setSelectedAddons(new Set()); // Reset addon selection for new step
+          setSelectedSnippets(new Set()); // Reset addon selection for new step
         } else {
           // Complete the execution
           onComplete();
@@ -539,7 +551,7 @@ const ItemExecutor = ({ item, type, inserts = [], addons = [], onComplete, onCan
     if (currentStep > 0) {
       setCurrentStep(currentStep - 1);
       setVariableValues({});
-      setSelectedAddons(new Set()); // Reset addon selection when going back
+      setSelectedSnippets(new Set()); // Reset addon selection when going back
       // Remove the completed step we're going back to
       setCompletedSteps(completedSteps.filter(step => step.stepIndex !== currentStep - 1));
     }
@@ -622,23 +634,27 @@ const ItemExecutor = ({ item, type, inserts = [], addons = [], onComplete, onCan
             >
               Cancel
             </button>
-            {completedSteps.length > 0 && (
+            {stepType === 'snippet' && onEdit && (
               <button
-                onClick={handlePrevious}
-                className="px-4 py-2 bg-gray-800 text-gray-100 rounded-lg hover:bg-gray-700 flex items-center gap-2"
+                onClick={() => onEdit(item)}
+                className="px-4 py-2 bg-gray-700 text-gray-100 rounded-lg hover:bg-gray-600 flex items-center gap-2"
                 tabIndex={allVariables.length + 3 || 3}
               >
-                <ArrowLeft className="w-4 h-4" />
-                Previous Step
+                <Edit className="w-4 h-4" />
+                Edit Snippet
               </button>
             )}
             <button
               onClick={stepType === 'info' ? handleNextStep : handleCopyAndNext}
               onKeyDown={(e) => e.key === 'Enter' && (stepType === 'info' ? handleNextStep() : handleCopyAndNext())}
               disabled={!canProceed || needsTemplateSelection}
-              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+              className={`px-4 py-2 text-white rounded-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 ${
+                stepType === 'snippet' 
+                  ? 'bg-purple-600 hover:bg-purple-700' 
+                  : 'bg-blue-600 hover:bg-blue-700'
+              }`}
               tabIndex={allVariables.length + 1 || 1}
-              data-action-button={stepType === 'info' || stepType === 'insert' ? 'true' : undefined}
+              data-action-button={stepType === 'info' || stepType === 'insert' || stepType === 'snippet' ? 'true' : undefined}
             >
               {stepType === 'info' ? (
                 <ArrowRight className="w-4 h-4" />
@@ -649,6 +665,8 @@ const ItemExecutor = ({ item, type, inserts = [], addons = [], onComplete, onCan
                 isWorkflow && currentStep < steps.length - 1 ? 'Next Step' : 'Complete'
               ) : stepType === 'insert' ? (
                 isWorkflow && currentStep < steps.length - 1 ? 'Copy Insert & Next' : 'Copy Insert'
+              ) : stepType === 'snippet' ? (
+                isWorkflow && currentStep < steps.length - 1 ? 'Copy Snippet & Next' : 'Copy Snippet'
               ) : (
                 isWorkflow && currentStep < steps.length - 1 ? 'Copy & Next Step' : 'Copy & Complete'
               )}
@@ -656,10 +674,27 @@ const ItemExecutor = ({ item, type, inserts = [], addons = [], onComplete, onCan
           </div>
         </div>
 
-        <div className={`grid gap-6 ${stepType === 'template' ? 'grid-cols-1 lg:grid-cols-12' : 'grid-cols-1 lg:grid-cols-2'}`}>
-          <div className={`space-y-4 ${stepType === 'template' ? 'lg:col-span-3' : ''}`}>{stepType === 'template' && (
+        {/* Info Step - Centered */}
+        {stepType === 'info' && (
+          <div className="max-w-4xl mx-auto mb-6">
+            <div className="bg-green-900 rounded-lg p-6 border border-green-700">
+              <h3 className="text-lg font-semibold text-green-100 mb-3 flex items-center gap-2">
+                <Info className="w-5 h-5" />
+                Information Step
+              </h3>
+              <div className="text-green-200 whitespace-pre-wrap">
+                {currentStepData.content || 'No information provided for this step.'}
+              </div>
+            </div>
+          </div>
+        )}
+
+        <div className={`grid gap-6 ${stepType === 'template' ? 'grid-cols-1 lg:grid-cols-12' : stepType === 'snippet' && sortedVariables.length > 0 ? 'grid-cols-1 lg:grid-cols-2' : stepType === 'snippet' ? 'grid-cols-1' : 'grid-cols-1 lg:grid-cols-2'}`}>
+          <div className={`space-y-4 ${stepType === 'template' ? 'lg:col-span-3' : ''}`}>{(stepType === 'template' || (stepType === 'snippet' && sortedVariables.length > 0)) && (
             <>
-              <h3 className="text-lg font-semibold text-gray-100 mb-3">Fill in Variables</h3>
+              {stepType !== 'snippet' && (
+                <h3 className="text-lg font-semibold text-gray-100 mb-3">Fill in Variables</h3>
+              )}
               {needsTemplateSelection ? (
                 <p className="text-gray-500 italic">Select a template above to see variables</p>
               ) : (
@@ -672,7 +707,7 @@ const ItemExecutor = ({ item, type, inserts = [], addons = [], onComplete, onCan
                 if (varData.type === 'regular') {
                   const variable = varData.variable;
                   return (
-                    <div key={variable} className="mb-4">
+                    <div key={`regular-${index}-${variable}`} className="mb-4">
                       <label className="block text-sm font-medium text-gray-300 mb-2">
                         {variable.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
                       </label>
@@ -704,18 +739,18 @@ const ItemExecutor = ({ item, type, inserts = [], addons = [], onComplete, onCan
                 } else {
                   // Snippet variable
                   const snippetVar = varData.snippetVar;
-                  const filteredInserts = inserts.filter(insert => 
-                    insert.tags.includes(snippetVar.tag)
+                  const filteredSnippets = snippets.filter(snippet => 
+                    snippet.tags.includes(snippetVar.tag)
                   );
                   
                   return (
-                    <div key={snippetVar.placeholder} className="mb-4 relative">
+                    <div key={`snippet-${index}-${snippetVar.placeholder}`} className="mb-4 relative">
                       <label className="block text-sm font-medium text-gray-300 mb-2">
-                        {snippetVar.tag.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())} (Insert)
-                        {filteredInserts.length === 1 && (
+                        {snippetVar.tag.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())} (Snippet)
+                        {filteredSnippets.length === 1 && (
                           <span className="ml-2 text-sm text-green-400">(Auto-filled)</span>
                         )}
-                        {filteredInserts.length > 1 && (
+                        {filteredSnippets.length > 1 && (
                           <span className="ml-2 text-xs text-gray-500">(↑↓ arrows to navigate, Enter/Tab to select)</span>
                         )}
                       </label>
@@ -725,34 +760,38 @@ const ItemExecutor = ({ item, type, inserts = [], addons = [], onComplete, onCan
                         onKeyDown={(e) => handleDropdownKeyDown(e, snippetVar.placeholder, index, isLast)}
                         onFocus={handleDropdownFocus}
                         onBlur={handleDropdownBlur}
-                        className="w-full p-3 border border-gray-600 bg-gray-800 text-gray-100 rounded-lg focus:ring-2 focus:ring-purple-400 focus:border-transparent cursor-pointer transition-all duration-200"
+                        className={`w-full p-3 border rounded-lg transition-all duration-200 ${
+                          filteredSnippets.length <= 1 
+                            ? 'border-gray-700 bg-gray-900 text-gray-400 cursor-not-allowed' 
+                            : 'border-gray-600 bg-gray-800 text-gray-100 focus:ring-2 focus:ring-purple-400 focus:border-transparent cursor-pointer'
+                        }`}
                         tabIndex={index + 1}
                         data-first-input={isFirst}
                         data-variable={snippetVar.placeholder}
-                        disabled={filteredInserts.length === 1}
+                        disabled={filteredSnippets.length <= 1}
                       >
-                        {filteredInserts.length === 0 && (
-                          <option value="">No inserts found with tag "{snippetVar.tag}"</option>
+                        {filteredSnippets.length === 0 && (
+                          <option value="">No snippets found with tag "{snippetVar.tag}"</option>
                         )}
-                        {filteredInserts.length === 1 && (
-                          <option value={filteredInserts[0].content}>
-                            {filteredInserts[0].name}
+                        {filteredSnippets.length === 1 && (
+                          <option value={filteredSnippets[0].content}>
+                            {filteredSnippets[0].name}
                           </option>
                         )}
-                        {filteredInserts.length > 1 && (
+                        {filteredSnippets.length > 1 && (
                           <>
-                            <option value="">🚫 No insert</option>
-                            {filteredInserts.map(insert => (
-                              <option key={insert.id} value={insert.content}>
-                                {insert.name}
+                            <option value="">🚫 No snippet</option>
+                            {filteredSnippets.map(snippet => (
+                              <option key={snippet.id} value={snippet.content}>
+                                {snippet.name}
                               </option>
                             ))}
                           </>
                         )}
                       </select>
-                      {filteredInserts.length === 0 && (
+                      {filteredSnippets.length === 0 && (
                         <p className="text-sm text-yellow-400 mt-1">
-                          No inserts found with tag "{snippetVar.tag}"
+                          No snippets found with tag "{snippetVar.tag}"
                         </p>
                       )}
                     </div>
@@ -760,7 +799,7 @@ const ItemExecutor = ({ item, type, inserts = [], addons = [], onComplete, onCan
                 }
               })}
               
-                  {sortedVariables.length === 0 && (
+                  {sortedVariables.length === 0 && stepType !== 'snippet' && (
                     <p className="text-gray-500">No variables to fill for this step.</p>
                   )}
                 </>
@@ -787,7 +826,7 @@ const ItemExecutor = ({ item, type, inserts = [], addons = [], onComplete, onCan
                           [currentStepData.id]: template.id
                         });
                         setVariableValues({}); // Reset variables when template changes
-                        // Keep addons selection when template changes
+                        // Keep snippets selection when template changes
                       }}
                     >
                       <h4 className="font-medium text-gray-100 mb-1">{template.name}</h4>
@@ -803,17 +842,6 @@ const ItemExecutor = ({ item, type, inserts = [], addons = [], onComplete, onCan
                 </div>
               </div>
             )}
-            {stepType === 'info' && (
-              <div className="bg-green-900 rounded-lg p-4 border border-green-700">
-                <h3 className="text-lg font-semibold text-green-100 mb-3 flex items-center gap-2">
-                  <Info className="w-5 h-5" />
-                  Information Step
-                </h3>
-                <div className="text-green-200 whitespace-pre-wrap">
-                  {currentStepData.content || 'No information provided for this step.'}
-                </div>
-              </div>
-            )}
             
             {stepType === 'insert' && (
               <div className="bg-purple-900 rounded-lg p-4 border border-purple-700">
@@ -824,10 +852,10 @@ const ItemExecutor = ({ item, type, inserts = [], addons = [], onComplete, onCan
                 <div className="text-purple-200 whitespace-pre-wrap">
                   {currentStepData.insertContent || 'No insert selected for this step.'}
                 </div>
-                {selectedAddons.size > 0 && (
+                {selectedSnippets.size > 0 && (
                   <div className="mt-3 pt-3 border-t border-purple-700">
                     <p className="text-sm text-purple-300 mb-2">
-                      + {selectedAddons.size} add-on{selectedAddons.size > 1 ? 's' : ''} will be appended
+                      + {selectedSnippets.size} snippet{selectedSnippets.size > 1 ? 's' : ''} will be appended
                     </p>
                   </div>
                 )}
@@ -835,9 +863,9 @@ const ItemExecutor = ({ item, type, inserts = [], addons = [], onComplete, onCan
             )}
           </div>
 
-          {/* Middle Column - Preview (only for template steps) */}
-          {stepType === 'template' && (
-            <div className="space-y-4 lg:col-span-6">
+          {/* Middle/Right Column - Preview (for template and snippet steps) */}
+          {(stepType === 'template' || stepType === 'snippet') && (
+            <div className={`space-y-4 ${stepType === 'template' ? 'lg:col-span-6' : ''}`}>
               <div>
                 <h3 className="text-lg font-semibold text-gray-100 mb-3">{isWorkflow ? 'Current Step Preview' : 'Preview'}</h3>
                 <div className="bg-gray-800 rounded-lg p-4 border border-gray-700 min-h-48">
@@ -855,49 +883,50 @@ const ItemExecutor = ({ item, type, inserts = [], addons = [], onComplete, onCan
             </div>
           )}
 
-          {/* Right Column - Addons and other content */}
-          <div className={`space-y-4 ${stepType === 'template' ? 'lg:col-span-3' : ''}`}>
-            {/* Addon Selection - Show for all step types */}
-            {filteredAddons.length > 0 && (
+          {/* Right Column - Only show for template and workflow steps */}
+          {stepType !== 'snippet' && (
+            <div className={`space-y-4 ${stepType === 'template' ? 'lg:col-span-3' : ''}`}>
+            {/* Snippet Selection - Show for templates and workflows */}
+            {filteredSnippets.length > 0 && (
               <div>
                 <h3 className="text-lg font-semibold text-gray-100 mb-3 flex items-center gap-2">
-                  <Plus className="w-5 h-5 text-orange-400" />
-                  Add-ons
+                  <Plus className="w-5 h-5 text-blue-400" />
+                  Snippets
                 </h3>
                 <div className="space-y-2">
-                  {filteredAddons.map((addon) => (
+                  {filteredSnippets.map((snippet) => (
                       <div
-                        key={addon.id}
+                        key={snippet.id}
                         className={`p-3 border rounded-lg cursor-pointer transition-colors ${
-                          selectedAddons.has(addon.id)
-                            ? 'border-orange-500 bg-orange-900/30'
+                          selectedSnippets.has(snippet.id)
+                            ? 'border-blue-500 bg-blue-900/30'
                             : 'border-gray-600 bg-gray-800 hover:bg-gray-700'
                         }`}
                         onClick={() => {
-                          const newSelected = new Set(selectedAddons);
-                          if (newSelected.has(addon.id)) {
-                            newSelected.delete(addon.id);
+                          const newSelected = new Set(selectedSnippets);
+                          if (newSelected.has(snippet.id)) {
+                            newSelected.delete(snippet.id);
                           } else {
-                            newSelected.add(addon.id);
+                            newSelected.add(snippet.id);
                           }
-                          setSelectedAddons(newSelected);
+                          setSelectedSnippets(newSelected);
                         }}
                       >
                         <div className="flex items-start gap-3">
                           <div className="flex-shrink-0 mt-1">
                             <div className={`w-4 h-4 rounded border-2 flex items-center justify-center ${
-                              selectedAddons.has(addon.id)
-                                ? 'bg-orange-500 border-orange-500'
+                              selectedSnippets.has(snippet.id)
+                                ? 'bg-blue-500 border-blue-500'
                                 : 'border-gray-400'
                             }`}>
-                              {selectedAddons.has(addon.id) && (
+                              {selectedSnippets.has(snippet.id) && (
                                 <Check className="w-3 h-3 text-white" />
                               )}
                             </div>
                           </div>
                           <div className="flex-1">
-                            <h4 className="font-medium text-gray-100 mb-1">{addon.name}</h4>
-                            <p className="text-sm text-gray-300">{addon.description}</p>
+                            <h4 className="font-medium text-gray-100 mb-1">{snippet.name}</h4>
+                            <p className="text-sm text-gray-300">{snippet.description}</p>
                           </div>
                         </div>
                       </div>
@@ -906,37 +935,37 @@ const ItemExecutor = ({ item, type, inserts = [], addons = [], onComplete, onCan
               </div>
             )}
 
-            {/* Selected Addons Preview - Show for all step types */}
-            {selectedAddons.size > 0 && (
+            {/* Selected Snippets Preview - Show for all step types */}
+            {selectedSnippets.size > 0 && (
               <div>
                 <h3 className="text-lg font-semibold text-gray-100 mb-3 flex items-center gap-2">
-                  <Plus className="w-5 h-5 text-orange-400" />
-                  Selected Add-ons ({selectedAddons.size})
+                  <Plus className="w-5 h-5 text-blue-400" />
+                  Selected Snippets ({selectedSnippets.size})
                 </h3>
                 <div className="space-y-2 max-h-48 overflow-y-auto">
-                  {Array.from(selectedAddons).map((addonId) => {
-                    const addon = filteredAddons.find(a => a.id === addonId);
-                    if (!addon) return null;
+                  {Array.from(selectedSnippets).map((snippetId) => {
+                    const snippet = filteredSnippets.find(s => s.id === snippetId);
+                    if (!snippet) return null;
                     
                     return (
-                      <div key={addonId} className="bg-orange-900 rounded-lg p-3 border border-orange-700">
+                      <div key={snippetId} className="bg-blue-900 rounded-lg p-3 border border-blue-700">
                         <div className="flex items-center justify-between mb-1">
-                          <p className="text-sm font-medium text-orange-100">
-                            {addon.name}
+                          <p className="text-sm font-medium text-blue-100">
+                            {snippet.name}
                           </p>
                           <button
                             onClick={() => {
-                              const newSelected = new Set(selectedAddons);
-                              newSelected.delete(addonId);
-                              setSelectedAddons(newSelected);
+                              const newSelected = new Set(selectedSnippets);
+                              newSelected.delete(snippetId);
+                              setSelectedSnippets(newSelected);
                             }}
-                            className="text-xs text-orange-300 hover:text-orange-100"
+                            className="text-xs text-blue-300 hover:text-blue-100"
                           >
                             Remove
                           </button>
                         </div>
-                        <div className="text-xs text-orange-200">
-                          {addon.description}
+                        <div className="text-xs text-blue-200">
+                          {snippet.description}
                         </div>
                       </div>
                     );
@@ -945,35 +974,6 @@ const ItemExecutor = ({ item, type, inserts = [], addons = [], onComplete, onCan
               </div>
             )}
 
-            {isWorkflow && completedSteps.length > 0 && (
-              <div>
-                <h3 className="text-lg font-semibold text-gray-100 mb-3">Completed Steps</h3>
-                <div className="space-y-2 max-h-48 overflow-y-auto">
-                  {completedSteps.map((completedStep, index) => (
-                    <div key={index} className="bg-green-900 rounded-lg p-3 border border-green-700">
-                      <div className="flex items-center justify-between mb-1">
-                        <p className="text-xs font-medium text-green-100">
-                          Step {completedStep.stepIndex + 1} ✓
-                        </p>
-                        <button
-                          onClick={async () => {
-                            const success = await copyToClipboard(completedStep.output);
-                            if (success) {
-                              setCopiedAgainId(completedStep.stepIndex);
-                              setTimeout(() => setCopiedAgainId(null), 1500);
-                            }
-                          }}
-                          className="text-xs text-green-300 hover:text-green-100"
-                        >
-                          {copiedAgainId === completedStep.stepIndex ? 'Copied! ✓' : 'Copy Again'}
-                        </button>
-                      </div>
-                      <p className="text-sm text-gray-200 truncate">{completedStep.output}</p>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
 
             {isWorkflow && stepType !== 'info' && (
               <div className="bg-blue-900 rounded-lg p-4 border border-blue-700">
@@ -984,7 +984,8 @@ const ItemExecutor = ({ item, type, inserts = [], addons = [], onComplete, onCan
                 </p>
               </div>
             )}
-          </div>
+            </div>
+          )}
         </div>
       </div>
     </div>

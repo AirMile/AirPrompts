@@ -130,5 +130,164 @@
     "lastUsed": "2025-01-13T00:00:00.000Z", 
     "createdAt": "2025-01-13T00:00:00.000Z",
     "updatedAt": "2025-01-13T00:00:00.000Z"
+  },
+  {
+    "id": 201,
+    "name": "🧪 TEST: Complete Workflow",
+    "description": "Test workflow testing all functionality types",
+    "steps": [
+      {
+        "id": "step1",
+        "name": "Info Step - Introduction",
+        "type": "info",
+        "content": "Welcome to the comprehensive test workflow!\n\nThis workflow will test:\n✓ Info steps (like this one)\n✓ Template steps with variables\n✓ Template steps with snippets\n✓ Mixed template steps\n✓ Previous output handling\n\nClick 'Next Step' to continue."
+      },
+      {
+        "id": "step2", 
+        "name": "Template with Variables Only",
+        "type": "template",
+        "content": "**Step 2: Variables Test**\n\nProject: {project_name}\nDescription: {description}\nPriority: {priority}\n\nThis step tests basic variable input functionality.",
+        "variables": ["project_name", "description", "priority"]
+      },
+      {
+        "id": "step3",
+        "name": "Template with Snippets Only", 
+        "type": "template",
+        "content": "**Step 3: Snippets Test**\n\n{{mood}} {{style}} {{tone}}\n\nThis step tests snippet dropdown functionality.",
+        "variables": []
+      },
+      {
+        "id": "step4",
+        "name": "Mixed Template with Variables + Snippets",
+        "type": "template", 
+        "content": "**Step 4: Mixed Test**\n\nPrevious output: {previous_output}\n\nUser input: {user_input}\nDate: {date}\n\n{{professional}} {{detailed}}\n\nThis step tests variables, snippets, and previous output together.",
+        "variables": ["previous_output", "user_input", "date"]
+      },
+      {
+        "id": "step5",
+        "name": "Final Info Step",
+        "type": "info",
+        "content": "🎉 Test workflow completed!\n\nYou have successfully tested:\n✅ Info steps\n✅ Variable input\n✅ Snippet dropdowns  \n✅ Mixed functionality\n✅ Previous output handling\n✅ Multi-step workflow\n\nAll functionality is working correctly!"
+      }
+    ],
+    "category": "Testing",
+    "folderId": "workflows",
+    "lastUsed": "2025-01-14T00:00:00.000Z",
+    "createdAt": "2025-01-14T00:00:00.000Z", 
+    "updatedAt": "2025-01-14T00:00:00.000Z"
+  },
+  {
+    "id": 202,
+    "name": "🧪 TEST: Workflow with Snippet Tags",
+    "description": "Test workflow demonstrating snippet tags across multiple steps",
+    "steps": [
+      {
+        "id": "step1",
+        "name": "Planning with Mood Snippets",
+        "type": "template",
+        "content": "Create a project plan for: {project_name}\n\n**Project Details:**\n- Objective: {objective}\n- Timeline: {timeline}\n- Budget: {budget}\n\nDevelop a comprehensive plan that addresses all requirements.",
+        "variables": ["project_name", "objective", "timeline", "budget"],
+        "snippetTags": ["mood", "professional"]
+      },
+      {
+        "id": "step2", 
+        "name": "Implementation with Style Snippets",
+        "type": "template",
+        "content": "Based on the plan: {previous_output}\n\n**Implementation Phase:**\n- Technology: {technology}\n- Team Size: {team_size}\n- Approach: {approach}\n\nOutline the implementation strategy with specific details.",
+        "variables": ["previous_output", "technology", "team_size", "approach"],
+        "snippetTags": ["style", "structured"]
+      },
+      {
+        "id": "step3",
+        "name": "Review with Multiple Tag Types",
+        "type": "template", 
+        "content": "Review the implementation plan: {previous_output}\n\n**Review Focus:**\n- Quality: {quality_criteria}\n- Risks: {risk_factors}\n- Success Metrics: {success_metrics}\n\nProvide comprehensive review and recommendations.",
+        "variables": ["previous_output", "quality_criteria", "risk_factors", "success_metrics"],
+        "snippetTags": ["tone", "analysis", "quality"]
+      }
+    ],
+    "category": "Testing",
+    "folderId": "workflows",
+    "lastUsed": "2025-01-14T00:00:00.000Z",
+    "createdAt": "2025-01-14T00:00:00.000Z",
+    "updatedAt": "2025-01-14T00:00:00.000Z"
+  },
+  {
+    "id": 203,
+    "name": "🧪 TEST: Workflow Mixed Step Types + Tags",
+    "description": "Test workflow with info, template, and snippet steps using tags",
+    "steps": [
+      {
+        "id": "step1",
+        "name": "Info Introduction",
+        "type": "info",
+        "content": "🧪 TESTING WORKFLOW STEP TYPES WITH SNIPPET TAGS\n\nThis workflow tests:\n✓ Info steps (this step)\n✓ Template steps with snippet tags\n✓ Mixed functionality\n\nProceed to test template steps with snippet tag functionality.",
+        "snippetTags": []
+      },
+      {
+        "id": "step2",
+        "name": "Template Step with Enhancement Tags",
+        "type": "template", 
+        "content": "Analyze the following scenario: {scenario}\n\n**Analysis Requirements:**\n- Context: {context}\n- Stakeholders: {stakeholders}\n- Constraints: {constraints}\n\nProvide detailed analysis with actionable recommendations.",
+        "variables": ["scenario", "context", "stakeholders", "constraints"],
+        "snippetTags": ["enhancement", "detailed", "analysis"]
+      },
+      {
+        "id": "step3",
+        "name": "Template Step with Mood/Style Tags",
+        "type": "template",
+        "content": "Based on the analysis: {previous_output}\n\n**Action Plan:**\n- Priority Actions: {priority_actions}\n- Resources Needed: {resources}\n- Timeline: {timeline}\n\nCreate an actionable implementation plan.",
+        "variables": ["previous_output", "priority_actions", "resources", "timeline"],
+        "snippetTags": ["mood", "style", "actionable"]
+      },
+      {
+        "id": "step4",
+        "name": "Final Info Summary",
+        "type": "info",
+        "content": "🎉 WORKFLOW TESTING COMPLETE!\n\nYou have successfully tested:\n✅ Info steps with no tags\n✅ Template steps with enhancement tags\n✅ Template steps with mood/style tags\n✅ Previous output handling\n✅ Mixed step types in workflow\n\nThe snippet tag system is working correctly across all step types!",
+        "snippetTags": []
+      }
+    ],
+    "category": "Testing",
+    "folderId": "workflows",
+    "lastUsed": "2025-01-14T00:00:00.000Z",
+    "createdAt": "2025-01-14T00:00:00.000Z", 
+    "updatedAt": "2025-01-14T00:00:00.000Z"
+  },
+  {
+    "id": 204,
+    "name": "🧪 TEST: Workflow with Variable Snippet Combinations", 
+    "description": "Test workflow with different snippet tag combinations per step",
+    "steps": [
+      {
+        "id": "step1",
+        "name": "Research Phase - Technical Focus",
+        "type": "template",
+        "content": "Research {research_topic} for the following project:\n\n**Research Scope:**\n- Technical requirements: {technical_requirements}\n- Market analysis: {market_scope}\n- Competitive landscape: {competitive_analysis}\n\nProvide comprehensive research findings.",
+        "variables": ["research_topic", "technical_requirements", "market_scope", "competitive_analysis"],
+        "snippetTags": ["technical", "detailed", "analysis"]
+      },
+      {
+        "id": "step2",
+        "name": "Strategy Phase - Creative Focus", 
+        "type": "template",
+        "content": "Develop strategy based on research: {previous_output}\n\n**Strategy Components:**\n- Approach: {strategic_approach}\n- Innovation opportunities: {innovation_areas}\n- Differentiation: {differentiation_strategy}\n\nCreate innovative strategic recommendations.",
+        "variables": ["previous_output", "strategic_approach", "innovation_areas", "differentiation_strategy"],
+        "snippetTags": ["creativity", "innovative", "professional"]
+      },
+      {
+        "id": "step3",
+        "name": "Implementation Phase - Practical Focus",
+        "type": "template",
+        "content": "Create implementation plan: {previous_output}\n\n**Implementation Details:**\n- Action items: {action_items}\n- Resources: {resource_requirements}\n- Timeline: {implementation_timeline}\n\nDevelop practical, actionable implementation plan.",
+        "variables": ["previous_output", "action_items", "resource_requirements", "implementation_timeline"],
+        "snippetTags": ["actionable", "structured", "productivity"]
+      }
+    ],
+    "category": "Testing",
+    "folderId": "workflows",
+    "lastUsed": "2025-01-14T00:00:00.000Z",
+    "createdAt": "2025-01-14T00:00:00.000Z",
+    "updatedAt": "2025-01-14T00:00:00.000Z"
   }
 ]

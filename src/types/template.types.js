@@ -1,16 +1,16 @@
 // Template type definitions and utility functions
 
 /**
- * Extract insert variables from template content
- * @param {string} content - Template content with {insert:tagname} placeholders
- * @returns {Object[]} Array of insert variable objects
+ * Extract snippet variables from template content
+ * @param {string} content - Template content with {{tagname}} placeholders
+ * @returns {Object[]} Array of snippet variable objects
  */
 export const extractSnippetVariables = (content) => {
-  const insertMatches = content.match(/\{insert:([^}]+)\}/g);
-  return insertMatches ? insertMatches.map(match => {
-    const tag = match.match(/\{insert:([^}]+)\}/)[1];
+  const snippetMatches = content.match(/\{\{([^}]+)\}\}/g);
+  return snippetMatches ? snippetMatches.map(match => {
+    const tag = match.match(/\{\{([^}]+)\}\}/)[1];
     return {
-      type: 'insert',
+      type: 'snippet',
       tag,
       placeholder: match
     };
@@ -23,19 +23,24 @@ export const extractSnippetVariables = (content) => {
  * @returns {string[]} Array of variable names
  */
 export const extractVariables = (content) => {
-  const matches = content.match(/\{([^}]+)\}/g);
+  // First remove all double brace patterns from content to avoid conflicts
+  let cleanContent = content;
+  const doubleMatches = content.match(/\{\{([^}]+)\}\}/g) || [];
+  doubleMatches.forEach(doubleMatch => {
+    cleanContent = cleanContent.replace(doubleMatch, '');
+  });
+  
+  // Then extract single brace patterns from the clean content
+  const matches = cleanContent.match(/\{([^}]+)\}/g);
   if (!matches) return [];
   
-  // Filter out insert variables
-  return matches
-    .map(match => match.slice(1, -1))
-    .filter(variable => !variable.startsWith('insert:'));
+  return [...new Set(matches.map(match => match.slice(1, -1)))];
 };
 
 /**
- * Extract all variables (both regular and insert) from template content
+ * Extract all variables (both regular and snippet) from template content
  * @param {string} content - Template content
- * @returns {Object} Object with regular variables and insert variables
+ * @returns {Object} Object with regular variables and snippet variables
  */
 export const extractAllVariables = (content) => {
   return {
@@ -60,7 +65,7 @@ export const createTemplate = (data = {}) => {
     content,
     folderId: data.folderId || 'general',
     variables: data.variables || extractVariables(content),
-    addonTags: data.addonTags || [],
+    snippetTags: data.snippetTags || [],
     lastUsed: data.lastUsed || now,
     favorite: data.favorite || false,
     createdAt: data.createdAt || now,
@@ -101,7 +106,7 @@ export const createWorkflow = (data = {}) => {
     description: data.description || '',
     steps: data.steps || [],
     folderId: data.folderId || 'workflows',
-    addonTags: data.addonTags || [],
+    snippetTags: data.snippetTags || [],
     lastUsed: data.lastUsed || now,
     favorite: data.favorite || false,
     createdAt: data.createdAt || now,
@@ -188,7 +193,7 @@ export const validateTemplate = (template) => {
 };
 
 /**
- * Create a new snippet with default values
+ * Create a new snippet with default values (replaces both addons and inserts)
  * @param {Object} data - Snippet data
  * @returns {Object} Complete snippet object
  */
@@ -198,16 +203,18 @@ export const createSnippet = (data = {}) => {
   return {
     id: data.id || Date.now(),
     name: data.name || '',
+    description: data.description || '',
     content: data.content || '',
     tags: data.tags || [],
     folderId: data.folderId || 'moods',
+    enabled: data.enabled !== undefined ? data.enabled : true,
     createdAt: data.createdAt || now,
     updatedAt: data.updatedAt || now
   };
 };
 
 /**
- * Snippet validation rules
+ * Snippet validation rules (unified for both addon and insert functionality)
  */
 export const SNIPPET_VALIDATION = {
   name: {
@@ -215,14 +222,22 @@ export const SNIPPET_VALIDATION = {
     minLength: 1,
     maxLength: 100
   },
+  description: {
+    required: false,
+    maxLength: 500
+  },
   content: {
+    required: true,
+    minLength: 1
+  },
+  tags: {
     required: true,
     minLength: 1
   },
 };
 
 /**
- * Validate snippet data
+ * Validate snippet data (unified validation for addon and insert functionality)
  * @param {Object} snippet - Snippet to validate
  * @returns {Object} Validation result with isValid boolean and errors array
  */
@@ -241,6 +256,13 @@ export const validateSnippet = (snippet) => {
     errors.push('Snippet content is required');
   }
   
+  if (snippet.description && snippet.description.length > SNIPPET_VALIDATION.description.maxLength) {
+    errors.push(`Snippet description must be less than ${SNIPPET_VALIDATION.description.maxLength} characters`);
+  }
+  
+  if (!snippet.tags || !Array.isArray(snippet.tags) || snippet.tags.length === 0) {
+    errors.push('At least one tag is required');
+  }
   
   return {
     isValid: errors.length === 0,

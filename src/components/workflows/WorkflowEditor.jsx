@@ -3,14 +3,14 @@ import { ArrowRight, Workflow, Trash2, Plus, X, FileText, Info, Tag } from 'luci
 import { createWorkflowStep } from '../../types/template.types.js';
 import FolderSelector from '../common/FolderSelector.jsx';
 
-const WorkflowEditor = ({ workflow, templates, inserts = [], folders = [], onSave, onCancel }) => {
+const WorkflowEditor = ({ workflow, templates, snippets = [], folders = [], onSave, onCancel }) => {
   const [formData, setFormData] = useState(() => {
     return {
       name: workflow?.name || '',
       description: workflow?.description || '',
       folderId: workflow?.folderId || 'workflows',
       steps: workflow?.steps || [],
-      addonTags: workflow?.addonTags || []
+      snippetTags: workflow?.snippetTags || []
     };
   });
 
@@ -196,20 +196,20 @@ const WorkflowEditor = ({ workflow, templates, inserts = [], folders = [], onSav
 
             <div>
               <label className="block text-sm font-medium text-gray-300 mb-2">
-                Addon Tags
+                Snippet Tags
               </label>
               <input
                 type="text"
-                value={formData.addonTags.join(', ')}
+                value={formData.snippetTags.join(', ')}
                 onChange={(e) => {
                   const tags = e.target.value.split(',').map(tag => tag.trim()).filter(tag => tag);
-                  setFormData({...formData, addonTags: tags});
+                  setFormData({...formData, snippetTags: tags});
                 }}
                 className="w-full p-3 border border-gray-600 bg-gray-800 text-gray-100 rounded-lg focus:ring-2 focus:ring-green-400 focus:border-transparent"
-                placeholder="Enter addon tags separated by commas (e.g., enhancement, quality, technical)"
+                placeholder="Enter snippet tags separated by commas (e.g., enhancement, quality, technical)"
               />
               <p className="mt-1 text-sm text-gray-400">
-                Only addons with these tags will be shown when using this workflow
+                Only snippets with these tags will be shown when using this workflow
               </p>
             </div>
 

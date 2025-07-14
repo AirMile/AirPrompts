@@ -3,27 +3,23 @@ import TemplateEditor from './templates/TemplateEditor.jsx';
 import ItemExecutor from './common/ItemExecutor.jsx';
 import Homepage from './dashboard/Homepage.jsx';
 import WorkflowEditor from './workflows/WorkflowEditor.jsx';
-import InsertEditor from './inserts/InsertEditor.jsx';
-import AddonEditor from './addons/AddonEditor.jsx';
+import SnippetEditor from './snippets/SnippetEditor.jsx';
 import defaultTemplates from '../data/defaultTemplates.json';
 import defaultWorkflows from '../data/defaultWorkflows.json';
-import defaultInserts from '../data/defaultInserts.json';
-import defaultAddons from '../data/defaultAddons.json';
+import defaultSnippets from '../data/defaultSnippets.json';
 import defaultFolders from '../data/defaultFolders.json';
 
 const PromptTemplateSystem = () => {
   const [templates, setTemplates] = useState(defaultTemplates);
   const [workflows, setWorkflows] = useState(defaultWorkflows);
-  const [inserts, setInserts] = useState(defaultInserts);
-  const [addons, setAddons] = useState(defaultAddons);
+  const [snippets, setSnippets] = useState(defaultSnippets);
   const [folders, setFolders] = useState(defaultFolders);
   const [editingTemplate, setEditingTemplate] = useState(null);
   const [editingWorkflow, setEditingWorkflow] = useState(null);
-  const [editingInsert, setEditingInsert] = useState(null);
-  const [editingAddon, setEditingAddon] = useState(null);
+  const [editingSnippet, setEditingSnippet] = useState(null);
   const [executingItem, setExecutingItem] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedFolderId, setSelectedFolderId] = useState(null);
+  const [selectedFolderId, setSelectedFolderId] = useState('home');
 
   // Main render logic
   const handleSaveTemplate = (template) => {
@@ -44,22 +40,13 @@ const PromptTemplateSystem = () => {
     setEditingWorkflow(null);
   };
 
-  const handleSaveInsert = (insert) => {
-    if (insert.id && inserts.find(s => s.id === insert.id)) {
-      setInserts(inserts.map(s => s.id === insert.id ? insert : s));
+  const handleSaveSnippet = (snippet) => {
+    if (snippet.id && snippets.find(s => s.id === snippet.id)) {
+      setSnippets(snippets.map(s => s.id === snippet.id ? snippet : s));
     } else {
-      setInserts([...inserts, { ...insert, id: Date.now() }]);
+      setSnippets([...snippets, { ...snippet, id: Date.now() }]);
     }
-    setEditingInsert(null);
-  };
-
-  const handleSaveAddon = (addon) => {
-    if (addon.id && addons.find(a => a.id === addon.id)) {
-      setAddons(addons.map(a => a.id === addon.id ? addon : a));
-    } else {
-      setAddons([...addons, { ...addon, id: Date.now() }]);
-    }
-    setEditingAddon(null);
+    setEditingSnippet(null);
   };
 
   const handleCreateFolder = (parentId = 'root') => {
@@ -82,13 +69,16 @@ const PromptTemplateSystem = () => {
       <ItemExecutor
         item={executingItem.item}
         type={executingItem.type}
-        inserts={inserts}
-        addons={addons}
+        snippets={snippets}
         onComplete={() => {
           setExecutingItem(null);
         }}
         onCancel={() => {
           setExecutingItem(null);
+        }}
+        onEdit={(snippet) => {
+          setExecutingItem(null);
+          setEditingSnippet(snippet);
         }}
       />
     );
@@ -112,8 +102,7 @@ const PromptTemplateSystem = () => {
       <WorkflowEditor
         workflow={editingWorkflow}
         templates={templates}
-        inserts={inserts}
-        addons={addons}
+        snippets={snippets}
         folders={folders}
         onSave={handleSaveWorkflow}
         onCancel={() => {
@@ -123,27 +112,14 @@ const PromptTemplateSystem = () => {
     );
   }
 
-  if (editingInsert !== null) {
+  if (editingSnippet !== null) {
     return (
-      <InsertEditor
-        insert={editingInsert}
+      <SnippetEditor
+        snippet={editingSnippet}
         folders={folders}
-        onSave={handleSaveInsert}
+        onSave={handleSaveSnippet}
         onCancel={() => {
-          setEditingInsert(null);
-        }}
-      />
-    );
-  }
-
-  if (editingAddon !== null) {
-    return (
-      <AddonEditor
-        addon={editingAddon}
-        folders={folders}
-        onSave={handleSaveAddon}
-        onCancel={() => {
-          setEditingAddon(null);
+          setEditingSnippet(null);
         }}
       />
     );
@@ -153,8 +129,7 @@ const PromptTemplateSystem = () => {
     <Homepage 
       templates={templates}
       workflows={workflows}
-      inserts={inserts}
-      addons={addons}
+      snippets={snippets}
       folders={folders}
       searchQuery={searchQuery}
       setSearchQuery={setSearchQuery}
@@ -162,13 +137,11 @@ const PromptTemplateSystem = () => {
       setSelectedFolderId={setSelectedFolderId}
       onEditTemplate={setEditingTemplate}
       onEditWorkflow={setEditingWorkflow}
-      onEditInsert={setEditingInsert}
-      onEditAddon={setEditingAddon}
+      onEditSnippet={setEditingSnippet}
       onExecuteItem={setExecutingItem}
       onDeleteTemplate={(id) => setTemplates(templates.filter(t => t.id !== id))}
       onDeleteWorkflow={(id) => setWorkflows(workflows.filter(w => w.id !== id))}
-      onDeleteInsert={(id) => setInserts(inserts.filter(s => s.id !== id))}
-      onDeleteAddon={(id) => setAddons(addons.filter(a => a.id !== id))}
+      onDeleteSnippet={(id) => setSnippets(snippets.filter(s => s.id !== id))}
       onCreateFolder={handleCreateFolder}
     />
   );
