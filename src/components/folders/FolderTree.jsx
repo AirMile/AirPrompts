@@ -8,38 +8,12 @@ const FolderTree = ({
   className = '' 
 }) => {
   const [expandedFolders, setExpandedFolders] = useState(new Set(['root', 'general']));
-  const [searchTerm, setSearchTerm] = useState('');
   const [isCompactView, setIsCompactView] = useState(false);
   const [favoriteFolders, setFavoriteFolders] = useState(new Set());
 
-  // Filter folders based on search
-  const filteredFolders = useMemo(() => {
-    if (!searchTerm.trim()) return folders;
-    
-    const searchLower = searchTerm.toLowerCase();
-    const matchingFolders = folders.filter(folder => 
-      folder.name.toLowerCase().includes(searchLower)
-    );
-    
-    // Include parent folders of matching folders for proper hierarchy
-    const folderIdsToInclude = new Set();
-    matchingFolders.forEach(folder => {
-      folderIdsToInclude.add(folder.id);
-      // Add all parent folders
-      let parentId = folder.parentId;
-      while (parentId && !folderIdsToInclude.has(parentId)) {
-        folderIdsToInclude.add(parentId);
-        const parent = folders.find(f => f.id === parentId);
-        parentId = parent?.parentId;
-      }
-    });
-    
-    return folders.filter(folder => folderIdsToInclude.has(folder.id));
-  }, [folders, searchTerm]);
-
   // Build folder hierarchy
   const buildFolderTree = (parentId = null) => {
-    return filteredFolders
+    return folders
       .filter(folder => folder.parentId === parentId)
       .sort((a, b) => {
         // Prioritize favorite folders
@@ -62,7 +36,7 @@ const FolderTree = ({
   };
 
   const hasChildren = (folderId) => {
-    return filteredFolders.some(folder => folder.parentId === folderId);
+    return folders.some(folder => folder.parentId === folderId);
   };
 
   const toggleFavorite = (folderId, e) => {
@@ -77,7 +51,7 @@ const FolderTree = ({
   };
 
   const expandAll = () => {
-    const allFolderIds = new Set(filteredFolders.map(f => f.id));
+    const allFolderIds = new Set(folders.map(f => f.id));
     setExpandedFolders(allFolderIds);
   };
 
@@ -85,21 +59,12 @@ const FolderTree = ({
     setExpandedFolders(new Set(['root']));
   };
 
-  // Auto-expand folders when searching
-  React.useEffect(() => {
-    if (searchTerm.trim()) {
-      const allMatchingIds = new Set(filteredFolders.map(f => f.id));
-      setExpandedFolders(allMatchingIds);
-    }
-  }, [searchTerm, filteredFolders]);
-
   const renderFolder = (folder, level = 0) => {
     const isExpanded = expandedFolders.has(folder.id);
     const isSelected = selectedFolderId === folder.id;
     const isFavorite = favoriteFolders.has(folder.id);
     const children = buildFolderTree(folder.id);
     const folderHasChildren = hasChildren(folder.id);
-    const isHighlighted = searchTerm.trim() && folder.name.toLowerCase().includes(searchTerm.toLowerCase());
 
     return (
       <div key={folder.id} className="select-none">
@@ -108,7 +73,6 @@ const FolderTree = ({
             flex items-center px-2 cursor-pointer rounded-md text-sm group
             hover:bg-gray-100 dark:hover:bg-gray-800
             ${isSelected ? 'bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300' : 'text-gray-700 dark:text-gray-300'}
-            ${isHighlighted ? 'bg-yellow-50 dark:bg-yellow-900/20' : ''}
             ${isCompactView ? 'py-0.5' : 'py-1'}
           `}
           style={{ paddingLeft: `${level * 12 + 8}px` }}
@@ -202,25 +166,8 @@ const FolderTree = ({
           </div>
         </div>
 
-        {/* Search Bar */}
-        <div className="mb-3">
-          <div className="relative">
-            <input
-              type="text"
-              placeholder="Search folders..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            />
-            <svg className="absolute right-3 top-2.5 w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-            </svg>
-          </div>
-        </div>
-
         {/* Expand/Collapse All Buttons */}
-        {!searchTerm.trim() && (
-          <div className="flex gap-1 mb-3">
+        <div className="flex gap-1 mb-3">
             <button
               onClick={expandAll}
               className="flex-1 px-2 py-1 text-xs border border-gray-300 dark:border-gray-600 rounded text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800"
@@ -233,11 +180,10 @@ const FolderTree = ({
             >
               Collapse All
             </button>
-          </div>
-        )}
+        </div>
 
         {/* Favorites Section */}
-        {favoriteFolders.size > 0 && !searchTerm.trim() && (
+        {favoriteFolders.size > 0 && (
           <div className="mb-4">
             <h4 className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-2 uppercase tracking-wide">
               Favorites
@@ -272,15 +218,6 @@ const FolderTree = ({
         <div className="space-y-1">
           {topLevelFolders.map(folder => renderFolder(folder))}
         </div>
-
-        {searchTerm.trim() && topLevelFolders.length === 0 && (
-          <div className="text-center py-8 text-gray-500 dark:text-gray-400">
-            <svg className="w-8 h-8 mx-auto mb-2 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-            </svg>
-            <p className="text-sm">No folders found</p>
-          </div>
-        )}
       </div>
     </div>
   );
