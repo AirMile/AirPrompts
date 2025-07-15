@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Plus, Play, Edit, Trash2, Search, Workflow, FileText, Star, Tag, Puzzle, GripVertical, Settings } from 'lucide-react';
 import FolderTree from '../folders/FolderTree.jsx';
 import FolderBreadcrumb from '../folders/FolderBreadcrumb.jsx';
@@ -32,6 +32,7 @@ const Homepage = ({
     const saved = localStorage.getItem(`itemOrders_${selectedFolderId || 'global'}`);
     return saved ? JSON.parse(saved) : {};
   });
+  const searchInputRef = useRef(null);
 
   // Save order to localStorage whenever it changes
   useEffect(() => {
@@ -561,7 +562,9 @@ const Homepage = ({
               <div className="relative flex-1">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
                 <input
+                  ref={searchInputRef}
                   type="text"
+                  key="search-input"
                   id="searchQuery"
                   name="searchQuery"
                   placeholder="Search templates, workflows, and snippets..."
