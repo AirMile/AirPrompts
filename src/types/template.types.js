@@ -74,7 +74,7 @@ export const createTemplate = (data = {}) => {
 };
 
 /**
- * Create a new workflow step with template options
+ * Create a new workflow step with template and snippet options
  * @param {Object} data - Step data
  * @returns {Object} Complete workflow step object
  */
@@ -84,9 +84,12 @@ export const createWorkflowStep = (data = {}) => {
     name: data.name || '',
     type: data.type || 'template', // 'template', 'info', 'insert'
     templateOptions: data.templateOptions || [], // For template steps
+    snippetOptions: data.snippetOptions || [], // For snippet steps
     selectedTemplateId: data.selectedTemplateId || null, // For execution
+    selectedSnippetId: data.selectedSnippetId || null, // For execution
     variables: data.variables || [],
     content: data.content || '', // For info steps
+    information: data.information || '', // Information text shown with any step type
     insertId: data.insertId || null, // For insert steps
     insertContent: data.insertContent || '' // For insert steps
   };

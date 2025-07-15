@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ArrowRight, Workflow, Trash2, Plus, X, FileText, Info, Tag } from 'lucide-react';
+import { ArrowRight, Workflow, Trash2, Plus, X, FileText, Info, Tag, Layers } from 'lucide-react';
 import { createWorkflowStep } from '../../types/template.types.js';
 import FolderSelector from '../common/FolderSelector.jsx';
 
@@ -28,7 +28,8 @@ const WorkflowEditor = ({ workflow, templates, snippets = [], folders = [], onSa
     const newStep = createWorkflowStep({
       name: `Step ${formData.steps.length + 1}`,
       type: type,
-      templateOptions: type === 'template' ? [] : undefined
+      templateOptions: [],
+      snippetOptions: []
     });
     setFormData({
       ...formData,
@@ -45,7 +46,24 @@ const WorkflowEditor = ({ workflow, templates, snippets = [], folders = [], onSa
           return {
             ...step,
             templateOptions: updatedOptions,
-            name: step.templateOptions.length === 0 ? `Step ${formData.steps.findIndex(s => s.id === stepId) + 1}: ${template.name}` : step.name
+            name: step.templateOptions.length === 0 && step.snippetOptions.length === 0 ? `Step ${formData.steps.findIndex(s => s.id === stepId) + 1}: ${template.name}` : step.name
+          };
+        }
+        return step;
+      })
+    });
+  };
+
+  const addSnippetToStep = (stepId, snippet) => {
+    setFormData({
+      ...formData,
+      steps: formData.steps.map(step => {
+        if (step.id === stepId) {
+          const updatedOptions = [...(step.snippetOptions || []), snippet];
+          return {
+            ...step,
+            snippetOptions: updatedOptions,
+            name: step.templateOptions.length === 0 && step.snippetOptions.length === 0 ? `Step ${formData.steps.findIndex(s => s.id === stepId) + 1}: ${snippet.name}` : step.name
           };
         }
         return step;
@@ -69,6 +87,22 @@ const WorkflowEditor = ({ workflow, templates, snippets = [], folders = [], onSa
     });
   };
 
+  const removeSnippetFromStep = (stepId, snippetId) => {
+    setFormData({
+      ...formData,
+      steps: formData.steps.map(step => {
+        if (step.id === stepId) {
+          const updatedOptions = (step.snippetOptions || []).filter(s => s.id !== snippetId);
+          return {
+            ...step,
+            snippetOptions: updatedOptions
+          };
+        }
+        return step;
+      })
+    });
+  };
+
   const removeStep = (stepId) => {
     setFormData({
       ...formData,
@@ -85,16 +119,20 @@ const WorkflowEditor = ({ workflow, templates, snippets = [], folders = [], onSa
       // Only swap the content, not the entire step objects
       if (steps[currentIndex].type === 'template' && steps[newIndex].type === 'template') {
         const currentTemplateOptions = steps[currentIndex].templateOptions;
+        const currentSnippetOptions = steps[currentIndex].snippetOptions || [];
         const targetTemplateOptions = steps[newIndex].templateOptions;
+        const targetSnippetOptions = steps[newIndex].snippetOptions || [];
         
         steps[currentIndex] = {
           ...steps[currentIndex],
-          templateOptions: targetTemplateOptions
+          templateOptions: targetTemplateOptions,
+          snippetOptions: targetSnippetOptions
         };
         
         steps[newIndex] = {
           ...steps[newIndex],
-          templateOptions: currentTemplateOptions
+          templateOptions: currentTemplateOptions,
+          snippetOptions: currentSnippetOptions
         };
       } else {
         // For other step types, swap relevant content
@@ -248,7 +286,7 @@ const WorkflowEditor = ({ workflow, templates, snippets = [], folders = [], onSa
                     className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 flex items-center gap-2"
                   >
                     <Tag className="w-4 h-4" />
-                    Insert Step
+                    Snippet Step
                   </button>
                 </div>
               </div>
@@ -284,9 +322,9 @@ const WorkflowEditor = ({ workflow, templates, snippets = [], folders = [], onSa
                             />
                           </div>
                           <p className="text-sm text-gray-300">
-                            {step.type === 'template' && `${step.templateOptions?.length || 0} template option(s)`}
+                            {step.type === 'template' && `${step.templateOptions?.length || 0} template(s), ${step.snippetOptions?.length || 0} snippet(s)`}
                             {step.type === 'info' && 'Information step'}
-                            {step.type === 'insert' && 'Insert step'}
+                            {step.type === 'insert' && 'Snippet insert step'}
                           </p>
                         </div>
                       </div>
@@ -316,54 +354,7 @@ const WorkflowEditor = ({ workflow, templates, snippets = [], folders = [], onSa
                     
                     {/* Step Content Based on Type */}
                     <div className="space-y-3">
-                      {step.type === 'template' && (
-                        <>
-                          {step.templateOptions?.map((template) => (
-                            <div key={template.id} className="bg-gray-900 rounded p-3 border border-gray-700">
-                              <div className="flex items-center justify-between mb-2">
-                                <h4 className="font-medium text-gray-100">{template.name}</h4>
-                                <button
-                                  onClick={() => removeTemplateFromStep(step.id, template.id)}
-                                  className="p-1 text-red-500 hover:text-red-700"
-                                >
-                                  <X className="w-4 h-4" />
-                                </button>
-                              </div>
-                              <div className="text-sm text-gray-200 font-mono">
-                                {template.content.split(/(\{[^}]+\})/).map((part, partIndex) => (
-                                  <span key={partIndex}>
-                                    {part.match(/\{[^}]+\}/) ? (
-                                      <span className="bg-green-100 text-green-800 px-1 rounded">
-                                        {part}
-                                      </span>
-                                    ) : (
-                                      part
-                                    )}
-                                  </span>
-                                ))}
-                              </div>
-                            </div>
-                          ))}
-                          
-                          {/* Add Template to Step */}
-                          <div className="border-2 border-dashed border-gray-600 rounded-lg p-3">
-                            <p className="text-sm text-gray-400 mb-2">Add template option:</p>
-                            <div className="grid grid-cols-1 gap-2 max-h-32 overflow-y-auto">
-                              {templates.filter(t => !step.templateOptions?.find(opt => opt.id === t.id)).map(template => (
-                                <button
-                                  key={template.id}
-                                  onClick={() => addTemplateToStep(step.id, template)}
-                                  className="text-left p-2 border border-gray-600 bg-gray-700 text-gray-100 rounded hover:bg-gray-600"
-                                >
-                                  <div className="font-medium text-sm">{template.name}</div>
-                                  <div className="text-xs text-gray-300">{template.variables.length} variables</div>
-                                </button>
-                              ))}
-                            </div>
-                          </div>
-                        </>
-                      )}
-                      
+                      {/* Info Step Content */}
                       {step.type === 'info' && (
                         <div className="border-2 border-dashed border-green-600 rounded-lg p-3">
                           <p className="text-sm text-green-400 mb-2">Information content:</p>
@@ -385,41 +376,337 @@ const WorkflowEditor = ({ workflow, templates, snippets = [], folders = [], onSa
                         </div>
                       )}
                       
-                      {step.type === 'insert' && (
+                      {/* Insert Step Content */}
+                      {step.type === 'insert' && !step.insertId && (
                         <div className="border-2 border-dashed border-purple-600 rounded-lg p-3">
-                          <p className="text-sm text-purple-400 mb-2">Select insert to copy:</p>
-                          <select
-                            value={step.insertId || ''}
-                            onChange={(e) => {
-                              const selectedInsert = inserts.find(i => i.id == e.target.value);
-                              setFormData({
-                                ...formData,
-                                steps: formData.steps.map(s => 
-                                  s.id === step.id ? { 
-                                    ...s, 
-                                    insertId: e.target.value || null,
-                                    insertContent: selectedInsert?.content || ''
-                                  } : s
-                                )
-                              });
-                            }}
-                            className="w-full p-3 border border-gray-600 bg-gray-800 text-gray-100 rounded-lg focus:ring-2 focus:ring-purple-400 focus:border-transparent"
-                          >
-                            <option value="">Select an insert...</option>
-                            {inserts.map(insert => (
-                              <option key={insert.id} value={insert.id}>
-                                {insert.name}
-                              </option>
+                          <p className="text-sm text-purple-400 mb-2">Select snippet to copy:</p>
+                          <div className="grid grid-cols-1 gap-2 max-h-32 overflow-y-auto">
+                            {snippets.map(snippet => (
+                              <button
+                                key={snippet.id}
+                                onClick={() => {
+                                  setFormData({
+                                    ...formData,
+                                    steps: formData.steps.map(s => 
+                                      s.id === step.id ? { 
+                                        ...s, 
+                                        insertId: snippet.id,
+                                        insertContent: snippet.content
+                                      } : s
+                                    )
+                                  });
+                                }}
+                                className="text-left p-2 border border-gray-600 bg-gray-700 text-gray-100 rounded hover:bg-gray-600"
+                              >
+                                <div className="font-medium text-sm">{snippet.name}</div>
+                                <div className="text-xs text-gray-300 flex flex-wrap gap-1">
+                                  {snippet.tags.map(tag => (
+                                    <span key={tag} className="px-1 py-0.5 bg-purple-100 text-purple-800 rounded text-xs">
+                                      {tag}
+                                    </span>
+                                  ))}
+                                </div>
+                              </button>
                             ))}
-                          </select>
-                          {step.insertContent && (
-                            <div className="mt-2 p-2 bg-gray-900 rounded border border-gray-700">
-                              <p className="text-xs text-purple-300 mb-1">Preview:</p>
-                              <p className="text-sm text-gray-200">{step.insertContent}</p>
-                            </div>
-                          )}
+                          </div>
                         </div>
                       )}
+                      
+                      {/* Insert Step - Show selected snippet */}
+                      {step.type === 'insert' && step.insertId && (
+                        <div className="bg-gray-900 rounded p-3 border border-gray-700">
+                          <div className="flex items-center justify-between mb-2">
+                            <div className="flex items-center gap-2">
+                              <Tag className="w-4 h-4 text-purple-400" />
+                              <h4 className="font-medium text-gray-100">
+                                {snippets.find(s => s.id == step.insertId)?.name || 'Selected Snippet'}
+                              </h4>
+                            </div>
+                            <button
+                              onClick={() => {
+                                setFormData({
+                                  ...formData,
+                                  steps: formData.steps.map(s => 
+                                    s.id === step.id ? { 
+                                      ...s, 
+                                      insertId: null,
+                                      insertContent: ''
+                                    } : s
+                                  )
+                                });
+                              }}
+                              className="p-1 text-red-500 hover:text-red-700"
+                            >
+                              <X className="w-4 h-4" />
+                            </button>
+                          </div>
+                          <div className="text-sm text-gray-200">
+                            {step.insertContent}
+                          </div>
+                        </div>
+                      )}
+                      
+                      {/* Show existing templates */}
+                      {step.templateOptions?.map((template) => (
+                        <div key={template.id} className="bg-gray-900 rounded p-3 border border-gray-700">
+                          <div className="flex items-center justify-between mb-2">
+                            <div className="flex items-center gap-2">
+                              <FileText className="w-4 h-4 text-blue-400" />
+                              <h4 className="font-medium text-gray-100">{template.name}</h4>
+                            </div>
+                            <button
+                              onClick={() => removeTemplateFromStep(step.id, template.id)}
+                              className="p-1 text-red-500 hover:text-red-700"
+                            >
+                              <X className="w-4 h-4" />
+                            </button>
+                          </div>
+                          <div className="text-sm text-gray-200 font-mono">
+                            {template.content.split(/(\{[^}]+\})/).map((part, partIndex) => (
+                              <span key={partIndex}>
+                                {part.match(/\{[^}]+\}/) ? (
+                                  <span className="bg-green-100 text-green-800 px-1 rounded">
+                                    {part}
+                                  </span>
+                                ) : (
+                                  part
+                                )}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                      ))}
+                      
+                      {/* Show existing snippets */}
+                      {step.snippetOptions?.map((snippet) => (
+                        <div key={snippet.id} className="bg-gray-900 rounded p-3 border border-gray-700">
+                          <div className="flex items-center justify-between mb-2">
+                            <div className="flex items-center gap-2">
+                              <Layers className="w-4 h-4 text-purple-400" />
+                              <h4 className="font-medium text-gray-100">{snippet.name}</h4>
+                            </div>
+                            <button
+                              onClick={() => removeSnippetFromStep(step.id, snippet.id)}
+                              className="p-1 text-red-500 hover:text-red-700"
+                            >
+                              <X className="w-4 h-4" />
+                            </button>
+                          </div>
+                          <div className="text-sm text-gray-200">
+                            {snippet.content.length > 100 ? `${snippet.content.substring(0, 100)}...` : snippet.content}
+                          </div>
+                          <div className="flex flex-wrap gap-1 mt-2">
+                            {snippet.tags.map(tag => (
+                              <span key={tag} className="px-2 py-1 bg-purple-100 text-purple-800 text-xs rounded">
+                                {tag}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                      ))}
+                      
+                      {/* Add Options - Show when step has content or existing options */}
+                      {(step.type === 'info' && step.content) || 
+                       (step.type === 'insert' && step.insertId) ||
+                       (step.templateOptions && step.templateOptions.length > 0) ||
+                       (step.snippetOptions && step.snippetOptions.length > 0) ? (
+                        <div className="border-2 border-dashed border-gray-600 rounded-lg p-3">
+                          <p className="text-sm text-gray-400 mb-3">Add more options to step:</p>
+                          
+                          <div className="flex gap-2 mb-4">
+                            <button
+                              onClick={() => {
+                                // Show template selection dropdown
+                                const stepElement = document.getElementById(`template-dropdown-${step.id}`);
+                                if (stepElement) {
+                                  stepElement.style.display = stepElement.style.display === 'none' ? 'block' : 'none';
+                                }
+                              }}
+                              className="px-3 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 flex items-center gap-2"
+                            >
+                              <FileText className="w-4 h-4" />
+                              Add Template
+                            </button>
+                            
+                            <button
+                              onClick={() => {
+                                // Show snippet selection dropdown
+                                const stepElement = document.getElementById(`snippet-dropdown-${step.id}`);
+                                if (stepElement) {
+                                  stepElement.style.display = stepElement.style.display === 'none' ? 'block' : 'none';
+                                }
+                              }}
+                              className="px-3 py-2 bg-purple-600 text-white rounded hover:bg-purple-700 flex items-center gap-2"
+                            >
+                              <Layers className="w-4 h-4" />
+                              Add Snippet
+                            </button>
+                          </div>
+                          
+                          {/* Template Selection Dropdown */}
+                          <div id={`template-dropdown-${step.id}`} style={{ display: 'none' }} className="mb-4">
+                            <p className="text-sm text-blue-400 mb-2 flex items-center gap-2">
+                              <FileText className="w-4 h-4" />
+                              Select Template:
+                            </p>
+                            <div className="grid grid-cols-1 gap-2 max-h-32 overflow-y-auto">
+                              {templates.filter(t => !step.templateOptions?.find(opt => opt.id === t.id)).map(template => (
+                                <button
+                                  key={template.id}
+                                  onClick={() => {
+                                    addTemplateToStep(step.id, template);
+                                    document.getElementById(`template-dropdown-${step.id}`).style.display = 'none';
+                                  }}
+                                  className="text-left p-2 border border-gray-600 bg-gray-700 text-gray-100 rounded hover:bg-gray-600"
+                                >
+                                  <div className="font-medium text-sm">{template.name}</div>
+                                  <div className="text-xs text-gray-300">{template.variables.length} variables</div>
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+                          
+                          {/* Snippet Selection Dropdown */}
+                          <div id={`snippet-dropdown-${step.id}`} style={{ display: 'none' }}>
+                            <p className="text-sm text-purple-400 mb-2 flex items-center gap-2">
+                              <Layers className="w-4 h-4" />
+                              Select Snippet:
+                            </p>
+                            <div className="grid grid-cols-1 gap-2 max-h-32 overflow-y-auto">
+                              {snippets.filter(s => !step.snippetOptions?.find(opt => opt.id === s.id)).map(snippet => (
+                                <button
+                                  key={snippet.id}
+                                  onClick={() => {
+                                    addSnippetToStep(step.id, snippet);
+                                    document.getElementById(`snippet-dropdown-${step.id}`).style.display = 'none';
+                                  }}
+                                  className="text-left p-2 border border-gray-600 bg-gray-700 text-gray-100 rounded hover:bg-gray-600"
+                                >
+                                  <div className="font-medium text-sm">{snippet.name}</div>
+                                  <div className="text-xs text-gray-300 flex flex-wrap gap-1">
+                                    {snippet.tags.map(tag => (
+                                      <span key={tag} className="px-1 py-0.5 bg-purple-100 text-purple-800 rounded text-xs">
+                                        {tag}
+                                      </span>
+                                    ))}
+                                  </div>
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+                        </div>
+                      ) : null}
+                      
+                      {/* Template Step - Direct template selection */}
+                      {step.type === 'template' && 
+                       (!step.templateOptions || step.templateOptions.length === 0) &&
+                       (!step.snippetOptions || step.snippetOptions.length === 0) ? (
+                        <div className="border-2 border-dashed border-blue-600 rounded-lg p-3">
+                          <p className="text-sm text-blue-400 mb-2">Select template:</p>
+                          <div className="grid grid-cols-1 gap-2 max-h-32 overflow-y-auto">
+                            {templates.map(template => (
+                              <button
+                                key={template.id}
+                                onClick={() => addTemplateToStep(step.id, template)}
+                                className="text-left p-2 border border-gray-600 bg-gray-700 text-gray-100 rounded hover:bg-gray-600"
+                              >
+                                <div className="font-medium text-sm">{template.name}</div>
+                                <div className="text-xs text-gray-300">{template.variables.length} variables</div>
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      ) : null}
+                      
+                      {/* Snippet Step - Direct snippet selection */}
+                      {step.type === 'snippet' && 
+                       (!step.templateOptions || step.templateOptions.length === 0) &&
+                       (!step.snippetOptions || step.snippetOptions.length === 0) ? (
+                        <div className="border-2 border-dashed border-purple-600 rounded-lg p-3">
+                          <p className="text-sm text-purple-400 mb-2">Select snippet:</p>
+                          <div className="grid grid-cols-1 gap-2 max-h-32 overflow-y-auto">
+                            {snippets.map(snippet => (
+                              <button
+                                key={snippet.id}
+                                onClick={() => addSnippetToStep(step.id, snippet)}
+                                className="text-left p-2 border border-gray-600 bg-gray-700 text-gray-100 rounded hover:bg-gray-600"
+                              >
+                                <div className="font-medium text-sm">{snippet.name}</div>
+                                <div className="text-xs text-gray-300 flex flex-wrap gap-1">
+                                  {snippet.tags.map(tag => (
+                                    <span key={tag} className="px-1 py-0.5 bg-purple-100 text-purple-800 rounded text-xs">
+                                      {tag}
+                                    </span>
+                                  ))}
+                                </div>
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      ) : null}
+                      
+                      {/* Step Information Toggle - Available for all step types except pure info */}
+                      {step.type !== 'info' || (step.templateOptions && step.templateOptions.length > 0) || (step.snippetOptions && step.snippetOptions.length > 0) ? (
+                        <div className="border-2 border-dashed border-blue-600 rounded-lg p-3">
+                          <div className="flex items-center justify-between mb-2">
+                            <p className="text-sm text-blue-400 flex items-center gap-2">
+                              <Info className="w-4 h-4" />
+                              Step Information (Optional)
+                            </p>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const hasInformation = step.information && step.information !== '';
+                                setFormData({
+                                  ...formData,
+                                  steps: formData.steps.map(s => 
+                                    s.id === step.id ? { 
+                                      ...s, 
+                                      information: hasInformation ? '' : ' ' 
+                                    } : s
+                                  )
+                                });
+                              }}
+                              className={`px-3 py-1 rounded text-xs font-medium transition-colors ${
+                                step.information && step.information !== '' 
+                                  ? 'bg-blue-600 text-white hover:bg-blue-700' 
+                                  : 'bg-gray-600 text-gray-300 hover:bg-gray-500'
+                              }`}
+                            >
+                              {step.information && step.information !== '' ? 'Remove' : 'Add'}
+                            </button>
+                          </div>
+                          
+                          {step.information && step.information !== '' && (
+                            <>
+                              <textarea
+                                id={`stepInformation-${step.id}`}
+                                name={`stepInformation-${step.id}`}
+                                value={step.information === ' ' ? '' : step.information || ''}
+                                onChange={(e) => {
+                                  setFormData({
+                                    ...formData,
+                                    steps: formData.steps.map(s => 
+                                      s.id === step.id ? { ...s, information: e.target.value } : s
+                                    )
+                                  });
+                                }}
+                                className="w-full h-20 p-3 border border-gray-600 bg-gray-800 text-gray-100 rounded-lg focus:ring-2 focus:ring-blue-400 focus:border-transparent"
+                                placeholder="Add helpful information or instructions for this step..."
+                              />
+                              <p className="mt-1 text-xs text-gray-400">
+                                This information will be displayed to users when executing this step
+                              </p>
+                            </>
+                          )}
+                          
+                          {(!step.information || step.information === '') && (
+                            <p className="text-sm text-gray-500 italic">
+                              Click "Add" to include helpful information or instructions for this step
+                            </p>
+                          )}
+                        </div>
+                      ) : null}
                     </div>
                   </div>
                 ))}
@@ -448,7 +735,7 @@ const WorkflowEditor = ({ workflow, templates, snippets = [], folders = [], onSa
                       className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 flex items-center gap-2"
                     >
                       <Tag className="w-4 h-4" />
-                      Insert Step
+                      Snippet Step
                     </button>
                   </div>
                 </div>
