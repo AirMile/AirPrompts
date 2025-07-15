@@ -14,20 +14,32 @@ const ItemExecutor = ({ item, type, snippets = [], onComplete, onCancel, onEdit 
   // Different logic for different step types
   const getStepType = () => {
     if (!isWorkflow) return type; // Use the passed type prop for non-workflows
+    
+    // Check if info step has templates or snippets attached
+    if (currentStepData.type === 'info') {
+      // If info step has template or snippet IDs, treat it as template/snippet step
+      if (currentStepData.templateId || currentStepData.snippetIds?.length > 0) {
+        return currentStepData.snippetIds?.length > 0 && !currentStepData.templateId ? 'snippet' : 'template';
+      }
+    }
+    
     return currentStepData.type || 'template';
   };
   
   const stepType = getStepType();
   
-  // Filter snippets based on item's snippet tags (for auto-append functionality)
+  // Filter snippets based on current step's snippet tags (for auto-append functionality)
   const getFilteredSnippets = () => {
     // For info steps, never show snippets
     if (stepType === 'info') {
       return [];
     }
     
+    // Get snippet tags from current step if workflow, otherwise from item
+    const snippetTags = isWorkflow ? (currentStepData.snippetTags || []) : (item.snippetTags || []);
+    
     // If no tags are specified, don't show any snippets
-    if (!item.snippetTags || item.snippetTags.length === 0) {
+    if (!snippetTags || snippetTags.length === 0) {
       return [];
     }
     
@@ -35,10 +47,10 @@ const ItemExecutor = ({ item, type, snippets = [], onComplete, onCancel, onEdit 
       if (!snippet.enabled) return false;
       if (!snippet.tags || snippet.tags.length === 0) return false;
       
-      // Check if snippet has any of the item's tags
-      return item.snippetTags.some(itemTag => 
+      // Check if snippet has any of the step's tags
+      return snippetTags.some(stepTag => 
         snippet.tags.some(snippetTag => 
-          snippetTag.toLowerCase() === itemTag.toLowerCase()
+          snippetTag.toLowerCase() === stepTag.toLowerCase()
         )
       );
     });
@@ -49,36 +61,155 @@ const ItemExecutor = ({ item, type, snippets = [], onComplete, onCancel, onEdit 
   const [stepOutputs] = useState([]);
   const [copied, setCopied] = useState(false);
   const [completedSteps, setCompletedSteps] = useState([]);
-  const [copiedAgainId, setCopiedAgainId] = useState(null);
-  const [selectedTemplates, setSelectedTemplates] = useState({}); // stepId -> templateId
-  const [selectedWorkflowSnippets, setSelectedWorkflowSnippets] = useState({}); // stepId -> snippetId
+  const [selectedOptions, setSelectedOptions] = useState({}); // stepId -> { type: 'template'|'snippet', id: itemId }
   const [selectedSnippets, setSelectedSnippets] = useState(new Set()); // Set of snippet IDs
 
   
+  // Get all available options (templates and snippets combined) for current step
+  const getAllStepOptions = () => {
+    if (!isWorkflow) return [];
+    
+    // Check if this is an info step with templates/snippets
+    if (currentStepData.type === 'info' && (currentStepData.templateId || currentStepData.snippetIds?.length > 0)) {
+      const options = [];
+      
+      // If info step has a template ID, load that template
+      if (currentStepData.templateId) {
+        // In a real app, you'd fetch the template from your data store
+        // For now, we'll create a placeholder
+        options.push({
+          type: 'template',
+          id: currentStepData.templateId,
+          item: {
+            id: currentStepData.templateId,
+            name: `Template ${currentStepData.templateId}`,
+            content: currentStepData.content || '',
+            variables: currentStepData.variables || []
+          }
+        });
+      }
+      
+      // If info step has snippet IDs, load those snippets
+      if (currentStepData.snippetIds?.length > 0) {
+        currentStepData.snippetIds.forEach(snippetId => {
+          // In a real app, you'd fetch the snippet from your data store
+          const snippet = snippets.find(s => s.id === snippetId);
+          if (snippet) {
+            const { variables } = extractAllVariables(snippet.content);
+            options.push({
+              type: 'snippet',
+              id: snippet.id,
+              item: {
+                ...snippet,
+                variables: variables || []
+              }
+            });
+          }
+        });
+      }
+      
+      return options;
+    }
+    
+    // Original logic for template steps
+    if (currentStepData.type !== 'template') return [];
+    
+    const options = [];
+    
+    // Add template options
+    if (currentStepData.templateOptions) {
+      currentStepData.templateOptions.forEach(template => {
+        options.push({
+          type: 'template',
+          id: template.id,
+          item: template
+        });
+      });
+    }
+    
+    // Add snippet options - convert snippets to template-like structure
+    if (currentStepData.snippetOptions) {
+      currentStepData.snippetOptions.forEach(snippet => {
+        // Extract variables from snippet content
+        const { variables } = extractAllVariables(snippet.content);
+        options.push({
+          type: 'snippet',
+          id: snippet.id,
+          item: {
+            ...snippet,
+            variables: variables || [] // Ensure snippets have variables array
+          }
+        });
+      });
+    }
+    
+    // If no explicit options but step has content, treat as single template option
+    if (options.length === 0 && currentStepData.content && currentStepData.variables) {
+      options.push({
+        type: 'template',
+        id: 'default',
+        item: currentStepData
+      });
+    }
+    
+    return options;
+  };
+
   // Get the current template or snippet for this step
   const getCurrentTemplate = () => {
     if (!isWorkflow) return currentStepData;
     
-    // Handle different step types
-    if (currentStepData.type === 'template') {
-      // Check if we have template options
-      if (currentStepData.templateOptions && currentStepData.templateOptions.length > 0) {
-        const selectedTemplateId = selectedTemplates[currentStepData.id];
-        const selectedTemplate = currentStepData.templateOptions.find(t => t.id === selectedTemplateId);
-        if (selectedTemplate) return selectedTemplate;
-        return currentStepData.templateOptions[0]; // Default to first template option
-      }
+    // Handle info steps with templates/snippets
+    if (currentStepData.type === 'info' && (currentStepData.templateId || currentStepData.snippetIds?.length > 0)) {
+      const allOptions = getAllStepOptions();
       
-      // Check if we have snippet options
-      if (currentStepData.snippetOptions && currentStepData.snippetOptions.length > 0) {
-        const selectedSnippetId = selectedWorkflowSnippets[currentStepData.id];
-        const selectedSnippet = currentStepData.snippetOptions.find(s => s.id === selectedSnippetId);
-        if (selectedSnippet) return selectedSnippet;
-        return currentStepData.snippetOptions[0]; // Default to first snippet option
+      if (allOptions.length > 0) {
+        const selectedOption = selectedOptions[currentStepData.id];
+        
+        if (selectedOption) {
+          // Find the selected option
+          const option = allOptions.find(opt => 
+            opt.type === selectedOption.type && opt.id === selectedOption.id
+          );
+          if (option) return option.item;
+        }
+        
+        // Only auto-select if there's exactly one option
+        if (allOptions.length === 1) {
+          return allOptions[0].item;
+        }
+        
+        // Otherwise return undefined to force user selection
+        return undefined;
       }
     }
     
-    // For info and insert steps, or legacy template steps
+    // Handle different step types
+    if (currentStepData.type === 'template') {
+      const allOptions = getAllStepOptions();
+      
+      if (allOptions.length > 0) {
+        const selectedOption = selectedOptions[currentStepData.id];
+        
+        if (selectedOption) {
+          // Find the selected option
+          const option = allOptions.find(opt => 
+            opt.type === selectedOption.type && opt.id === selectedOption.id
+          );
+          if (option) return option.item;
+        }
+        
+        // Only auto-select if there's exactly one option (including legacy single template)
+        if (allOptions.length === 1) {
+          return allOptions[0].item;
+        }
+        
+        // Otherwise return undefined to force user selection
+        return undefined;
+      }
+    }
+    
+    // For info and insert steps, or fallback to step data
     return currentStepData;
   };
   
@@ -86,7 +217,7 @@ const ItemExecutor = ({ item, type, snippets = [], onComplete, onCancel, onEdit 
   
   // Extract all variables including snippets from current template and sort by position
   const getAllTemplateVariables = () => {
-    if (!currentTemplate.content) return { variables: [], snippetVariables: [], sortedVariables: [] };
+    if (!currentTemplate || !currentTemplate.content) return { variables: [], snippetVariables: [], sortedVariables: [] };
     
     const { variables, snippetVariables } = extractAllVariables(currentTemplate.content);
     
@@ -437,6 +568,7 @@ const ItemExecutor = ({ item, type, snippets = [], onComplete, onCancel, onEdit 
   };
 
   const generateOutput = () => {
+    if (!currentTemplate || !currentTemplate.content) return '';
     let output = currentTemplate.content;
     
     // Replace regular variables
@@ -560,15 +692,6 @@ const ItemExecutor = ({ item, type, snippets = [], onComplete, onCancel, onEdit 
     }
   };
 
-  const handlePrevious = () => {
-    if (currentStep > 0) {
-      setCurrentStep(currentStep - 1);
-      setVariableValues({});
-      setSelectedSnippets(new Set()); // Reset addon selection when going back
-      // Remove the completed step we're going back to
-      setCompletedSteps(completedSteps.filter(step => step.stepIndex !== currentStep - 1));
-    }
-  };
 
   const canProceed = (() => {
     if (stepType === 'info') return true; // Info steps don't need variables
@@ -583,14 +706,9 @@ const ItemExecutor = ({ item, type, snippets = [], onComplete, onCancel, onEdit 
     });
   })();
   
-  const hasTemplateOptions = isWorkflow && stepType === 'template' && currentStepData.templateOptions && currentStepData.templateOptions.length > 1;
-  const hasSnippetOptions = isWorkflow && stepType === 'template' && currentStepData.snippetOptions && currentStepData.snippetOptions.length > 1;
-  const hasMixedOptions = isWorkflow && stepType === 'template' && 
-    ((currentStepData.templateOptions && currentStepData.templateOptions.length > 0) || 
-     (currentStepData.snippetOptions && currentStepData.snippetOptions.length > 0));
-  
-  const needsTemplateSelection = hasTemplateOptions && !selectedTemplates[currentStepData.id];
-  const needsSnippetSelection = hasSnippetOptions && !selectedWorkflowSnippets[currentStepData.id];
+  const allStepOptions = getAllStepOptions();
+  const hasMultipleOptions = allStepOptions.length > 1;
+  const needsSelection = hasMultipleOptions && !selectedOptions[currentStepData.id];
 
   if (copied) {
     return (
@@ -622,14 +740,13 @@ const ItemExecutor = ({ item, type, snippets = [], onComplete, onCancel, onEdit 
                 <p className="text-gray-300 mb-2">
                   Step {currentStep + 1} of {steps.length}: {currentStepData.name}
                 </p>
-                {(hasTemplateOptions || hasSnippetOptions) && (
-                  <p className="text-sm text-blue-300 mb-2">
-                    {hasTemplateOptions && hasSnippetOptions ? 
-                      `Template options (${currentStepData.templateOptions.length}) and snippet options (${currentStepData.snippetOptions.length}) available` :
-                      hasTemplateOptions ? 
-                        `Template options available (${currentStepData.templateOptions.length})` :
-                        `Snippet options available (${currentStepData.snippetOptions.length})`
-                    }
+                {allStepOptions.length > 0 && (
+                  <p className="text-sm text-green-300 mb-2">
+                    {allStepOptions.length} option{allStepOptions.length > 1 ? 's' : ''} available
+                    {allStepOptions.length > 1 && ': '}
+                    {currentStepData.templateOptions?.length > 0 && ` ${currentStepData.templateOptions.length} template${currentStepData.templateOptions.length > 1 ? 's' : ''}`}
+                    {currentStepData.templateOptions?.length > 0 && currentStepData.snippetOptions?.length > 0 && ','}
+                    {currentStepData.snippetOptions?.length > 0 && ` ${currentStepData.snippetOptions.length} snippet${currentStepData.snippetOptions.length > 1 ? 's' : ''}`}
                   </p>
                 )}
                 {/* Progress indicator */}
@@ -671,7 +788,7 @@ const ItemExecutor = ({ item, type, snippets = [], onComplete, onCancel, onEdit 
             <button
               onClick={stepType === 'info' ? handleNextStep : handleCopyAndNext}
               onKeyDown={(e) => e.key === 'Enter' && (stepType === 'info' ? handleNextStep() : handleCopyAndNext())}
-              disabled={!canProceed || needsTemplateSelection || needsSnippetSelection}
+              disabled={!canProceed || needsSelection}
               className={`px-4 py-2 text-white rounded-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 ${
                 stepType === 'snippet' 
                   ? 'bg-purple-600 hover:bg-purple-700' 
@@ -698,8 +815,8 @@ const ItemExecutor = ({ item, type, snippets = [], onComplete, onCancel, onEdit 
           </div>
         </div>
 
-        {/* Info Step - Centered */}
-        {stepType === 'info' && (
+        {/* Info Step - Only show centered info if no templates/snippets attached */}
+        {stepType === 'info' && currentStepData.type === 'info' && !currentStepData.templateId && !currentStepData.snippetIds?.length && (
           <div className="max-w-4xl mx-auto mb-6">
             <div className="bg-green-900 rounded-lg p-6 border border-green-700">
               <h3 className="text-lg font-semibold text-green-100 mb-3 flex items-center gap-2">
@@ -707,22 +824,24 @@ const ItemExecutor = ({ item, type, snippets = [], onComplete, onCancel, onEdit 
                 Information Step
               </h3>
               <div className="text-green-200 whitespace-pre-wrap">
-                {currentStepData.content || 'No information provided for this step.'}
+                {currentStepData.info || currentStepData.content || 'No information provided for this step.'}
               </div>
             </div>
           </div>
         )}
 
-        {/* Step Information - Show for all step types when available */}
-        {isWorkflow && currentStepData.information && currentStepData.information.trim() && currentStepData.information !== ' ' && (
+        {/* Step Information - Show for all step types when available, including info from info steps */}
+        {isWorkflow && (currentStepData.information || (currentStepData.type === 'info' && currentStepData.info)) && 
+         (currentStepData.information?.trim() || currentStepData.info?.trim()) && 
+         (currentStepData.information !== ' ' || currentStepData.info !== ' ') && (
           <div className="max-w-4xl mx-auto mb-6">
             <div className="bg-blue-900 rounded-lg p-4 border border-blue-700">
               <h3 className="text-sm font-semibold text-blue-100 mb-2 flex items-center gap-2">
                 <Info className="w-4 h-4" />
-                Step Information
+                Step Information {(currentStepData.type === 'info' && (currentStepData.templateId || currentStepData.snippetIds?.length > 0)) ? '(optional)' : ''}
               </h3>
               <div className="text-blue-200 whitespace-pre-wrap text-sm">
-                {currentStepData.information}
+                {currentStepData.information || currentStepData.info}
               </div>
             </div>
           </div>
@@ -734,7 +853,7 @@ const ItemExecutor = ({ item, type, snippets = [], onComplete, onCancel, onEdit 
               {stepType !== 'snippet' && (
                 <h3 className="text-lg font-semibold text-gray-100 mb-3">Fill in Variables</h3>
               )}
-              {(needsTemplateSelection || needsSnippetSelection) ? (
+              {needsSelection ? (
                 <p className="text-gray-500 italic">Select an option above to see variables</p>
               ) : (
                 <>
@@ -846,87 +965,103 @@ const ItemExecutor = ({ item, type, snippets = [], onComplete, onCancel, onEdit 
             </>
           )}
             
-            {/* Template Selection */}
-            {hasTemplateOptions && (
+            {/* Universal Option Selection */}
+            {hasMultipleOptions && (
               <div>
                 <h3 className="text-lg font-semibold text-gray-100 mb-3 flex items-center gap-2">
-                  <FileText className="w-5 h-5 text-blue-400" />
-                  Choose Template
+                  <Layers className="w-5 h-5 text-green-400" />
+                  Choose Option ({allStepOptions.length} available)
                 </h3>
                 <div className="space-y-2">
-                  {currentStepData.templateOptions.map((template) => (
-                    <div
-                      key={template.id}
-                      className={`p-3 border rounded-lg cursor-pointer transition-colors ${
-                        selectedTemplates[currentStepData.id] === template.id
-                          ? 'border-blue-500 bg-blue-900/30'
-                          : 'border-gray-600 bg-gray-800 hover:bg-gray-700'
-                      }`}
-                      onClick={() => {
-                        setSelectedTemplates({
-                          ...selectedTemplates,
-                          [currentStepData.id]: template.id
-                        });
-                        setVariableValues({}); // Reset variables when template changes
-                        // Keep snippets selection when template changes
-                      }}
-                    >
-                      <h4 className="font-medium text-gray-100 mb-1">{template.name}</h4>
-                      <p className="text-sm text-gray-300 mb-2">{template.description}</p>
-                      <div className="text-xs text-gray-400 font-mono bg-gray-900 p-2 rounded">
-                        {template.content.length > 100 
-                          ? `${template.content.substring(0, 100)}...` 
-                          : template.content
-                        }
+                  {allStepOptions.map((option) => {
+                    const isSelected = selectedOptions[currentStepData.id]?.type === option.type && 
+                                     selectedOptions[currentStepData.id]?.id === option.id;
+                    const isTemplate = option.type === 'template';
+                    
+                    return (
+                      <div
+                        key={`${option.type}-${option.id}`}
+                        className={`p-3 border rounded-lg cursor-pointer transition-colors ${
+                          isSelected
+                            ? isTemplate 
+                              ? 'border-blue-500 bg-blue-900/30'
+                              : 'border-purple-500 bg-purple-900/30'
+                            : 'border-gray-600 bg-gray-800 hover:bg-gray-700'
+                        }`}
+                        onClick={() => {
+                          setSelectedOptions({
+                            ...selectedOptions,
+                            [currentStepData.id]: { type: option.type, id: option.id }
+                          });
+                          setVariableValues({}); // Reset variables when selection changes
+                        }}
+                      >
+                        <div className="flex items-center gap-2 mb-1">
+                          {isTemplate ? (
+                            <FileText className="w-4 h-4 text-blue-400" />
+                          ) : (
+                            <Layers className="w-4 h-4 text-purple-400" />
+                          )}
+                          <span className={`text-xs px-2 py-1 rounded ${
+                            isTemplate ? 'bg-blue-100 text-blue-800' : 'bg-purple-100 text-purple-800'
+                          }`}>
+                            {isTemplate ? 'Template' : 'Snippet'}
+                          </span>
+                        </div>
+                        <h4 className="font-medium text-gray-100 mb-1">{option.item.name}</h4>
+                        <p className="text-sm text-gray-300 mb-2">{option.item.description}</p>
+                        <div className={`text-xs text-gray-400 p-2 rounded ${
+                          isTemplate ? 'font-mono bg-gray-900' : 'bg-gray-900'
+                        }`}>
+                          {option.item.content.length > 100 
+                            ? `${option.item.content.substring(0, 100)}...` 
+                            : option.item.content
+                          }
+                        </div>
+                        {!isTemplate && option.item.tags && (
+                          <div className="flex flex-wrap gap-1 mt-2">
+                            {option.item.tags.map(tag => (
+                              <span key={tag} className="px-2 py-1 bg-purple-100 text-purple-800 text-xs rounded">
+                                {tag}
+                              </span>
+                            ))}
+                          </div>
+                        )}
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </div>
             )}
             
-            {/* Snippet Selection */}
-            {hasSnippetOptions && (
+            {/* Special handling for info steps with only snippets */}
+            {stepType === 'snippet' && currentStepData.type === 'info' && currentStepData.snippetIds?.length > 0 && !hasMultipleOptions && (
               <div>
                 <h3 className="text-lg font-semibold text-gray-100 mb-3 flex items-center gap-2">
                   <Layers className="w-5 h-5 text-purple-400" />
-                  Choose Snippet
+                  Snippets for this Step
                 </h3>
                 <div className="space-y-2">
-                  {currentStepData.snippetOptions.map((snippet) => (
-                    <div
-                      key={snippet.id}
-                      className={`p-3 border rounded-lg cursor-pointer transition-colors ${
-                        selectedWorkflowSnippets[currentStepData.id] === snippet.id
-                          ? 'border-purple-500 bg-purple-900/30'
-                          : 'border-gray-600 bg-gray-800 hover:bg-gray-700'
-                      }`}
-                      onClick={() => {
-                        setSelectedWorkflowSnippets({
-                          ...selectedWorkflowSnippets,
-                          [currentStepData.id]: snippet.id
-                        });
-                        setVariableValues({}); // Reset variables when snippet changes
-                        // Keep snippets selection when snippet changes
-                      }}
-                    >
-                      <h4 className="font-medium text-gray-100 mb-1">{snippet.name}</h4>
-                      <p className="text-sm text-gray-300 mb-2">{snippet.description}</p>
-                      <div className="text-xs text-gray-400 bg-gray-900 p-2 rounded">
-                        {snippet.content.length > 100 
-                          ? `${snippet.content.substring(0, 100)}...` 
-                          : snippet.content
-                        }
+                  {currentStepData.snippetIds.map(snippetId => {
+                    const snippet = snippets.find(s => s.id === snippetId);
+                    if (!snippet) return null;
+                    
+                    return (
+                      <div key={snippetId} className="p-3 border border-purple-500 bg-purple-900/30 rounded-lg">
+                        <h4 className="font-medium text-gray-100 mb-1">{snippet.name}</h4>
+                        <p className="text-sm text-gray-300 mb-2">{snippet.description}</p>
+                        {snippet.tags && (
+                          <div className="flex flex-wrap gap-1">
+                            {snippet.tags.map(tag => (
+                              <span key={tag} className="px-2 py-1 bg-purple-100 text-purple-800 text-xs rounded">
+                                {tag}
+                              </span>
+                            ))}
+                          </div>
+                        )}
                       </div>
-                      <div className="flex flex-wrap gap-1 mt-2">
-                        {snippet.tags.map(tag => (
-                          <span key={tag} className="px-2 py-1 bg-purple-100 text-purple-800 text-xs rounded">
-                            {tag}
-                          </span>
-                        ))}
-                      </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </div>
             )}
@@ -958,10 +1093,23 @@ const ItemExecutor = ({ item, type, snippets = [], onComplete, onCancel, onEdit 
                 <h3 className="text-lg font-semibold text-gray-100 mb-3">{isWorkflow ? 'Current Step Preview' : 'Preview'}</h3>
                 <div className="bg-gray-800 rounded-lg p-4 border border-gray-700 min-h-48">
                   <div className="prose prose-sm max-w-none whitespace-pre-wrap">
-                    {(needsTemplateSelection || needsSnippetSelection) ? (
+                    {needsSelection ? (
                       <p className="text-gray-500 italic text-center py-8">
                         Select an option above to see the preview
                       </p>
+                    ) : stepType === 'snippet' && currentStepData.type === 'info' && currentStepData.snippetIds?.length > 0 ? (
+                      // For info steps with snippets, show the selected snippets content
+                      <div>
+                        {currentStepData.snippetIds.map(snippetId => {
+                          const snippet = snippets.find(s => s.id === snippetId);
+                          return snippet ? (
+                            <div key={snippetId} className="mb-4">
+                              <h4 className="font-semibold text-gray-100 mb-2">{snippet.name}</h4>
+                              <div className="text-gray-300">{snippet.content}</div>
+                            </div>
+                          ) : null;
+                        })}
+                      </div>
                     ) : (
                       generateOutput()
                     )}

@@ -22,36 +22,20 @@ const Homepage = ({
   onCreateFolder
 }) => {
   const [isReorderMode, setIsReorderMode] = useState(false);
-  const [draggedSection, setDraggedSection] = useState(null);
   const [draggedItem, setDraggedItem] = useState(null);
-  const [customOrder, setCustomOrder] = useState(() => {
-    const saved = localStorage.getItem(`sectionOrder_${selectedFolderId || 'global'}`);
-    return saved ? JSON.parse(saved) : { workflows: 1, templates: 2, snippets: 3 };
-  });
   const [itemOrders, setItemOrders] = useState(() => {
     const saved = localStorage.getItem(`itemOrders_${selectedFolderId || 'global'}`);
     return saved ? JSON.parse(saved) : {};
   });
   const searchInputRef = useRef(null);
 
-  // Save order to localStorage whenever it changes
-  useEffect(() => {
-    localStorage.setItem(`sectionOrder_${selectedFolderId || 'global'}`, JSON.stringify(customOrder));
-  }, [customOrder, selectedFolderId]);
 
   useEffect(() => {
     localStorage.setItem(`itemOrders_${selectedFolderId || 'global'}`, JSON.stringify(itemOrders));
   }, [itemOrders, selectedFolderId]);
 
-  // Load order when folder changes
+  // Load item orders when folder changes
   useEffect(() => {
-    const saved = localStorage.getItem(`sectionOrder_${selectedFolderId || 'global'}`);
-    if (saved) {
-      setCustomOrder(JSON.parse(saved));
-    } else {
-      setCustomOrder({ workflows: 1, templates: 2, snippets: 3 });
-    }
-    
     const savedItemOrders = localStorage.getItem(`itemOrders_${selectedFolderId || 'global'}`);
     if (savedItemOrders) {
       setItemOrders(JSON.parse(savedItemOrders));
@@ -114,47 +98,14 @@ const Homepage = ({
 
   const filteredSnippets = getFilteredItems(snippets, (item) => [item.name, item.description, item.content, ...(item.tags || [])]);
 
-  // Create sections with their data and custom order
+  // Create sections with their data in fixed order
   const sections = [
-    { type: 'workflows', data: filteredWorkflows, order: customOrder.workflows || 1 },
-    { type: 'templates', data: filteredTemplates, order: customOrder.templates || 2 },
-    { type: 'snippets', data: filteredSnippets, order: customOrder.snippets || 3 }
+    { type: 'workflows', data: filteredWorkflows },
+    { type: 'templates', data: filteredTemplates },
+    { type: 'snippets', data: filteredSnippets }
   ];
 
-  // Sort sections by custom order
-  const sortedSections = sections.sort((a, b) => a.order - b.order);
-
-  // Handle drag and drop for section reordering
-  const handleDragStart = (e, sectionType) => {
-    setDraggedSection(sectionType);
-    e.dataTransfer.effectAllowed = 'move';
-  };
-
-  const handleDragOver = (e) => {
-    e.preventDefault();
-    e.dataTransfer.dropEffect = 'move';
-  };
-
-  const handleDrop = (e, targetSectionType) => {
-    e.preventDefault();
-    
-    if (draggedSection && draggedSection !== targetSectionType) {
-      const draggedOrder = customOrder[draggedSection];
-      const targetOrder = customOrder[targetSectionType];
-      
-      // Swap the orders
-      setCustomOrder(prev => ({
-        ...prev,
-        [draggedSection]: targetOrder,
-        [targetSectionType]: draggedOrder
-      }));
-    }
-    
-    setDraggedSection(null);
-  };
-
   const resetToDefaultOrder = () => {
-    setCustomOrder({ workflows: 1, templates: 2, snippets: 3 });
     setItemOrders({});
   };
 
@@ -235,26 +186,15 @@ const Homepage = ({
 
   const renderSection = (section, isLast = false) => {
     const { type, data } = section;
-    const isDragging = draggedSection === type;
-    const canDrop = draggedSection && draggedSection !== type;
     
     switch (type) {
       case 'workflows':
         return (
           <div 
-            className={`${isLast ? '' : 'mb-8'} ${isDragging ? 'opacity-50' : ''} ${canDrop ? 'border-2 border-dashed border-green-500 rounded-lg p-2' : ''}`} 
+            className={`${isLast ? '' : 'mb-8'}`} 
             key="workflows"
-            draggable={isReorderMode}
-            onDragStart={(e) => handleDragStart(e, 'workflows')}
-            onDragOver={handleDragOver}
-            onDrop={(e) => handleDrop(e, 'workflows')}
           >
             <div className="flex items-center justify-between mb-4">
-              {isReorderMode && (
-                <div className="flex items-center mr-2 cursor-move">
-                  <GripVertical className="w-5 h-5 text-gray-400" />
-                </div>
-              )}
               <h2 className="text-xl font-semibold text-gray-100 flex items-center gap-2">
                 <Workflow className="w-5 h-5 text-gray-300" />
                 Workflows ({data.length})
@@ -267,7 +207,7 @@ const Homepage = ({
                 New Workflow
               </button>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
               {getSortedItems(data, 'workflows').map(workflow => {
                 const isDraggingItem = draggedItem?.item.id === workflow.id;
                 const canDropHere = draggedItem?.sectionType === 'workflows' && draggedItem?.item.id !== workflow.id;
@@ -333,19 +273,10 @@ const Homepage = ({
       case 'templates':
         return (
           <div 
-            className={`${isLast ? '' : 'mb-8'} ${isDragging ? 'opacity-50' : ''} ${canDrop ? 'border-2 border-dashed border-blue-500 rounded-lg p-2' : ''}`} 
+            className={`${isLast ? '' : 'mb-8'}`} 
             key="templates"
-            draggable={isReorderMode}
-            onDragStart={(e) => handleDragStart(e, 'templates')}
-            onDragOver={handleDragOver}
-            onDrop={(e) => handleDrop(e, 'templates')}
           >
             <div className="flex items-center justify-between mb-4">
-              {isReorderMode && (
-                <div className="flex items-center mr-2 cursor-move">
-                  <GripVertical className="w-5 h-5 text-gray-400" />
-                </div>
-              )}
               <h2 className="text-xl font-semibold text-gray-100 flex items-center gap-2">
                 <FileText className="w-5 h-5 text-gray-300" />
                 Templates ({data.length})
@@ -358,7 +289,7 @@ const Homepage = ({
                 New Template
               </button>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
               {getSortedItems(data, 'templates').map(template => {
                 const isDraggingItem = draggedItem?.item.id === template.id;
                 const canDropHere = draggedItem?.sectionType === 'templates' && draggedItem?.item.id !== template.id;
@@ -424,19 +355,10 @@ const Homepage = ({
       case 'snippets':
         return (
           <div 
-            className={`${isLast ? '' : 'mb-8'} ${isDragging ? 'opacity-50' : ''} ${canDrop ? 'border-2 border-dashed border-purple-500 rounded-lg p-2' : ''}`} 
+            className={`${isLast ? '' : 'mb-8'}`} 
             key="snippets"
-            draggable={isReorderMode}
-            onDragStart={(e) => handleDragStart(e, 'snippets')}
-            onDragOver={handleDragOver}
-            onDrop={(e) => handleDrop(e, 'snippets')}
           >
             <div className="flex items-center justify-between mb-4">
-              {isReorderMode && (
-                <div className="flex items-center mr-2 cursor-move">
-                  <GripVertical className="w-5 h-5 text-gray-400" />
-                </div>
-              )}
               <h2 className="text-xl font-semibold text-gray-100 flex items-center gap-2">
                 <Tag className="w-5 h-5 text-gray-300" />
                 Snippets ({data.length})
@@ -449,7 +371,7 @@ const Homepage = ({
                 New Snippet
               </button>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
               {getSortedItems(data, 'snippets').map(snippet => {
                 const isDraggingItem = draggedItem?.item.id === snippet.id;
                 const canDropHere = draggedItem?.sectionType === 'snippets' && draggedItem?.item.id !== snippet.id;
@@ -529,7 +451,7 @@ const Homepage = ({
   return (
     <div className="flex h-screen bg-gray-900">
       {/* Sidebar */}
-      <div className="w-64 bg-gray-800 border-r border-gray-700 flex flex-col">
+      <div className="w-72 bg-gray-800 border-r border-gray-700 flex flex-col flex-shrink-0">
         <FolderTree
           folders={folders || []}
           selectedFolderId={selectedFolderId}
@@ -539,8 +461,8 @@ const Homepage = ({
       </div>
 
       {/* Main Content */}
-      <div className="flex-1 overflow-y-auto">
-        <div className="max-w-6xl mx-auto p-6">
+      <div className="flex-1 overflow-y-auto overflow-x-hidden">
+        <div className="max-w-7xl mx-auto px-8 py-6">
           {/* Header */}
           <div className="mb-6">
             <h1 className="text-3xl font-bold text-gray-100 mb-2">Prompt Templates & Workflows</h1>
@@ -596,7 +518,7 @@ const Homepage = ({
             {isReorderMode && (
               <div className="bg-blue-900/20 border border-blue-600/30 rounded-lg p-4 mb-4">
                 <p className="text-blue-300 text-sm">
-                  <strong>Reorder Mode:</strong> Drag and drop the sections below to change their display order. 
+                  <strong>Reorder Mode:</strong> Drag and drop cards within each section to change their display order. 
                   This order will be saved for the current folder.
                 </p>
               </div>
@@ -604,8 +526,8 @@ const Homepage = ({
           </div>
 
           {/* Dynamic Sections */}
-          {sortedSections.map((section, index) => 
-            renderSection(section, index === sortedSections.length - 1)
+          {sections.map((section, index) => 
+            renderSection(section, index === sections.length - 1)
           )}
         </div>
       </div>

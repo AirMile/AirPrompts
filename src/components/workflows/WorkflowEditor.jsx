@@ -1,11 +1,10 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState } from 'react';
 import { ArrowRight, Workflow, Trash2, Plus, X, FileText, Info, Tag, Layers, Search, Filter } from 'lucide-react';
 import { createWorkflowStep } from '../../types/template.types.js';
 import FolderSelector from '../common/FolderSelector.jsx';
 
 // Separate SearchAndFilter component to prevent re-renders
 const SearchAndFilter = ({ 
-  stepId, 
   type, 
   items, 
   onItemSelect, 
@@ -102,18 +101,50 @@ const SearchAndFilter = ({
 
 const WorkflowEditor = ({ workflow, templates, snippets = [], folders = [], onSave, onCancel }) => {
   const [formData, setFormData] = useState(() => {
+    // Process existing workflow steps to handle info steps with snippetIds/templateId
+    const processedSteps = workflow?.steps?.map(step => {
+      if (step.type === 'info') {
+        const processedStep = { ...step };
+        
+        // Convert snippetIds back to snippetOptions for editing
+        if (step.snippetIds && step.snippetIds.length > 0) {
+          processedStep.snippetOptions = step.snippetIds
+            .map(id => snippets.find(s => s.id === id))
+            .filter(Boolean);
+        }
+        
+        // Convert templateId back to templateOptions for editing
+        if (step.templateId) {
+          const template = templates.find(t => t.id === step.templateId);
+          if (template) {
+            processedStep.templateOptions = [template];
+          }
+        }
+        
+        // Move info field to content for editing
+        if (step.info && !step.content) {
+          processedStep.content = step.info;
+        }
+        
+        return processedStep;
+      }
+      return step;
+    }) || [];
+    
     return {
       name: workflow?.name || '',
       description: workflow?.description || '',
       folderId: workflow?.folderId || 'workflows',
-      steps: workflow?.steps || [],
-      snippetTags: workflow?.snippetTags || []
+      steps: processedSteps
     };
   });
 
   // Search and filter states
   const [searchStates, setSearchStates] = useState({});
   const [filterStates, setFilterStates] = useState({});
+  
+  // Tag input states for each step
+  const [tagInputs, setTagInputs] = useState({});
 
   const getSearchTerm = (stepId, type) => searchStates[`${stepId}-${type}`] || '';
   const getFilterFolder = (stepId, type) => filterStates[`${stepId}-${type}`] || '';
@@ -132,42 +163,84 @@ const WorkflowEditor = ({ workflow, templates, snippets = [], folders = [], onSa
     }));
   };
 
-  const filterTemplates = (stepId, allTemplates = templates) => {
-    const searchTerm = getSearchTerm(stepId, 'template').toLowerCase();
-    const filterFolder = getFilterFolder(stepId, 'template');
+  const getTagInput = (stepId) => tagInputs[stepId] || '';
+  
+  const setTagInput = (stepId, value) => {
+    setTagInputs(prev => ({
+      ...prev,
+      [stepId]: value
+    }));
+  };
+
+  const handleAddTag = (stepId) => {
+    const newTag = getTagInput(stepId).trim().toLowerCase();
+    const step = formData.steps.find(s => s.id === stepId);
     
-    return allTemplates.filter(template => {
-      const matchesSearch = !searchTerm || 
-        template.name.toLowerCase().includes(searchTerm) ||
-        template.description?.toLowerCase().includes(searchTerm);
-      const matchesFolder = !filterFolder || template.folderId === filterFolder;
-      return matchesSearch && matchesFolder;
+    if (newTag && step && !step.snippetTags?.includes(newTag)) {
+      setFormData({
+        ...formData,
+        steps: formData.steps.map(s => 
+          s.id === stepId 
+            ? { ...s, snippetTags: [...(s.snippetTags || []), newTag] }
+            : s
+        )
+      });
+      setTagInput(stepId, '');
+    }
+  };
+
+  const handleRemoveTag = (stepId, tagToRemove) => {
+    setFormData({
+      ...formData,
+      steps: formData.steps.map(s => 
+        s.id === stepId 
+          ? { ...s, snippetTags: (s.snippetTags || []).filter(tag => tag !== tagToRemove) }
+          : s
+      )
     });
   };
 
-  const filterSnippets = (stepId, allSnippets = snippets) => {
-    const searchTerm = getSearchTerm(stepId, 'snippet').toLowerCase();
-    const filterFolder = getFilterFolder(stepId, 'snippet');
-    
-    return allSnippets.filter(snippet => {
-      const matchesSearch = !searchTerm || 
-        snippet.name.toLowerCase().includes(searchTerm) ||
-        snippet.description?.toLowerCase().includes(searchTerm) ||
-        snippet.tags.some(tag => tag.toLowerCase().includes(searchTerm));
-      const matchesFolder = !filterFolder || snippet.folderId === filterFolder;
-      return matchesSearch && matchesFolder;
-    });
-  };
-
-  const getUniqueFolders = (items) => {
-    const folderIds = [...new Set(items.map(item => item.folderId))];
-    return folderIds.map(id => folders.find(f => f.id === id)).filter(Boolean);
+  const handleTagKeyPress = (e, stepId) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      handleAddTag(stepId);
+    } else if (e.key === ',' || e.key === ' ') {
+      e.preventDefault();
+      handleAddTag(stepId);
+    }
   };
 
   const handleSave = () => {
+    // Process steps to handle info steps with snippets/templates
+    const processedSteps = formData.steps.map(step => {
+      if (step.type === 'info') {
+        const processedStep = { ...step };
+        
+        // If info step has snippetOptions, convert to snippetIds
+        if (step.snippetOptions && step.snippetOptions.length > 0) {
+          processedStep.snippetIds = step.snippetOptions.map(s => s.id);
+        }
+        
+        // If info step has templateOptions and only one, set templateId
+        if (step.templateOptions && step.templateOptions.length === 1) {
+          processedStep.templateId = step.templateOptions[0].id;
+        }
+        
+        // Store info content in the 'info' field
+        if (step.content) {
+          processedStep.info = step.content;
+          delete processedStep.content;
+        }
+        
+        return processedStep;
+      }
+      return step;
+    });
+    
     const newWorkflow = {
       id: workflow?.id || Date.now(),
       ...formData,
+      steps: processedSteps,
       lastUsed: workflow?.lastUsed || new Date().toISOString(),
       favorite: workflow?.favorite || false
     };
@@ -179,7 +252,8 @@ const WorkflowEditor = ({ workflow, templates, snippets = [], folders = [], onSa
       name: `Step ${formData.steps.length + 1}`,
       type: type,
       templateOptions: [],
-      snippetOptions: []
+      snippetOptions: [],
+      snippetTags: []
     });
     setFormData({
       ...formData,
@@ -266,48 +340,10 @@ const WorkflowEditor = ({ workflow, templates, snippets = [], folders = [], onSa
     const newIndex = direction === 'up' ? currentIndex - 1 : currentIndex + 1;
     
     if (newIndex >= 0 && newIndex < steps.length) {
-      // Only swap the content, not the entire step objects
-      if (steps[currentIndex].type === 'template' && steps[newIndex].type === 'template') {
-        const currentTemplateOptions = steps[currentIndex].templateOptions;
-        const currentSnippetOptions = steps[currentIndex].snippetOptions || [];
-        const targetTemplateOptions = steps[newIndex].templateOptions;
-        const targetSnippetOptions = steps[newIndex].snippetOptions || [];
-        
-        steps[currentIndex] = {
-          ...steps[currentIndex],
-          templateOptions: targetTemplateOptions,
-          snippetOptions: targetSnippetOptions
-        };
-        
-        steps[newIndex] = {
-          ...steps[newIndex],
-          templateOptions: currentTemplateOptions,
-          snippetOptions: currentSnippetOptions
-        };
-      } else {
-        // For other step types, swap relevant content
-        const currentContent = steps[currentIndex].content || '';
-        const currentInsertId = steps[currentIndex].insertId;
-        const currentInsertContent = steps[currentIndex].insertContent || '';
-        
-        const targetContent = steps[newIndex].content || '';
-        const targetInsertId = steps[newIndex].insertId;
-        const targetInsertContent = steps[newIndex].insertContent || '';
-        
-        steps[currentIndex] = {
-          ...steps[currentIndex],
-          content: targetContent,
-          insertId: targetInsertId,
-          insertContent: targetInsertContent
-        };
-        
-        steps[newIndex] = {
-          ...steps[newIndex],
-          content: currentContent,
-          insertId: currentInsertId,
-          insertContent: currentInsertContent
-        };
-      }
+      // Swap the entire step objects
+      const temp = steps[currentIndex];
+      steps[currentIndex] = steps[newIndex];
+      steps[newIndex] = temp;
       
       setFormData({ ...formData, steps });
     }
@@ -380,25 +416,6 @@ const WorkflowEditor = ({ workflow, templates, snippets = [], folders = [], onSa
                 onFolderSelect={(folderId) => setFormData({...formData, folderId})}
                 focusRingColor="green"
               />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">
-                Snippet Tags
-              </label>
-              <input
-                type="text"
-                value={formData.snippetTags.join(', ')}
-                onChange={(e) => {
-                  const tags = e.target.value.split(',').map(tag => tag.trim()).filter(tag => tag);
-                  setFormData({...formData, snippetTags: tags});
-                }}
-                className="w-full p-3 border border-gray-600 bg-gray-800 text-gray-100 rounded-lg focus:ring-2 focus:ring-green-400 focus:border-transparent"
-                placeholder="Enter snippet tags separated by commas (e.g., enhancement, quality, technical)"
-              />
-              <p className="mt-1 text-sm text-gray-400">
-                Only snippets with these tags will be shown when using this workflow
-              </p>
             </div>
 
           </div>
@@ -480,22 +497,28 @@ const WorkflowEditor = ({ workflow, templates, snippets = [], folders = [], onSa
                       </div>
                       <div className="flex items-center gap-1">
                         <button
+                          type="button"
                           onClick={() => moveStep(step.id, 'up')}
                           disabled={index === 0}
-                          className="p-1 text-gray-500 hover:text-gray-700 disabled:opacity-30"
+                          className="p-2 text-gray-300 hover:text-white hover:bg-gray-700 rounded disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-gray-300 transition-colors"
+                          title="Move step up"
                         >
                           ↑
                         </button>
                         <button
+                          type="button"
                           onClick={() => moveStep(step.id, 'down')}
                           disabled={index === formData.steps.length - 1}
-                          className="p-1 text-gray-500 hover:text-gray-700 disabled:opacity-30"
+                          className="p-2 text-gray-300 hover:text-white hover:bg-gray-700 rounded disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-gray-300 transition-colors"
+                          title="Move step down"
                         >
                           ↓
                         </button>
                         <button
+                          type="button"
                           onClick={() => removeStep(step.id)}
-                          className="p-1 text-red-500 hover:text-red-700 ml-2"
+                          className="p-2 text-red-500 hover:text-red-700 hover:bg-red-900/20 rounded ml-2 transition-colors"
+                          title="Delete step"
                         >
                           <Trash2 className="w-4 h-4" />
                         </button>
@@ -534,7 +557,6 @@ const WorkflowEditor = ({ workflow, templates, snippets = [], folders = [], onSa
                             Select snippet to copy:
                           </p>
                           <SearchAndFilter
-                            stepId={`insert-${step.id}`}
                             type="snippet"
                             items={snippets}
                             onItemSelect={(snippet) => {
@@ -666,8 +688,8 @@ const WorkflowEditor = ({ workflow, templates, snippets = [], folders = [], onSa
                         </div>
                       ))}
                       
-                      {/* Step Information Toggle - Available for all step types except pure info */}
-                      {step.type !== 'info' || (step.templateOptions && step.templateOptions.length > 0) || (step.snippetOptions && step.snippetOptions.length > 0) ? (
+                      {/* Step Information Toggle - Available for all step types except info */}
+                      {step.type !== 'info' ? (
                         !step.information || step.information === '' ? (
                           // CTA to add information
                           <div className="border-2 border-dashed border-green-600 rounded-lg p-4 text-center">
@@ -739,6 +761,59 @@ const WorkflowEditor = ({ workflow, templates, snippets = [], folders = [], onSa
                         )
                       ) : null}
                       
+                      {/* Snippet Tags Field - Only show when step has templates or snippets */}
+                      {((step.templateOptions && step.templateOptions.length > 0) || 
+                        (step.snippetOptions && step.snippetOptions.length > 0)) ? (
+                        <div className="border border-gray-600 rounded-lg p-3">
+                          <label className="block text-sm font-medium text-gray-300 mb-2">
+                            <Tag className="w-4 h-4 inline mr-1" />
+                            Snippet Tags for this Step
+                          </label>
+                          
+                          {/* Tag input field */}
+                          <div className="flex gap-2 mb-3">
+                            <input
+                              type="text"
+                              value={getTagInput(step.id)}
+                              onChange={(e) => setTagInput(step.id, e.target.value)}
+                              onKeyDown={(e) => handleTagKeyPress(e, step.id)}
+                              className="flex-1 p-2 border border-gray-600 bg-gray-800 text-gray-100 rounded focus:ring-2 focus:ring-blue-400 focus:border-transparent text-sm"
+                              placeholder="Add tags (press Enter or comma to add)..."
+                            />
+                            <button
+                              onClick={() => handleAddTag(step.id)}
+                              className="px-3 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+                            >
+                              <Plus className="w-4 h-4" />
+                            </button>
+                          </div>
+                          
+                          {/* Display existing tags */}
+                          {step.snippetTags && step.snippetTags.length > 0 && (
+                            <div className="flex flex-wrap gap-2 mb-2">
+                              {step.snippetTags.map(tag => (
+                                <span 
+                                  key={tag} 
+                                  className="px-2 py-1 bg-purple-100 text-purple-800 rounded text-sm flex items-center gap-1"
+                                >
+                                  {tag}
+                                  <button
+                                    onClick={() => handleRemoveTag(step.id, tag)}
+                                    className="text-purple-600 hover:text-purple-800"
+                                  >
+                                    <X className="w-3 h-3" />
+                                  </button>
+                                </span>
+                              ))}
+                            </div>
+                          )}
+                          
+                          <p className="mt-1 text-xs text-gray-400">
+                            Only snippets with these tags will be shown when executing this step
+                          </p>
+                        </div>
+                      ) : null}
+                      
                       {/* Add Options - Show when step has content or existing options */}
                       {(step.type === 'info' && step.content) || 
                        (step.type === 'insert' && step.insertId) ||
@@ -784,7 +859,6 @@ const WorkflowEditor = ({ workflow, templates, snippets = [], folders = [], onSa
                               Select Template:
                             </p>
                             <SearchAndFilter
-                              stepId={`${step.id}-add`}
                               type="template"
                               items={templates.filter(t => !step.templateOptions?.find(opt => opt.id === t.id))}
                               onItemSelect={(template) => {
@@ -815,7 +889,6 @@ const WorkflowEditor = ({ workflow, templates, snippets = [], folders = [], onSa
                               Select Snippet:
                             </p>
                             <SearchAndFilter
-                              stepId={`${step.id}-add`}
                               type="snippet"
                               items={snippets.filter(s => !step.snippetOptions?.find(opt => opt.id === s.id))}
                               onItemSelect={(snippet) => {
@@ -857,7 +930,6 @@ const WorkflowEditor = ({ workflow, templates, snippets = [], folders = [], onSa
                             Select template:
                           </p>
                           <SearchAndFilter
-                            stepId={step.id}
                             type="template"
                             items={templates}
                             onItemSelect={(template) => addTemplateToStep(step.id, template)}
@@ -889,7 +961,6 @@ const WorkflowEditor = ({ workflow, templates, snippets = [], folders = [], onSa
                             Select snippet:
                           </p>
                           <SearchAndFilter
-                            stepId={step.id}
                             type="snippet"
                             items={snippets}
                             onItemSelect={(snippet) => addSnippetToStep(step.id, snippet)}

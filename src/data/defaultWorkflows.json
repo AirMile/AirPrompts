@@ -289,5 +289,78 @@
     "lastUsed": "2025-01-14T00:00:00.000Z",
     "createdAt": "2025-01-14T00:00:00.000Z",
     "updatedAt": "2025-01-14T00:00:00.000Z"
+  },
+  {
+    "id": 999,
+    "name": "Complete Test Workflow",
+    "description": "Tests all step configurations: info only, snippet only, multiple snippets, templates, templates with info, templates with snippets",
+    "category": "Testing",
+    "favorite": false,
+    "folderId": "workflows",
+    "steps": [
+      {
+        "id": 99901,
+        "type": "info",
+        "name": "Step 1: Info Only",
+        "description": "This step only shows information",
+        "info": "This is a pure information step. It demonstrates how steps can provide context or instructions without templates or snippets."
+      },
+      {
+        "id": 99902,
+        "type": "snippet",
+        "name": "Step 2: Single Snippet",
+        "description": "This step uses a single snippet",
+        "snippetIds": [1]
+      },
+      {
+        "id": 99903,
+        "type": "snippet",
+        "name": "Step 3: Multiple Snippets",
+        "description": "This step combines multiple snippets",
+        "snippetIds": [1, 2, 3]
+      },
+      {
+        "id": 99904,
+        "type": "template",
+        "name": "Step 4: Template Only",
+        "description": "This step uses a template without additional info",
+        "templateId": 1
+      },
+      {
+        "id": 99905,
+        "type": "template",
+        "name": "Step 5: Template with Info",
+        "description": "This step combines a template with additional information",
+        "templateId": 2,
+        "info": "Additional context: This template can be modified. You can use {previous_output} to reference the previous step's result."
+      },
+      {
+        "id": 99906,
+        "type": "template",
+        "name": "Step 6: Template with Snippets",
+        "description": "This step combines a template with snippets for comprehensive output",
+        "templateId": 3,
+        "snippetIds": [2, 3],
+        "info": "This demonstrates the most complex step type: template + snippets + info"
+      },
+      {
+        "id": 99907,
+        "type": "info",
+        "name": "Step 7: Info with Single Template",
+        "description": "Info step that shows a template with additional context",
+        "templateId": 1,
+        "info": "This info text becomes 'Step Information (optional)' when a template is attached. The template is shown as the main content."
+      },
+      {
+        "id": 99908,
+        "type": "info",
+        "name": "Step 8: Info with Multiple Snippets",
+        "description": "Info step that shows snippets with additional context",
+        "snippetIds": [1, 2, 3],
+        "info": "When an info step has snippets attached, the user can select which snippets to use. This info text provides additional context."
+      }
+    ],
+    "createdAt": "2025-01-15T00:00:00.000Z",
+    "updatedAt": "2025-01-15T00:00:00.000Z"
   }
 ]
