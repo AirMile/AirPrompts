@@ -668,65 +668,75 @@ const WorkflowEditor = ({ workflow, templates, snippets = [], folders = [], onSa
                       
                       {/* Step Information Toggle - Available for all step types except pure info */}
                       {step.type !== 'info' || (step.templateOptions && step.templateOptions.length > 0) || (step.snippetOptions && step.snippetOptions.length > 0) ? (
-                        <div className="border-2 border-dashed border-blue-600 rounded-lg p-3">
-                          <div className="flex items-center justify-between mb-2">
-                            <p className="text-sm text-blue-400 flex items-center gap-2">
+                        !step.information || step.information === '' ? (
+                          // CTA to add information
+                          <div className="border-2 border-dashed border-green-600 rounded-lg p-4 text-center">
+                            <p className="text-sm text-green-400 flex items-center justify-center gap-2 mb-2">
                               <Info className="w-4 h-4" />
                               Step Information (Optional)
+                            </p>
+                            <p className="text-sm text-gray-500 italic mb-3">
+                              Include helpful information or instructions for this step.
                             </p>
                             <button
                               type="button"
                               onClick={() => {
-                                const hasInformation = step.information && step.information !== '';
                                 setFormData({
                                   ...formData,
                                   steps: formData.steps.map(s => 
-                                    s.id === step.id ? { 
-                                      ...s, 
-                                      information: hasInformation ? '' : ' ' 
-                                    } : s
+                                    s.id === step.id ? { ...s, information: ' ' } : s
                                   )
                                 });
                               }}
-                              className={`px-3 py-1 rounded text-xs font-medium transition-colors ${
-                                step.information && step.information !== '' 
-                                  ? 'bg-blue-600 text-white hover:bg-blue-700' 
-                                  : 'bg-gray-600 text-gray-300 hover:bg-gray-500'
-                              }`}
+                              className='px-4 py-2 rounded text-sm font-medium transition-colors bg-green-600 text-white hover:bg-green-700'
                             >
-                              {step.information && step.information !== '' ? 'Remove' : 'Add'}
+                              Add Information
                             </button>
                           </div>
-                          
-                          {step.information && step.information !== '' && (
-                            <>
-                              <textarea
-                                id={`stepInformation-${step.id}`}
-                                name={`stepInformation-${step.id}`}
-                                value={step.information === ' ' ? '' : step.information || ''}
-                                onChange={(e) => {
+                        ) : (
+                          // View/edit information
+                          <div className="border-2 border-solid border-green-700 rounded-lg p-3">
+                            <div className="flex items-center justify-between mb-2">
+                              <p className="text-sm text-green-400 flex items-center gap-2">
+                                <Info className="w-4 h-4" />
+                                Step Information
+                              </p>
+                              <button
+                                type="button"
+                                onClick={() => {
                                   setFormData({
                                     ...formData,
                                     steps: formData.steps.map(s => 
-                                      s.id === step.id ? { ...s, information: e.target.value } : s
+                                      s.id === step.id ? { ...s, information: '' } : s
                                     )
                                   });
                                 }}
-                                className="w-full h-20 p-3 border border-gray-600 bg-gray-800 text-gray-100 rounded-lg focus:ring-2 focus:ring-blue-400 focus:border-transparent"
-                                placeholder="Add helpful information or instructions for this step..."
-                              />
-                              <p className="mt-1 text-xs text-gray-400">
-                                This information will be displayed to users when executing this step
-                              </p>
-                            </>
-                          )}
-                          
-                          {(!step.information || step.information === '') && (
-                            <p className="text-sm text-gray-500 italic">
-                              Click "Add" to include helpful information or instructions for this step
+                                className='px-3 py-1 rounded text-xs font-medium transition-colors bg-red-600 text-white hover:bg-red-700 flex items-center gap-1'
+                              >
+                                <Trash2 className="w-3 h-3" />
+                                Remove
+                              </button>
+                            </div>
+                            <textarea
+                              id={`stepInformation-${step.id}`}
+                              name={`stepInformation-${step.id}`}
+                              value={step.information === ' ' ? '' : step.information || ''}
+                              onChange={(e) => {
+                                setFormData({
+                                  ...formData,
+                                  steps: formData.steps.map(s => 
+                                    s.id === step.id ? { ...s, information: e.target.value } : s
+                                  )
+                                });
+                              }}
+                              className="w-full h-20 p-3 border border-gray-600 bg-gray-800 text-gray-100 rounded-lg focus:ring-2 focus:ring-green-400 focus:border-transparent"
+                              placeholder="Add helpful information or instructions for this step..."
+                            />
+                            <p className="mt-1 text-xs text-gray-400">
+                              This information will be displayed to users when executing this step
                             </p>
-                          )}
-                        </div>
+                          </div>
+                        )
                       ) : null}
                       
                       {/* Add Options - Show when step has content or existing options */}
