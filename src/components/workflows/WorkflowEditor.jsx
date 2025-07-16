@@ -864,14 +864,74 @@ const WorkflowEditor = ({ workflow, templates, snippets = [], workflows = [], fo
                         </div>
                       ) : null}
                       
-                      {/* Add Options - Show when step has content or existing options, or for template/workflow steps */}
+                      {/* Template Step Selection - Show when no templates selected yet */}
+                      {step.type === 'template' && (!step.templateOptions || step.templateOptions.length === 0) ? (
+                        <div className="border-2 border-dashed border-blue-600 rounded-lg p-3">
+                          <p className="text-sm text-blue-400 mb-3 flex items-center gap-2">
+                            <FileText className="w-4 h-4" />
+                            Select Template:
+                          </p>
+                          <SearchAndFilter
+                            type="template"
+                            items={templates}
+                            onItemSelect={(template) => {
+                              addTemplateToStep(step.id, template);
+                            }}
+                            renderItem={(template) => (
+                              <div>
+                                <div className="font-medium text-sm">{template.name}</div>
+                                <div className="text-xs text-gray-300">{template.variables.length} variables</div>
+                                {template.description && (
+                                  <div className="text-xs text-gray-400 mt-1">{template.description}</div>
+                                )}
+                              </div>
+                            )}
+                            searchTerm={getSearchTerm(`${step.id}-select`, 'template')}
+                            onSearchChange={(term) => setSearchTerm(`${step.id}-select`, 'template', term)}
+                            filterFolder={getFilterFolder(`${step.id}-select`, 'template')}
+                            onFilterChange={(folder) => setFilterFolder(`${step.id}-select`, 'template', folder)}
+                            folders={folders}
+                          />
+                        </div>
+                      ) : null}
+                      
+                      {/* Workflow Step Selection - Show when no workflows selected yet */}
+                      {step.type === 'workflow' && (!step.workflowOptions || step.workflowOptions.length === 0) ? (
+                        <div className="border-2 border-dashed border-orange-600 rounded-lg p-3">
+                          <p className="text-sm text-orange-400 mb-3 flex items-center gap-2">
+                            <Workflow className="w-4 h-4" />
+                            Select Workflow:
+                          </p>
+                          <SearchAndFilter
+                            type="workflow"
+                            items={workflows.filter(w => w.id !== workflow?.id)}
+                            onItemSelect={(selectedWorkflow) => {
+                              addWorkflowToStep(step.id, selectedWorkflow);
+                            }}
+                            renderItem={(workflowItem) => (
+                              <div>
+                                <div className="font-medium text-sm">{workflowItem.name}</div>
+                                <div className="text-xs text-gray-300">{workflowItem.steps?.length || 0} steps</div>
+                                {workflowItem.description && (
+                                  <div className="text-xs text-gray-400 mt-1">{workflowItem.description}</div>
+                                )}
+                              </div>
+                            )}
+                            searchTerm={getSearchTerm(`${step.id}-select`, 'workflow')}
+                            onSearchChange={(term) => setSearchTerm(`${step.id}-select`, 'workflow', term)}
+                            filterFolder={getFilterFolder(`${step.id}-select`, 'workflow')}
+                            onFilterChange={(folder) => setFilterFolder(`${step.id}-select`, 'workflow', folder)}
+                            folders={folders}
+                          />
+                        </div>
+                      ) : null}
+                      
+                      {/* Add Options - Show when step has content or existing options */}
                       {(step.type === 'info' && step.content) || 
                        (step.type === 'insert' && step.insertId) ||
-                       (step.type === 'template') ||
-                       (step.type === 'snippet') ||
-                       (step.type === 'workflow') ||
                        (step.templateOptions && step.templateOptions.length > 0) ||
-                       (step.snippetOptions && step.snippetOptions.length > 0) ? (
+                       (step.snippetOptions && step.snippetOptions.length > 0) ||
+                       (step.workflowOptions && step.workflowOptions.length > 0) ? (
                         <div className="border-2 border-dashed border-gray-600 rounded-lg p-3">
                           <p className="text-sm text-gray-400 mb-3">Add more options to step:</p>
                           
