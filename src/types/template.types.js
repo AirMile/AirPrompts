@@ -82,11 +82,13 @@ export const createWorkflowStep = (data = {}) => {
   return {
     id: data.id || `step_${Date.now()}`,
     name: data.name || '',
-    type: data.type || 'template', // 'template', 'info', 'insert'
+    type: data.type || 'template', // 'template', 'info', 'insert', 'workflow'
     templateOptions: data.templateOptions || [], // For template steps
     snippetOptions: data.snippetOptions || [], // For snippet steps
+    workflowOptions: data.workflowOptions || [], // For workflow steps
     selectedTemplateId: data.selectedTemplateId || null, // For execution
     selectedSnippetId: data.selectedSnippetId || null, // For execution
+    selectedWorkflowId: data.selectedWorkflowId || null, // For execution
     variables: data.variables || [],
     content: data.content || '', // For info steps
     information: data.information || '', // Information text shown with any step type

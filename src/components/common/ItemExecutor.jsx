@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Copy, ArrowLeft, ArrowRight, Check, Info, Tag, Plus, Edit, FileText, Layers } from 'lucide-react';
+import { Copy, ArrowLeft, ArrowRight, Check, Info, Tag, Plus, Edit, FileText, Layers, Workflow } from 'lucide-react';
 import { copyToClipboard } from '../../utils/clipboard.js';
 import { extractAllVariables } from '../../types/template.types.js';
 
@@ -30,8 +30,8 @@ const ItemExecutor = ({ item, type, snippets = [], onComplete, onCancel, onEdit 
   
   // Filter snippets based on current step's snippet tags (for auto-append functionality)
   const getFilteredSnippets = () => {
-    // For info steps, never show snippets
-    if (stepType === 'info') {
+    // For info steps and workflow steps, never show snippets
+    if (stepType === 'info' || stepType === 'workflow') {
       return [];
     }
     
@@ -64,10 +64,19 @@ const ItemExecutor = ({ item, type, snippets = [], onComplete, onCancel, onEdit 
   const [selectedOptions, setSelectedOptions] = useState({}); // stepId -> { type: 'template'|'snippet', id: itemId }
   const [selectedSnippets, setSelectedSnippets] = useState(new Set()); // Set of snippet IDs
 
+  // Track if we're in keyboard navigation mode
+  const [keyboardNavigating, setKeyboardNavigating] = useState(new Set());
+
+  // Track programmatic changes to prevent unwanted closing
+  const [programmaticChange, setProgrammaticChange] = useState(new Set());
+
+
   
   // Get all available options (templates and snippets combined) for current step
   const getAllStepOptions = () => {
-    if (!isWorkflow) return [];
+    if (!isWorkflow) {
+      return [];
+    }
     
     // Check if this is an info step with templates/snippets
     if (currentStepData.type === 'info' && (currentStepData.templateId || currentStepData.snippetIds?.length > 0)) {
@@ -111,9 +120,10 @@ const ItemExecutor = ({ item, type, snippets = [], onComplete, onCancel, onEdit 
       return options;
     }
     
-    // Original logic for template steps
-    if (currentStepData.type !== 'template') return [];
-    
+    // Original logic for template and workflow steps
+    if (currentStepData.type !== 'template' && currentStepData.type !== 'workflow') {
+      return [];
+    }
     const options = [];
     
     // Add template options
@@ -143,6 +153,17 @@ const ItemExecutor = ({ item, type, snippets = [], onComplete, onCancel, onEdit 
       });
     }
     
+    // Add workflow options - convert workflows to executable structure
+    if (currentStepData.workflowOptions) {
+      currentStepData.workflowOptions.forEach(workflowItem => {
+        options.push({
+          type: 'workflow',
+          id: workflowItem.id,
+          item: workflowItem
+        });
+      });
+    }
+    
     // If no explicit options but step has content, treat as single template option
     if (options.length === 0 && currentStepData.content && currentStepData.variables) {
       options.push({
@@ -151,13 +172,14 @@ const ItemExecutor = ({ item, type, snippets = [], onComplete, onCancel, onEdit 
         item: currentStepData
       });
     }
-    
     return options;
   };
 
   // Get the current template or snippet for this step
   const getCurrentTemplate = () => {
-    if (!isWorkflow) return currentStepData;
+    if (!isWorkflow) {
+      return currentStepData;
+    }
     
     // Handle info steps with templates/snippets
     if (currentStepData.type === 'info' && (currentStepData.templateId || currentStepData.snippetIds?.length > 0)) {
@@ -185,7 +207,7 @@ const ItemExecutor = ({ item, type, snippets = [], onComplete, onCancel, onEdit 
     }
     
     // Handle different step types
-    if (currentStepData.type === 'template') {
+    if (currentStepData.type === 'template' || currentStepData.type === 'workflow') {
       const allOptions = getAllStepOptions();
       
       if (allOptions.length > 0) {
@@ -196,10 +218,12 @@ const ItemExecutor = ({ item, type, snippets = [], onComplete, onCancel, onEdit 
           const option = allOptions.find(opt => 
             opt.type === selectedOption.type && opt.id === selectedOption.id
           );
-          if (option) return option.item;
+          if (option) {
+            return option.item;
+          }
         }
         
-        // Only auto-select if there's exactly one option (including legacy single template)
+        // Only auto-select if there's exactly one option (including legacy single template/workflow)
         if (allOptions.length === 1) {
           return allOptions[0].item;
         }
@@ -214,6 +238,9 @@ const ItemExecutor = ({ item, type, snippets = [], onComplete, onCancel, onEdit 
   };
   
   const currentTemplate = getCurrentTemplate();
+  
+  // Check if currentTemplate is actually a workflow (has steps property)
+  const isNestedWorkflow = currentTemplate && Array.isArray(currentTemplate.steps);
   
   // Extract all variables including snippets from current template and sort by position
   const getAllTemplateVariables = () => {
@@ -263,6 +290,26 @@ const ItemExecutor = ({ item, type, snippets = [], onComplete, onCancel, onEdit 
   
   const { snippetVariables, sortedVariables } = getAllTemplateVariables();
   const allVariables = sortedVariables.map(v => v.placeholder);
+
+  // Helper function to focus next field
+  const focusNextField = (currentIndex) => {
+    const nextTabIndex = currentIndex + 2; // tabIndex starts at 1, so next is current + 1 + 1
+    const nextInput = document.querySelector(`input[tabindex="${nextTabIndex}"], select[tabindex="${nextTabIndex}"]`);
+    if (nextInput) {
+      nextInput.focus();
+      // Auto-expand dropdown if it's a select element
+      if (nextInput.tagName === 'SELECT' && !nextInput.disabled) {
+        const optionCount = nextInput.options.length;
+        nextInput.size = Math.min(optionCount, 8);
+        nextInput.style.zIndex = '1000';
+        nextInput.style.maxHeight = '200px';
+        nextInput.style.overflowY = 'auto';
+        
+        // Do NOT auto-select when focusing next field - let user navigate with arrow keys
+      }
+    }
+  };
+
   
   // Auto-focus first input on mount and step changes
   useEffect(() => {
@@ -350,7 +397,28 @@ const ItemExecutor = ({ item, type, snippets = [], onComplete, onCancel, onEdit 
       return () => clearTimeout(timer);
     }
   }, [stepType, sortedVariables.length]);
-
+  
+  
+  // If we have a nested workflow, render a recursive ItemExecutor for it
+  if (isNestedWorkflow) {
+    return (
+      <ItemExecutor
+        item={currentTemplate}
+        type="workflow"
+        snippets={snippets}
+        onComplete={() => {
+          if (currentStep + 1 < steps.length) {
+            setCurrentStep(currentStep + 1);
+          } else {
+            onComplete();
+          }
+        }}
+        onCancel={onCancel}
+        onEdit={onEdit}
+      />
+    );
+  }
+  
   const handleVariableChange = (variable, value) => {
     setVariableValues(prev => ({
       ...prev,
@@ -512,12 +580,6 @@ const ItemExecutor = ({ item, type, snippets = [], onComplete, onCancel, onEdit 
     }
   };
 
-  // Track if we're in keyboard navigation mode
-  const [keyboardNavigating, setKeyboardNavigating] = useState(new Set());
-
-  // Track programmatic changes to prevent unwanted closing
-  const [programmaticChange, setProgrammaticChange] = useState(new Set());
-
   // Handler for dropdown selection - only close if not keyboard navigating or programmatic
   const handleDropdownSelect = (variable, value, currentIndex) => {
     // Check if this is keyboard navigation or programmatic change
@@ -546,25 +608,6 @@ const ItemExecutor = ({ item, type, snippets = [], onComplete, onCancel, onEdit 
         dropdown.style.overflowY = '';
       }
     }, 100);
-  };
-
-  // Helper function to focus next field
-  const focusNextField = (currentIndex) => {
-    const nextTabIndex = currentIndex + 2; // tabIndex starts at 1, so next is current + 1 + 1
-    const nextInput = document.querySelector(`input[tabindex="${nextTabIndex}"], select[tabindex="${nextTabIndex}"]`);
-    if (nextInput) {
-      nextInput.focus();
-      // Auto-expand dropdown if it's a select element
-      if (nextInput.tagName === 'SELECT' && !nextInput.disabled) {
-        const optionCount = nextInput.options.length;
-        nextInput.size = Math.min(optionCount, 8);
-        nextInput.style.zIndex = '1000';
-        nextInput.style.maxHeight = '200px';
-        nextInput.style.overflowY = 'auto';
-        
-        // Do NOT auto-select when focusing next field - let user navigate with arrow keys
-      }
-    }
   };
 
   const generateOutput = () => {
@@ -977,6 +1020,8 @@ const ItemExecutor = ({ item, type, snippets = [], onComplete, onCancel, onEdit 
                     const isSelected = selectedOptions[currentStepData.id]?.type === option.type && 
                                      selectedOptions[currentStepData.id]?.id === option.id;
                     const isTemplate = option.type === 'template';
+                    const isWorkflow = option.type === 'workflow';
+                    const isSnippet = option.type === 'snippet';
                     
                     return (
                       <div
@@ -985,6 +1030,8 @@ const ItemExecutor = ({ item, type, snippets = [], onComplete, onCancel, onEdit 
                           isSelected
                             ? isTemplate 
                               ? 'border-blue-500 bg-blue-900/30'
+                              : isWorkflow
+                              ? 'border-orange-500 bg-orange-900/30'
                               : 'border-purple-500 bg-purple-900/30'
                             : 'border-gray-600 bg-gray-800 hover:bg-gray-700'
                         }`}
@@ -999,13 +1046,15 @@ const ItemExecutor = ({ item, type, snippets = [], onComplete, onCancel, onEdit 
                         <div className="flex items-center gap-2 mb-1">
                           {isTemplate ? (
                             <FileText className="w-4 h-4 text-blue-400" />
+                          ) : isWorkflow ? (
+                            <Workflow className="w-4 h-4 text-orange-400" />
                           ) : (
                             <Layers className="w-4 h-4 text-purple-400" />
                           )}
                           <span className={`text-xs px-2 py-1 rounded ${
-                            isTemplate ? 'bg-blue-100 text-blue-800' : 'bg-purple-100 text-purple-800'
+                            isTemplate ? 'bg-blue-100 text-blue-800' : isWorkflow ? 'bg-orange-100 text-orange-800' : 'bg-purple-100 text-purple-800'
                           }`}>
-                            {isTemplate ? 'Template' : 'Snippet'}
+                            {isTemplate ? 'Template' : isWorkflow ? 'Workflow' : 'Snippet'}
                           </span>
                         </div>
                         <h4 className="font-medium text-gray-100 mb-1">{option.item.name}</h4>
@@ -1013,9 +1062,9 @@ const ItemExecutor = ({ item, type, snippets = [], onComplete, onCancel, onEdit 
                         <div className={`text-xs text-gray-400 p-2 rounded ${
                           isTemplate ? 'font-mono bg-gray-900' : 'bg-gray-900'
                         }`}>
-                          {option.item.content.length > 100 
+                          {option.item.content && option.item.content.length > 100 
                             ? `${option.item.content.substring(0, 100)}...` 
-                            : option.item.content
+                            : option.item.content || 'No content available'
                           }
                         </div>
                         {!isTemplate && option.item.tags && (

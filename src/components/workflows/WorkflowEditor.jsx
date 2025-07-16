@@ -99,7 +99,7 @@ const SearchAndFilter = ({
   );
 };
 
-const WorkflowEditor = ({ workflow, templates, snippets = [], folders = [], onSave, onCancel }) => {
+const WorkflowEditor = ({ workflow, templates, snippets = [], workflows = [], folders = [], onSave, onCancel }) => {
   const [formData, setFormData] = useState(() => {
     // Process existing workflow steps to handle info steps with snippetIds/templateId
     const processedSteps = workflow?.steps?.map(step => {
@@ -119,6 +119,13 @@ const WorkflowEditor = ({ workflow, templates, snippets = [], folders = [], onSa
           if (template) {
             processedStep.templateOptions = [template];
           }
+        }
+        
+        // Convert workflowIds back to workflowOptions for editing
+        if (step.workflowIds && step.workflowIds.length > 0) {
+          processedStep.workflowOptions = step.workflowIds
+            .map(id => workflows.find(w => w.id === id))
+            .filter(Boolean);
         }
         
         // Move info field to content for editing
@@ -226,6 +233,11 @@ const WorkflowEditor = ({ workflow, templates, snippets = [], folders = [], onSa
           processedStep.templateId = step.templateOptions[0].id;
         }
         
+        // If info step has workflowOptions, convert to workflowIds
+        if (step.workflowOptions && step.workflowOptions.length > 0) {
+          processedStep.workflowIds = step.workflowOptions.map(w => w.id);
+        }
+        
         // Store info content in the 'info' field
         if (step.content) {
           processedStep.info = step.content;
@@ -320,6 +332,41 @@ const WorkflowEditor = ({ workflow, templates, snippets = [], folders = [], onSa
           return {
             ...step,
             snippetOptions: updatedOptions
+          };
+        }
+        return step;
+      })
+    });
+  };
+
+  const addWorkflowToStep = (stepId, workflowItem) => {
+    setFormData({
+      ...formData,
+      steps: formData.steps.map(step => {
+        if (step.id === stepId) {
+          const updatedOptions = [...(step.workflowOptions || []), workflowItem];
+          return {
+            ...step,
+            workflowOptions: updatedOptions,
+            name: step.templateOptions?.length === 0 && step.snippetOptions?.length === 0 && (step.workflowOptions?.length === 0 || !step.workflowOptions) 
+              ? `Step ${formData.steps.findIndex(s => s.id === stepId) + 1}: ${workflowItem.name}` 
+              : step.name
+          };
+        }
+        return step;
+      })
+    });
+  };
+
+  const removeWorkflowFromStep = (stepId, workflowId) => {
+    setFormData({
+      ...formData,
+      steps: formData.steps.map(step => {
+        if (step.id === stepId) {
+          const updatedOptions = (step.workflowOptions || []).filter(w => w.id !== workflowId);
+          return {
+            ...step,
+            workflowOptions: updatedOptions
           };
         }
         return step;
@@ -455,6 +502,13 @@ const WorkflowEditor = ({ workflow, templates, snippets = [], folders = [], onSa
                     <Tag className="w-4 h-4" />
                     Snippet Step
                   </button>
+                  <button
+                    onClick={() => addNewStep('workflow')}
+                    className="px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 flex items-center gap-2"
+                  >
+                    <Workflow className="w-4 h-4" />
+                    Workflow Step
+                  </button>
                 </div>
               </div>
             ) : (
@@ -471,6 +525,7 @@ const WorkflowEditor = ({ workflow, templates, snippets = [], folders = [], onSa
                             {step.type === 'template' && <FileText className="w-4 h-4 text-blue-400" />}
                             {step.type === 'info' && <Info className="w-4 h-4 text-green-400" />}
                             {step.type === 'insert' && <Tag className="w-4 h-4 text-purple-400" />}
+                            {step.type === 'workflow' && <Workflow className="w-4 h-4 text-orange-400" />}
                             <input
                               type="text"
                               id={`stepName-${step.id}`}
@@ -492,6 +547,7 @@ const WorkflowEditor = ({ workflow, templates, snippets = [], folders = [], onSa
                             {step.type === 'template' && `${step.templateOptions?.length || 0} template(s), ${step.snippetOptions?.length || 0} snippet(s)`}
                             {step.type === 'info' && 'Information step'}
                             {step.type === 'insert' && 'Snippet insert step'}
+                            {step.type === 'workflow' && `${step.workflowOptions?.length || 0} workflow(s)`}
                           </p>
                         </div>
                       </div>
@@ -688,6 +744,28 @@ const WorkflowEditor = ({ workflow, templates, snippets = [], folders = [], onSa
                         </div>
                       ))}
                       
+                      {/* Show existing workflows */}
+                      {step.workflowOptions?.map((workflowItem) => (
+                        <div key={workflowItem.id} className="bg-gray-900 rounded p-3 border border-gray-700">
+                          <div className="flex items-center justify-between mb-2">
+                            <div className="flex items-center gap-2">
+                              <Workflow className="w-4 h-4 text-orange-400" />
+                              <h4 className="font-medium text-gray-100">{workflowItem.name}</h4>
+                            </div>
+                            <button
+                              onClick={() => removeWorkflowFromStep(step.id, workflowItem.id)}
+                              className="p-1 text-red-500 hover:text-red-700"
+                            >
+                              <X className="w-4 h-4" />
+                            </button>
+                          </div>
+                          <div className="text-sm text-gray-200">
+                            {workflowItem.steps?.length || 0} steps
+                            {workflowItem.description && ` - ${workflowItem.description}`}
+                          </div>
+                        </div>
+                      ))}
+                      
                       {/* Step Information - Only show when explicitly added */}
                       {step.type !== 'info' && step.information && step.information !== '' ? (
                         <div className="border-2 border-solid border-green-700 rounded-lg p-3">
@@ -786,9 +864,12 @@ const WorkflowEditor = ({ workflow, templates, snippets = [], folders = [], onSa
                         </div>
                       ) : null}
                       
-                      {/* Add Options - Show when step has content or existing options */}
+                      {/* Add Options - Show when step has content or existing options, or for template/workflow steps */}
                       {(step.type === 'info' && step.content) || 
                        (step.type === 'insert' && step.insertId) ||
+                       (step.type === 'template') ||
+                       (step.type === 'snippet') ||
+                       (step.type === 'workflow') ||
                        (step.templateOptions && step.templateOptions.length > 0) ||
                        (step.snippetOptions && step.snippetOptions.length > 0) ? (
                         <div className="border-2 border-dashed border-gray-600 rounded-lg p-3">
@@ -821,6 +902,20 @@ const WorkflowEditor = ({ workflow, templates, snippets = [], folders = [], onSa
                             >
                               <Layers className="w-4 h-4" />
                               Add Snippet
+                            </button>
+                            
+                            <button
+                              onClick={() => {
+                                // Show workflow selection dropdown
+                                const stepElement = document.getElementById(`workflow-dropdown-${step.id}`);
+                                if (stepElement) {
+                                  stepElement.style.display = stepElement.style.display === 'none' ? 'block' : 'none';
+                                }
+                              }}
+                              className="px-3 py-2 bg-orange-600 text-white rounded hover:bg-orange-700 flex items-center gap-2"
+                            >
+                              <Workflow className="w-4 h-4" />
+                              Add Workflow
                             </button>
                             
                             {/* Add Info button - only show if step doesn't have information yet and step is not an info step */}
@@ -873,7 +968,7 @@ const WorkflowEditor = ({ workflow, templates, snippets = [], folders = [], onSa
                           </div>
                           
                           {/* Snippet Selection Dropdown */}
-                          <div id={`snippet-dropdown-${step.id}`} style={{ display: 'none' }}>
+                          <div id={`snippet-dropdown-${step.id}`} style={{ display: 'none' }} className="mb-4">
                             <p className="text-sm text-purple-400 mb-3 flex items-center gap-2">
                               <Layers className="w-4 h-4" />
                               Select Snippet:
@@ -907,74 +1002,36 @@ const WorkflowEditor = ({ workflow, templates, snippets = [], folders = [], onSa
                               folders={folders}
                             />
                           </div>
-                        </div>
-                      ) : null}
-                      
-                      {/* Template Step - Direct template selection */}
-                      {step.type === 'template' && 
-                       (!step.templateOptions || step.templateOptions.length === 0) &&
-                       (!step.snippetOptions || step.snippetOptions.length === 0) ? (
-                        <div className="border-2 border-dashed border-blue-600 rounded-lg p-3">
-                          <p className="text-sm text-blue-400 mb-3 flex items-center gap-2">
-                            <FileText className="w-4 h-4" />
-                            Select template:
-                          </p>
-                          <SearchAndFilter
-                            type="template"
-                            items={templates}
-                            onItemSelect={(template) => addTemplateToStep(step.id, template)}
-                            renderItem={(template) => (
-                              <div>
-                                <div className="font-medium text-sm">{template.name}</div>
-                                <div className="text-xs text-gray-300">{template.variables.length} variables</div>
-                                {template.description && (
-                                  <div className="text-xs text-gray-400 mt-1">{template.description}</div>
-                                )}
-                              </div>
-                            )}
-                            searchTerm={getSearchTerm(step.id, 'template')}
-                            onSearchChange={(term) => setSearchTerm(step.id, 'template', term)}
-                            filterFolder={getFilterFolder(step.id, 'template')}
-                            onFilterChange={(folder) => setFilterFolder(step.id, 'template', folder)}
-                            folders={folders}
-                          />
-                        </div>
-                      ) : null}
-                      
-                      {/* Snippet Step - Direct snippet selection */}
-                      {step.type === 'snippet' && 
-                       (!step.templateOptions || step.templateOptions.length === 0) &&
-                       (!step.snippetOptions || step.snippetOptions.length === 0) ? (
-                        <div className="border-2 border-dashed border-purple-600 rounded-lg p-3">
-                          <p className="text-sm text-purple-400 mb-3 flex items-center gap-2">
-                            <Layers className="w-4 h-4" />
-                            Select snippet:
-                          </p>
-                          <SearchAndFilter
-                            type="snippet"
-                            items={snippets}
-                            onItemSelect={(snippet) => addSnippetToStep(step.id, snippet)}
-                            renderItem={(snippet) => (
-                              <div>
-                                <div className="font-medium text-sm">{snippet.name}</div>
-                                {snippet.description && (
-                                  <div className="text-xs text-gray-400 mt-1">{snippet.description}</div>
-                                )}
-                                <div className="text-xs text-gray-300 flex flex-wrap gap-1 mt-1">
-                                  {snippet.tags.map(tag => (
-                                    <span key={tag} className="px-1 py-0.5 bg-purple-100 text-purple-800 rounded text-xs">
-                                      {tag}
-                                    </span>
-                                  ))}
+                          
+                          {/* Workflow Selection Dropdown */}
+                          <div id={`workflow-dropdown-${step.id}`} style={{ display: 'none' }}>
+                            <p className="text-sm text-orange-400 mb-3 flex items-center gap-2">
+                              <Workflow className="w-4 h-4" />
+                              Select Workflow:
+                            </p>
+                            <SearchAndFilter
+                              type="workflow"
+                              items={workflows.filter(w => w.id !== workflow?.id && !step.workflowOptions?.find(opt => opt.id === w.id))}
+                              onItemSelect={(selectedWorkflow) => {
+                                addWorkflowToStep(step.id, selectedWorkflow);
+                                document.getElementById(`workflow-dropdown-${step.id}`).style.display = 'none';
+                              }}
+                              renderItem={(workflowItem) => (
+                                <div>
+                                  <div className="font-medium text-sm">{workflowItem.name}</div>
+                                  <div className="text-xs text-gray-300">{workflowItem.steps?.length || 0} steps</div>
+                                  {workflowItem.description && (
+                                    <div className="text-xs text-gray-400 mt-1">{workflowItem.description}</div>
+                                  )}
                                 </div>
-                              </div>
-                            )}
-                            searchTerm={getSearchTerm(step.id, 'snippet')}
-                            onSearchChange={(term) => setSearchTerm(step.id, 'snippet', term)}
-                            filterFolder={getFilterFolder(step.id, 'snippet')}
-                            onFilterChange={(folder) => setFilterFolder(step.id, 'snippet', folder)}
-                            folders={folders}
-                          />
+                              )}
+                              searchTerm={getSearchTerm(`${step.id}-add`, 'workflow')}
+                              onSearchChange={(term) => setSearchTerm(`${step.id}-add`, 'workflow', term)}
+                              filterFolder={getFilterFolder(`${step.id}-add`, 'workflow')}
+                              onFilterChange={(folder) => setFilterFolder(`${step.id}-add`, 'workflow', folder)}
+                              folders={folders}
+                            />
+                          </div>
                         </div>
                       ) : null}
                     </div>
@@ -1006,6 +1063,13 @@ const WorkflowEditor = ({ workflow, templates, snippets = [], folders = [], onSa
                     >
                       <Tag className="w-4 h-4" />
                       Snippet Step
+                    </button>
+                    <button
+                      onClick={() => addNewStep('workflow')}
+                      className="px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 flex items-center gap-2"
+                    >
+                      <Workflow className="w-4 h-4" />
+                      Workflow Step
                     </button>
                   </div>
                 </div>

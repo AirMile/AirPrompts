@@ -103,6 +103,7 @@ const PromptTemplateSystem = () => {
         workflow={editingWorkflow}
         templates={templates}
         snippets={snippets}
+        workflows={workflows}
         folders={folders}
         onSave={handleSaveWorkflow}
         onCancel={() => {
