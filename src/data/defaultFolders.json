@@ -4,6 +4,7 @@
     "name": "Root",
     "parentId": null,
     "type": "folder",
+    "favorite": false,
     "createdAt": "2025-01-13T00:00:00.000Z",
     "updatedAt": "2025-01-13T00:00:00.000Z"
   },
@@ -12,14 +13,7 @@
     "name": "🏠 Home",
     "parentId": "root",
     "type": "folder",
-    "createdAt": "2025-01-13T00:00:00.000Z",
-    "updatedAt": "2025-01-13T00:00:00.000Z"
-  },
-  {
-    "id": "moods",
-    "name": "Moods",
-    "parentId": "root",
-    "type": "folder",
+    "favorite": false,
     "createdAt": "2025-01-13T00:00:00.000Z",
     "updatedAt": "2025-01-13T00:00:00.000Z"
   },
@@ -28,46 +22,25 @@
     "name": "Projects",
     "parentId": "root",
     "type": "folder",
+    "favorite": false,
     "createdAt": "2025-01-13T00:00:00.000Z",
     "updatedAt": "2025-01-13T00:00:00.000Z"
   },
   {
-    "id": "ai-character-story",
-    "name": "AI Character Story",
-    "parentId": "projects",
-    "type": "folder",
-    "createdAt": "2025-01-13T00:00:00.000Z",
-    "updatedAt": "2025-01-13T00:00:00.000Z"
-  },
-  {
-    "id": "prompt-website",
-    "name": "Prompt Website",
-    "parentId": "projects",
-    "type": "folder",
-    "createdAt": "2025-01-13T00:00:00.000Z",
-    "updatedAt": "2025-01-13T00:00:00.000Z"
-  },
-  {
-    "id": "rogue-lite-game",
-    "name": "Rogue-lite Game",
-    "parentId": "projects",
-    "type": "folder",
-    "createdAt": "2025-01-13T00:00:00.000Z",
-    "updatedAt": "2025-01-13T00:00:00.000Z"
-  },
-  {
-    "id": "creativity",
-    "name": "Creativity",
+    "id": "writing",
+    "name": "Writing",
     "parentId": "root",
     "type": "folder",
+    "favorite": false,
     "createdAt": "2025-01-13T00:00:00.000Z",
     "updatedAt": "2025-01-13T00:00:00.000Z"
   },
   {
-    "id": "productivity",
-    "name": "Productivity",
+    "id": "school",
+    "name": "School",
     "parentId": "root",
     "type": "folder",
+    "favorite": false,
     "createdAt": "2025-01-13T00:00:00.000Z",
     "updatedAt": "2025-01-13T00:00:00.000Z"
   },
@@ -76,14 +49,61 @@
     "name": "Development",
     "parentId": "root",
     "type": "folder",
+    "favorite": false,
     "createdAt": "2025-01-13T00:00:00.000Z",
     "updatedAt": "2025-01-13T00:00:00.000Z"
   },
   {
-    "id": "documentation",
-    "name": "Documentation",
+    "id": "workshop",
+    "name": "Workshop",
     "parentId": "root",
     "type": "folder",
+    "favorite": true,
+    "createdAt": "2025-01-13T00:00:00.000Z",
+    "updatedAt": "2025-01-13T00:00:00.000Z"
+  },
+  {
+    "id": "moods",
+    "name": "Moods",
+    "parentId": "workshop",
+    "type": "folder",
+    "favorite": false,
+    "createdAt": "2025-01-13T00:00:00.000Z",
+    "updatedAt": "2025-01-13T00:00:00.000Z"
+  },
+  {
+    "id": "blocks",
+    "name": "Blocks",
+    "parentId": "workshop",
+    "type": "folder",
+    "favorite": false,
+    "createdAt": "2025-01-13T00:00:00.000Z",
+    "updatedAt": "2025-01-13T00:00:00.000Z"
+  },
+  {
+    "id": "ai-character-story",
+    "name": "AI Character Story",
+    "parentId": "projects",
+    "type": "folder",
+    "favorite": false,
+    "createdAt": "2025-01-13T00:00:00.000Z",
+    "updatedAt": "2025-01-13T00:00:00.000Z"
+  },
+  {
+    "id": "prompt-website",
+    "name": "Prompt Website",
+    "parentId": "projects",
+    "type": "folder",
+    "favorite": false,
+    "createdAt": "2025-01-13T00:00:00.000Z",
+    "updatedAt": "2025-01-13T00:00:00.000Z"
+  },
+  {
+    "id": "rogue-lite-game",
+    "name": "Rogue-lite Game",
+    "parentId": "projects",
+    "type": "folder",
+    "favorite": false,
     "createdAt": "2025-01-13T00:00:00.000Z",
     "updatedAt": "2025-01-13T00:00:00.000Z"
   }

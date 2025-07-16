@@ -1,1 +1,49 @@
-[]
+[
+  {
+    "id": "workflow-builder",
+    "name": "Workflow Builder",
+    "description": "Interactive workflow to create new workflows. Choose between template types and build your workflow step by step.",
+    "steps": [
+      {
+        "id": "step_1",
+        "name": "Step 1: Choose Template Type",
+        "type": "template",
+        "templateOptions": ["workflow-step-choice", "first-step-choice"],
+        "snippetOptions": [],
+        "workflowOptions": [],
+        "selectedTemplateId": null,
+        "selectedSnippetId": null,
+        "selectedWorkflowId": null,
+        "variables": [],
+        "content": "",
+        "information": "Choose what type of template you want to create. This will determine the structure and capabilities of your template.",
+        "insertId": null,
+        "insertContent": "",
+        "snippetTags": []
+      },
+      {
+        "id": "step_2", 
+        "name": "Step 2: Build Your Template",
+        "type": "template",
+        "templateOptions": ["template-for-workflow-step", "template-for-first-step"],
+        "snippetOptions": [],
+        "workflowOptions": [],
+        "selectedTemplateId": null,
+        "selectedSnippetId": null,
+        "selectedWorkflowId": null,
+        "variables": [],
+        "content": "",
+        "information": "Now build your template based on your choice from step 1. The template builder will adapt to your selection.",
+        "insertId": null,
+        "insertContent": "",
+        "snippetTags": []
+      }
+    ],
+    "folderId": "workshop",
+    "snippetTags": [],
+    "lastUsed": "2025-01-16T00:00:00.000Z",
+    "favorite": false,
+    "createdAt": "2025-01-16T00:00:00.000Z",
+    "updatedAt": "2025-01-16T00:00:00.000Z"
+  }
+]

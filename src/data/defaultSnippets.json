@@ -1,13 +1,1 @@
-[
-  {
-    "id": "test-snippet-variables",
-    "name": "Test Snippet with Variables",
-    "description": "Test snippet that contains {variables} and {{snippet_tags}} to verify they are not processed as input fields",
-    "content": "Hello {name}, this is a test snippet with variables. It also contains {{mood}} snippet tags. These should NOT show input fields but copy as-is: {project_name} and {{style}}.",
-    "tags": ["test", "variables", "debug"],
-    "folderId": "general",
-    "enabled": true,
-    "createdAt": "2025-01-16T00:00:00.000Z",
-    "updatedAt": "2025-01-16T00:00:00.000Z"
-  }
-]
+[]

@@ -66,7 +66,8 @@ const Homepage = ({
       // Folder filtering logic
       let folderMatch = false;
       if (!selectedFolderId || selectedFolderId === 'root') {
-        folderMatch = true; // Show all for root
+        // For root folder, only show items that actually belong to root
+        folderMatch = !item.folderId || item.folderId === 'root';
       } else if (selectedFolderId === 'home') {
         // For Home folder, show items from root and immediate children, but exclude deep project nesting
         folderMatch = !item.folderId || item.folderId === 'root' || 
@@ -74,8 +75,8 @@ const Homepage = ({
            item.folderId !== 'prompt-website' && item.folderId !== 'rogue-lite-game' &&
            item.folderId !== 'content');
       } else {
-        const currentFolderIds = getFolderDescendants(selectedFolderId);
-        folderMatch = currentFolderIds.has(item.folderId);
+        // Only show items that belong directly to the selected folder
+        folderMatch = item.folderId === selectedFolderId;
       }
       
       // Search filtering

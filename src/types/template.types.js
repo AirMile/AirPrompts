@@ -143,20 +143,8 @@ export const createFolder = (data = {}) => {
  */
 export const DEFAULT_FOLDERS = [
   { id: 'root', name: 'Root', parentId: null },
-  { id: 'general', name: 'General', parentId: 'root' },
-  { id: 'content', name: 'Content', parentId: 'general' },
-  { id: 'moods', name: 'Moods', parentId: 'general' },
-  { id: 'workflows', name: 'Common Workflows', parentId: 'general' },
-  { id: 'projects', name: 'Projects', parentId: 'root' },
-  { id: 'research', name: 'Research', parentId: 'root' },
-  { id: 'writing', name: 'Writing', parentId: 'root' },
-  { id: 'coding', name: 'Coding', parentId: 'root' },
-  { id: 'note-taking', name: 'Note Taking', parentId: 'root' },
-  { id: 'cooking', name: 'Cooking', parentId: 'root' },
-  { id: 'prompt-website', name: 'Prompt Website', parentId: 'projects' },
-  { id: 'rogue-lite-game', name: 'Rogue-Lite Game', parentId: 'projects' },
-  { id: 'ai-character-story', name: 'AI Character Story', parentId: 'projects' },
-  { id: 'archive', name: 'Archive', parentId: 'root' }
+  { id: 'general', name: 'Home', parentId: 'root' },
+  { id: 'workshop', name: 'Workshop', parentId: 'root' }
 ];
 
 
