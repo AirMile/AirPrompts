@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Copy, ArrowLeft, ArrowRight, Check, Info, Tag, Plus, Edit, FileText, Layers, Workflow } from 'lucide-react';
 import { copyToClipboard } from '../../utils/clipboard.js';
 import { extractAllVariables } from '../../types/template.types.js';
@@ -10,6 +10,12 @@ const ItemExecutor = ({ item, type, snippets = [], onComplete, onCancel, onEdit 
   // State voor huidige step
   const [currentStep, setCurrentStep] = useState(0);
   const currentStepData = steps[currentStep];
+  
+  // State for tracking selected options - must be defined before getStepType function
+  const [selectedOptions, setSelectedOptions] = useState({}); // stepId -> { type: 'template'|'snippet', id: itemId }
+  
+  // Ref for Copy Snippet button auto-focus
+  const copyButtonRef = useRef(null);
   
   // Different logic for different step types
   const getStepType = () => {
@@ -23,11 +29,28 @@ const ItemExecutor = ({ item, type, snippets = [], onComplete, onCancel, onEdit 
       }
     }
     
+    // Check if an option has been selected from multiple options
+    const selectedOption = selectedOptions[currentStepData.id];
+    if (selectedOption) {
+      // Return the type of the selected option
+      return selectedOption.type;
+    }
+    
     return currentStepData.type || 'template';
   };
-  
+
   const stepType = getStepType();
-  
+
+  // Auto-focus Copy Snippet button for snippets
+  useEffect(() => {
+    if (stepType === 'snippet' && copyButtonRef.current) {
+      const timer = setTimeout(() => {
+        copyButtonRef.current.focus();
+      }, 100);
+      return () => clearTimeout(timer);
+    }
+  }, [stepType]);
+
   // Filter snippets based on current step's snippet tags (for auto-append functionality)
   const getFilteredSnippets = () => {
     // For info steps and workflow steps, never show snippets
@@ -61,7 +84,6 @@ const ItemExecutor = ({ item, type, snippets = [], onComplete, onCancel, onEdit 
   const [stepOutputs] = useState([]);
   const [copied, setCopied] = useState(false);
   const [completedSteps, setCompletedSteps] = useState([]);
-  const [selectedOptions, setSelectedOptions] = useState({}); // stepId -> { type: 'template'|'snippet', id: itemId }
   const [selectedSnippets, setSelectedSnippets] = useState(new Set()); // Set of snippet IDs
 
   // Track if we're in keyboard navigation mode
@@ -70,6 +92,8 @@ const ItemExecutor = ({ item, type, snippets = [], onComplete, onCancel, onEdit 
   // Track programmatic changes to prevent unwanted closing
   const [programmaticChange, setProgrammaticChange] = useState(new Set());
 
+  // Track the highlighted option index for keyboard navigation
+  const [highlightedOptionIndex, setHighlightedOptionIndex] = useState(0);
 
   
   // Get all available options (templates and snippets combined) for current step
@@ -126,13 +150,17 @@ const ItemExecutor = ({ item, type, snippets = [], onComplete, onCancel, onEdit 
     }
     const options = [];
     
+    // Combine all items first to sort by order
+    const allItems = [];
+    
     // Add template options
     if (currentStepData.templateOptions) {
       currentStepData.templateOptions.forEach(template => {
-        options.push({
+        allItems.push({
           type: 'template',
           id: template.id,
-          item: template
+          item: template,
+          order: template.order || 0
         });
       });
     }
@@ -142,13 +170,14 @@ const ItemExecutor = ({ item, type, snippets = [], onComplete, onCancel, onEdit 
       currentStepData.snippetOptions.forEach(snippet => {
         // Extract variables from snippet content
         const { variables } = extractAllVariables(snippet.content);
-        options.push({
+        allItems.push({
           type: 'snippet',
           id: snippet.id,
           item: {
             ...snippet,
             variables: variables || [] // Ensure snippets have variables array
-          }
+          },
+          order: snippet.order || 0
         });
       });
     }
@@ -156,13 +185,27 @@ const ItemExecutor = ({ item, type, snippets = [], onComplete, onCancel, onEdit 
     // Add workflow options - convert workflows to executable structure
     if (currentStepData.workflowOptions) {
       currentStepData.workflowOptions.forEach(workflowItem => {
-        options.push({
+        allItems.push({
           type: 'workflow',
           id: workflowItem.id,
-          item: workflowItem
+          item: workflowItem,
+          order: workflowItem.order || 0
         });
       });
     }
+    
+    // Sort by order (chronological order of addition)
+    allItems.sort((a, b) => a.order - b.order);
+    
+    
+    // Convert to options format
+    allItems.forEach(item => {
+      options.push({
+        type: item.type,
+        id: item.id,
+        item: item.item
+      });
+    });
     
     // If no explicit options but step has content, treat as single template option
     if (options.length === 0 && currentStepData.content && currentStepData.variables) {
@@ -239,6 +282,12 @@ const ItemExecutor = ({ item, type, snippets = [], onComplete, onCancel, onEdit 
   
   const currentTemplate = getCurrentTemplate();
   
+  // // console.log('DEBUG currentTemplate after selection:', {
+  //   currentTemplate: currentTemplate ? currentTemplate.name : 'undefined',
+  //   hasContent: currentTemplate ? !!currentTemplate.content : false,
+  //   content: currentTemplate ? currentTemplate.content?.substring(0, 100) : 'no content'
+  // });
+  
   // Check if currentTemplate is actually a workflow (has steps property)
   const isNestedWorkflow = currentTemplate && Array.isArray(currentTemplate.steps);
   
@@ -290,6 +339,13 @@ const ItemExecutor = ({ item, type, snippets = [], onComplete, onCancel, onEdit 
   
   const { snippetVariables, sortedVariables } = getAllTemplateVariables();
   const allVariables = sortedVariables.map(v => v.placeholder);
+  
+  // // console.log('DEBUG Template variables:', {
+  //   snippetVariables: snippetVariables.length,
+  //   sortedVariables: sortedVariables.length,
+  //   sortedVariablesList: sortedVariables.map(v => ({ type: v.type, variable: v.variable })),
+  //   allVariables: allVariables.length
+  // });
 
   // Helper function to focus next field
   const focusNextField = (currentIndex) => {
@@ -315,15 +371,44 @@ const ItemExecutor = ({ item, type, snippets = [], onComplete, onCancel, onEdit 
   useEffect(() => {
     const currentStepType = getStepType();
     const timer = setTimeout(() => {
-      if (currentStepType === 'info' || currentStepType === 'insert') {
+      const allStepOptions = getAllStepOptions();
+      const hasMultipleOptions = allStepOptions.length > 1;
+      const needsSelection = hasMultipleOptions && !selectedOptions[currentStepData.id];
+      
+      // console.log('DEBUG Focus effect triggered:', {
+      //   currentStep,
+      //   currentStepType,
+      //   hasMultipleOptions,
+      //   needsSelection,
+      //   selectedOptionsForStep: selectedOptions[currentStepData.id],
+      //   hasCurrentTemplate: currentTemplate?.hasContent,
+      //   sortedVariablesLength: sortedVariables.length
+      // });
+      
+      if (needsSelection) {
+        // Focus the option selection area
+        const optionSelectionArea = document.querySelector('div[tabIndex="0"]');
+        if (optionSelectionArea) {
+          // console.log('DEBUG Focusing option selection area');
+          optionSelectionArea.focus();
+        }
+      } else if (currentStepType === 'info' || currentStepType === 'insert') {
         // For info/insert steps, focus the action button
         const actionButton = document.querySelector('button[data-action-button="true"]');
         if (actionButton) {
+          // console.log('DEBUG Focusing action button');
           actionButton.focus();
         }
       } else {
-        const firstInput = document.querySelector('input[data-first-input="true"], select[data-first-input="true"]');
+        // Try to find the first input in the proper order
+        let firstInput = document.querySelector('input[data-first-input="true"], select[data-first-input="true"]');
+        if (!firstInput) {
+          // If no marked first input, find the first visible and editable input in the form
+          const allInputs = document.querySelectorAll('input:not([type="hidden"]):not([type="button"]):not([type="submit"]):not([readonly]):not([disabled]), select:not([disabled]), textarea:not([readonly]):not([disabled])');
+          firstInput = allInputs[0]; // Get the first one in DOM order
+        }
         if (firstInput) {
+          // console.log('DEBUG Focusing first input field');
           firstInput.focus();
           // Auto-expand dropdown if it's a select element
           if (firstInput.tagName === 'SELECT' && !firstInput.disabled) {
@@ -335,11 +420,53 @@ const ItemExecutor = ({ item, type, snippets = [], onComplete, onCancel, onEdit 
             
             // Do NOT auto-select when initially focusing - let user navigate with arrow keys
           }
+        } else {
+          // console.log('DEBUG No first input found, retrying with multiple attempts');
+          // If no input found, try again multiple times with increasing delays
+          const retryFocus = (attempt = 1, maxAttempts = 10) => {
+            const delay = attempt * 50; // 50ms, 100ms, 150ms, etc.
+            setTimeout(() => {
+              // Try to find the first input in the proper order
+              let retryInput = document.querySelector('input[data-first-input="true"], select[data-first-input="true"]');
+              if (!retryInput) {
+                // If no marked first input, find the first visible and editable input in the form
+                const allInputs = document.querySelectorAll('input:not([type="hidden"]):not([type="button"]):not([type="submit"]):not([readonly]):not([disabled]), select:not([disabled]), textarea:not([readonly]):not([disabled])');
+                retryInput = allInputs[0]; // Get the first one in DOM order
+              }
+              if (retryInput) {
+                // console.log(`DEBUG Focusing first input field on retry attempt ${attempt}`);
+                retryInput.focus();
+              } else if (attempt < maxAttempts) {
+                // console.log(`DEBUG Retry attempt ${attempt} failed, trying again in ${delay + 50}ms`);
+                retryFocus(attempt + 1, maxAttempts);
+              } else {
+                // console.log('DEBUG All retry attempts failed - no first input found');
+              }
+            }, delay);
+          };
+          retryFocus();
         }
       }
     }, 100);
     return () => clearTimeout(timer);
+  }, [currentStep, selectedOptions, currentStepData.id, currentTemplate?.hasContent, sortedVariables.length]);
+
+  // Reset highlighted option index when step changes or options change
+  useEffect(() => {
+    setHighlightedOptionIndex(0);
   }, [currentStep]);
+
+  // Reset selection when step changes (don't auto-select, just highlight)
+  useEffect(() => {
+    const allStepOptions = getAllStepOptions();
+    const hasMultipleOptions = allStepOptions.length > 1;
+    
+    if (hasMultipleOptions) {
+      // console.log('DEBUG Multiple options available, first option highlighted but not selected');
+      // Don't auto-select, just let the highlighted index stay at 0
+      // User must manually select with Enter/Tab or mouse click
+    }
+  }, [currentStep, currentStepData.id]);
 
   // Auto-fill single option snippets
   useEffect(() => {
@@ -648,12 +775,16 @@ const ItemExecutor = ({ item, type, snippets = [], onComplete, onCancel, onEdit 
   };
 
   const handleKeyDown = (e, isLastInput = false, currentIndex = 0) => {
-    if ((e.key === 'Tab' || e.key === 'Enter') && isLastInput && canProceed) {
-      // If this is the last input and user tabs/enters, auto-copy (especially for snippets)
+    if (e.key === 'Tab' && isLastInput && canProceed) {
+      // If this is the last input and user tabs with all fields filled, auto-copy
       e.preventDefault();
       handleCopyAndNext();
-    } else if ((e.key === 'Tab' || e.key === 'Enter') && stepType === 'snippet' && canProceed) {
-      // For snippets, always auto-copy on Tab/Enter regardless of position
+    } else if (e.key === 'Enter' && isLastInput && canProceed) {
+      // If this is the last input and user presses Enter, auto-copy (especially for snippets)
+      e.preventDefault();
+      handleCopyAndNext();
+    } else if (e.key === 'Enter' && stepType === 'snippet' && canProceed) {
+      // For snippets, always auto-copy on Enter regardless of position
       e.preventDefault();
       handleCopyAndNext();
     } else if (e.key === 'Enter' && !isLastInput) {
@@ -664,15 +795,97 @@ const ItemExecutor = ({ item, type, snippets = [], onComplete, onCancel, onEdit 
         nextInput.focus();
       }
     }
+    // Let Tab key work normally for navigation between fields (except for last input when done)
   };
 
   const handleGlobalKeyDown = (e) => {
-    if ((stepType === 'info' || stepType === 'insert' || stepType === 'snippet') && (e.key === 'Tab' || e.key === 'Enter')) {
+    // Don't handle global keys if user is typing in an input field OR if user is navigating with Tab
+    const activeElement = document.activeElement;
+    const isInputFocused = activeElement && (
+      activeElement.tagName === 'INPUT' || 
+      activeElement.tagName === 'TEXTAREA' || 
+      activeElement.tagName === 'SELECT'
+    );
+    
+    // If an input is focused, let the browser handle the key event naturally
+    if (isInputFocused) {
+      return;
+    }
+    
+    // Also don't handle Tab key if we're not in option selection mode (let normal focus flow work)
+    const allStepOptions = getAllStepOptions();
+    const hasMultipleOptions = allStepOptions.length > 1;
+    const needsSelection = hasMultipleOptions && !selectedOptions[currentStepData.id];
+    
+    // If we don't need selection and user presses Tab, only return if it's not a snippet/info/insert step
+    if (!needsSelection && e.key === 'Tab') {
+      // console.log('DEBUG Tab key with no selection needed:', {
+      //   stepType,
+      //   shouldLetBrowserHandle: stepType !== 'snippet' && stepType !== 'info' && stepType !== 'insert'
+      // });
+      
+      // For non-actionable steps, let browser handle Tab normally
+      if (stepType !== 'snippet' && stepType !== 'info' && stepType !== 'insert') {
+        return;
+      }
+      // For snippet/info/insert steps, let the logic below handle it
+    }
+    
+    // Only log for Tab key to reduce noise
+    if (e.key === 'Tab') {
+      // console.log('DEBUG Tab key handling:', { 
+      //   hasMultipleOptions, 
+      //   needsSelection,
+      //   highlightedIndex: highlightedOptionIndex,
+      //   stepType
+      // });
+    }
+    
+    // Handle keyboard navigation for option selection - only when we actually need selection
+    if (needsSelection && hasMultipleOptions && allStepOptions.length > 0) {
+      if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        setHighlightedOptionIndex(prevIndex => {
+          const newIndex = prevIndex < allStepOptions.length - 1 ? prevIndex + 1 : 0;
+          // console.log('DEBUG ArrowUp: changing from', prevIndex, 'to', newIndex);
+          return newIndex;
+        });
+      } else if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        setHighlightedOptionIndex(prevIndex => {
+          const newIndex = prevIndex > 0 ? prevIndex - 1 : allStepOptions.length - 1;
+          // console.log('DEBUG ArrowDown: changing from', prevIndex, 'to', newIndex);
+          return newIndex;
+        });
+      } else if (e.key === 'Enter' || e.key === 'Tab') {
+        e.preventDefault();
+        e.stopPropagation();
+        const selectedOption = allStepOptions[highlightedOptionIndex];
+        if (selectedOption) {
+          // console.log('DEBUG Selecting option:', selectedOption.item.name);
+          const newSelection = { type: selectedOption.type, id: selectedOption.id };
+          // console.log('DEBUG New selection object:', newSelection);
+          
+          setSelectedOptions(prevOptions => {
+            const newOptions = {
+              ...prevOptions,
+              [currentStepData.id]: newSelection
+            };
+            // console.log('DEBUG Updated selectedOptions:', newOptions);
+            return newOptions;
+          });
+          setVariableValues({}); // Reset variables when selection changes
+        }
+      }
+    } else if ((stepType === 'info' || stepType === 'insert' || stepType === 'snippet') && (e.key === 'Tab' || e.key === 'Enter')) {
       // For info/insert/snippet steps, Tab or Enter should move to next step or copy
+      // console.log('DEBUG Final Tab/Enter handler reached:', { stepType, key: e.key });
       e.preventDefault();
       if (stepType === 'info') {
+        // console.log('DEBUG Calling handleNextStep');
         handleNextStep();
       } else {
+        // console.log('DEBUG Calling handleCopyAndNext');
         handleCopyAndNext();
       }
     }
@@ -681,10 +894,16 @@ const ItemExecutor = ({ item, type, snippets = [], onComplete, onCancel, onEdit 
   const handleNextStep = () => {
     // For info steps, just move to next step without copying
     if (isWorkflow && currentStep < steps.length - 1) {
+      // console.log('DEBUG handleNextStep: Moving to next step', { 
+      //   currentStep, 
+      //   nextStep: currentStep + 1,
+      //   totalSteps: steps.length 
+      // });
       setCurrentStep(currentStep + 1);
       setVariableValues({});
       setSelectedSnippets(new Set()); // Reset addon selection for new step
     } else {
+      // console.log('DEBUG handleNextStep: Completing workflow');
       onComplete();
     }
   };
@@ -694,6 +913,9 @@ const ItemExecutor = ({ item, type, snippets = [], onComplete, onCancel, onEdit 
     
     if (stepType === 'insert') {
       output = currentStepData.insertContent || '';
+    } else if (stepType === 'snippet') {
+      // For snippets, use content as-is without variable processing
+      output = currentTemplate?.content || '';
     } else {
       output = generateOutput();
     }
@@ -724,11 +946,17 @@ const ItemExecutor = ({ item, type, snippets = [], onComplete, onCancel, onEdit 
         
         if (isWorkflow && currentStep < steps.length - 1) {
           // Move to next step in workflow
+          // console.log('DEBUG handleCopyAndNext: Moving to next step after copy', { 
+          //   currentStep, 
+          //   nextStep: currentStep + 1,
+          //   totalSteps: steps.length 
+          // });
           setCurrentStep(currentStep + 1);
           setVariableValues({});
           setSelectedSnippets(new Set()); // Reset addon selection for new step
         } else {
           // Complete the execution
+          // console.log('DEBUG handleCopyAndNext: Completing workflow after copy');
           onComplete();
         }
       }, 1500);
@@ -736,9 +964,14 @@ const ItemExecutor = ({ item, type, snippets = [], onComplete, onCancel, onEdit 
   };
 
 
+  const allStepOptions = getAllStepOptions();
+  const hasMultipleOptions = allStepOptions.length > 1;
+  const needsSelection = hasMultipleOptions && !selectedOptions[currentStepData.id];
+  
   const canProceed = (() => {
     if (stepType === 'info') return true; // Info steps don't need variables
     if (stepType === 'insert') return true; // Insert steps don't need variables
+    if (stepType === 'snippet') return true; // Snippets are always ready to copy
     return sortedVariables.every(varData => {
       if (varData.type === 'regular') {
         return variableValues[varData.variable]?.trim();
@@ -749,9 +982,20 @@ const ItemExecutor = ({ item, type, snippets = [], onComplete, onCancel, onEdit 
     });
   })();
   
-  const allStepOptions = getAllStepOptions();
-  const hasMultipleOptions = allStepOptions.length > 1;
-  const needsSelection = hasMultipleOptions && !selectedOptions[currentStepData.id];
+  
+  // Debug selection state
+  // console.log('DEBUG ItemExecutor - Selection state:', {
+  //   hasMultipleOptions,
+  //   needsSelection,
+  //   selectedOption: selectedOptions[currentStepData.id],
+  //   highlightedIndex: highlightedOptionIndex,
+  //   canProceed,
+  //   stepType,
+  //   currentTemplate: currentTemplate ? currentTemplate.name : 'undefined',
+  //   sortedVariables: sortedVariables.length,
+  //   stepId: currentStepData.id,
+  //   allSelectedOptions: selectedOptions
+  // });
 
   if (copied) {
     return (
@@ -814,7 +1058,7 @@ const ItemExecutor = ({ item, type, snippets = [], onComplete, onCancel, onEdit 
             <button
               onClick={onCancel}
               className="px-4 py-2 text-gray-300 border border-gray-600 rounded-lg hover:bg-gray-700"
-              tabIndex={allVariables.length + 2 || 2}
+              tabIndex={stepType === 'snippet' ? 10 : allVariables.length + 2 || 2}
             >
               Cancel
             </button>
@@ -822,30 +1066,53 @@ const ItemExecutor = ({ item, type, snippets = [], onComplete, onCancel, onEdit 
               <button
                 onClick={() => onEdit(item)}
                 className="px-4 py-2 bg-gray-700 text-gray-100 rounded-lg hover:bg-gray-600 flex items-center gap-2"
-                tabIndex={allVariables.length + 3 || 3}
+                tabIndex={11}
               >
                 <Edit className="w-4 h-4" />
                 Edit Snippet
               </button>
             )}
             <button
-              onClick={stepType === 'info' ? handleNextStep : handleCopyAndNext}
+              onClick={needsSelection ? () => {
+                // When "Select Option" is clicked, select the highlighted option
+                const selectedOption = allStepOptions[highlightedOptionIndex];
+                if (selectedOption) {
+                  // console.log('DEBUG Button click selecting option:', selectedOption.item.name);
+                  const newSelection = { type: selectedOption.type, id: selectedOption.id };
+                  // console.log('DEBUG Button click new selection object:', newSelection);
+                  
+                  setSelectedOptions(prevOptions => {
+                    const newOptions = {
+                      ...prevOptions,
+                      [currentStepData.id]: newSelection
+                    };
+                    // console.log('DEBUG Button click updated selectedOptions:', newOptions);
+                    return newOptions;
+                  });
+                  setVariableValues({}); // Reset variables when selection changes
+                }
+              } : (stepType === 'info' ? handleNextStep : handleCopyAndNext)}
               onKeyDown={(e) => e.key === 'Enter' && (stepType === 'info' ? handleNextStep() : handleCopyAndNext())}
-              disabled={!canProceed || needsSelection}
+              disabled={!canProceed && !needsSelection}
               className={`px-4 py-2 text-white rounded-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 ${
                 stepType === 'snippet' 
                   ? 'bg-purple-600 hover:bg-purple-700' 
                   : 'bg-blue-600 hover:bg-blue-700'
               }`}
-              tabIndex={allVariables.length + 1 || 1}
+              tabIndex={stepType === 'snippet' ? 1 : allVariables.length + 1 || 1}
               data-action-button={stepType === 'info' || stepType === 'insert' || stepType === 'snippet' ? 'true' : undefined}
+              ref={stepType === 'snippet' ? copyButtonRef : null}
             >
-              {stepType === 'info' ? (
+              {needsSelection ? (
+                <ArrowRight className="w-4 h-4" />
+              ) : stepType === 'info' ? (
                 <ArrowRight className="w-4 h-4" />
               ) : (
                 <Copy className="w-4 h-4" />
               )}
-              {stepType === 'info' ? (
+              {needsSelection ? (
+                'Select Option'
+              ) : stepType === 'info' ? (
                 isWorkflow && currentStep < steps.length - 1 ? 'Next Step' : 'Complete'
               ) : stepType === 'insert' ? (
                 isWorkflow && currentStep < steps.length - 1 ? 'Copy Insert & Next' : 'Copy Insert'
@@ -890,15 +1157,23 @@ const ItemExecutor = ({ item, type, snippets = [], onComplete, onCancel, onEdit 
           </div>
         )}
 
-        <div className={`grid gap-6 ${stepType === 'template' ? 'grid-cols-1 lg:grid-cols-12' : stepType === 'snippet' && sortedVariables.length > 0 ? 'grid-cols-1 lg:grid-cols-2' : stepType === 'snippet' ? 'grid-cols-1' : 'grid-cols-1 lg:grid-cols-2'}`}>
-          <div className={`space-y-4 ${stepType === 'template' ? 'lg:col-span-3' : ''}`}>{(stepType === 'template' || (stepType === 'snippet' && sortedVariables.length > 0)) && (
+        <div className={`grid gap-6 ${stepType === 'template' ? 'grid-cols-1 lg:grid-cols-12' : stepType === 'snippet' ? 'grid-cols-1' : 'grid-cols-1 lg:grid-cols-2'}`}>
+          <div className={`space-y-4 ${stepType === 'template' ? 'lg:col-span-3' : ''}`}>
+          {/* console.log('DEBUG Rendering check:', {
+            stepType,
+            isTemplateOrSnippet: stepType === 'template' || (stepType === 'snippet' && sortedVariables.length > 0),
+            needsSelection,
+            hasCurrentTemplate: !!currentTemplate,
+            sortedVariablesLength: sortedVariables.length
+          }) */}
+          {stepType === 'template' && (
             <>
               {stepType !== 'snippet' && (
                 <h3 className="text-lg font-semibold text-gray-100 mb-3">Fill in Variables</h3>
               )}
               {needsSelection ? (
                 <p className="text-gray-500 italic">Select an option above to see variables</p>
-              ) : (
+              ) : currentTemplate ? (
                 <>
                   {/* Variables in order of appearance */}
                   {sortedVariables.map((varData, index) => {
@@ -1004,24 +1279,39 @@ const ItemExecutor = ({ item, type, snippets = [], onComplete, onCancel, onEdit 
                     <p className="text-gray-500">No variables to fill for this step.</p>
                   )}
                 </>
+              ) : (
+                <p className="text-gray-500 italic">Loading template...</p>
               )}
             </>
           )}
             
             {/* Universal Option Selection */}
-            {hasMultipleOptions && (
-              <div>
+            {hasMultipleOptions && needsSelection && (
+              <div 
+                tabIndex={0}
+                onKeyDown={handleGlobalKeyDown}
+                className="focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-opacity-50 rounded-lg p-1"
+              >
                 <h3 className="text-lg font-semibold text-gray-100 mb-3 flex items-center gap-2">
                   <Layers className="w-5 h-5 text-green-400" />
                   Choose Option ({allStepOptions.length} available)
+                  <span className="text-sm text-gray-400 ml-2">
+                    (↑↓ arrows, Enter/Tab to select)
+                  </span>
                 </h3>
                 <div className="space-y-2">
-                  {allStepOptions.map((option) => {
+                  {allStepOptions.map((option, mapIndex) => {                    
                     const isSelected = selectedOptions[currentStepData.id]?.type === option.type && 
                                      selectedOptions[currentStepData.id]?.id === option.id;
+                    const isHighlighted = highlightedOptionIndex === mapIndex;
                     const isTemplate = option.type === 'template';
                     const isWorkflow = option.type === 'workflow';
-                    const isSnippet = option.type === 'snippet';
+                    
+                    // console.log(`DEBUG Option ${mapIndex}:`, {
+                    //   name: option.item.name,
+                    //   isSelected,
+                    //   isHighlighted
+                    // });
                     
                     return (
                       <div
@@ -1033,6 +1323,8 @@ const ItemExecutor = ({ item, type, snippets = [], onComplete, onCancel, onEdit 
                               : isWorkflow
                               ? 'border-orange-500 bg-orange-900/30'
                               : 'border-purple-500 bg-purple-900/30'
+                            : isHighlighted
+                            ? 'border-gray-400 bg-gray-700 ring-2 ring-gray-400'
                             : 'border-gray-600 bg-gray-800 hover:bg-gray-700'
                         }`}
                         onClick={() => {
@@ -1135,15 +1427,15 @@ const ItemExecutor = ({ item, type, snippets = [], onComplete, onCancel, onEdit 
             )}
           </div>
 
-          {/* Middle/Right Column - Preview (for template and snippet steps) */}
-          {(stepType === 'template' || stepType === 'snippet') && (
-            <div className={`space-y-4 ${stepType === 'template' ? 'lg:col-span-6' : ''}`}>
+          {/* Snippet Preview - Special centered layout */}
+          {stepType === 'snippet' && (
+            <div className="max-w-4xl mx-auto">
               <div>
-                <h3 className="text-lg font-semibold text-gray-100 mb-3">{isWorkflow ? 'Current Step Preview' : 'Preview'}</h3>
-                <div className="bg-gray-800 rounded-lg p-4 border border-gray-700 min-h-48">
-                  <div className="prose prose-sm max-w-none whitespace-pre-wrap">
+                <h3 className="text-lg font-semibold text-gray-100 mb-3 text-center">{isWorkflow ? 'Current Step Preview' : 'Preview'}</h3>
+                <div className="bg-gray-800 rounded-lg p-6 border border-gray-700 min-h-48">
+                  <div className="prose prose-sm max-w-none whitespace-pre-wrap text-center">
                     {needsSelection ? (
-                      <p className="text-gray-500 italic text-center py-8">
+                      <p className="text-gray-500 italic py-8">
                         Select an option above to see the preview
                       </p>
                     ) : stepType === 'snippet' && currentStepData.type === 'info' && currentStepData.snippetIds?.length > 0 ? (
@@ -1159,6 +1451,27 @@ const ItemExecutor = ({ item, type, snippets = [], onComplete, onCancel, onEdit 
                           ) : null;
                         })}
                       </div>
+                    ) : (
+                      // For snippets, show content as-is without variable processing
+                      <div className="text-gray-300 text-left max-w-full">{currentTemplate?.content || ''}</div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Template Preview - Grid layout */}
+          {stepType === 'template' && (
+            <div className={`space-y-4 lg:col-span-6`}>
+              <div>
+                <h3 className="text-lg font-semibold text-gray-100 mb-3">{isWorkflow ? 'Current Step Preview' : 'Preview'}</h3>
+                <div className="bg-gray-800 rounded-lg p-4 border border-gray-700 min-h-48">
+                  <div className="prose prose-sm max-w-none whitespace-pre-wrap">
+                    {needsSelection ? (
+                      <p className="text-gray-500 italic text-center py-8">
+                        Select an option above to see the preview
+                      </p>
                     ) : (
                       generateOutput()
                     )}

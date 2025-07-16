@@ -6,7 +6,7 @@ import FolderSelector from '../common/FolderSelector.jsx';
 const SnippetEditor = ({ snippet, folders = [], onSave, onCancel }) => {
   const [formData, setFormData] = useState(() => {
     if (snippet) {
-      return { ...snippet };
+      return { ...snippet, tags: snippet.tags || [] };
     }
     return createSnippet();
   });
@@ -17,7 +17,7 @@ const SnippetEditor = ({ snippet, folders = [], onSave, onCancel }) => {
 
   useEffect(() => {
     if (snippet) {
-      setFormData({ ...snippet });
+      setFormData({ ...snippet, tags: snippet.tags || [] });
     }
   }, [snippet]);
 
@@ -58,10 +58,10 @@ const SnippetEditor = ({ snippet, folders = [], onSave, onCancel }) => {
 
   const handleAddTag = () => {
     const newTag = tagInput.trim().toLowerCase();
-    if (newTag && !formData.tags.includes(newTag)) {
+    if (newTag && !(formData.tags || []).includes(newTag)) {
       setFormData({
         ...formData,
-        tags: [...formData.tags, newTag]
+        tags: [...(formData.tags || []), newTag]
       });
       setTagInput('');
     }
@@ -70,7 +70,7 @@ const SnippetEditor = ({ snippet, folders = [], onSave, onCancel }) => {
   const handleRemoveTag = (tagToRemove) => {
     setFormData({
       ...formData,
-      tags: formData.tags.filter(tag => tag !== tagToRemove)
+      tags: (formData.tags || []).filter(tag => tag !== tagToRemove)
     });
   };
 
@@ -202,7 +202,7 @@ const SnippetEditor = ({ snippet, folders = [], onSave, onCancel }) => {
                 </div>
                 
                 <div className="flex flex-wrap gap-2">
-                  {formData.tags.map((tag, index) => (
+                  {(formData.tags || []).map((tag, index) => (
                     <span
                       key={index}
                       className="inline-flex items-center gap-1 px-3 py-1 bg-blue-900 text-blue-100 rounded-full text-sm"
@@ -226,7 +226,7 @@ const SnippetEditor = ({ snippet, folders = [], onSave, onCancel }) => {
                         key={tag}
                         type="button"
                         onClick={() => {
-                          if (!formData.tags.includes(tag)) {
+                          if (!(formData.tags || []).includes(tag)) {
                             setFormData(prev => ({
                               ...prev,
                               tags: [...prev.tags, tag]
@@ -292,7 +292,7 @@ const SnippetEditor = ({ snippet, folders = [], onSave, onCancel }) => {
                   <div>
                     <span className="text-sm font-medium text-gray-300">Tags: </span>
                     <div className="inline-flex flex-wrap gap-1 mt-1">
-                      {formData.tags.map((tag, index) => (
+                      {(formData.tags || []).map((tag, index) => (
                         <span key={index} className="px-2 py-1 bg-blue-900 text-blue-100 rounded text-xs">
                           {tag}
                         </span>

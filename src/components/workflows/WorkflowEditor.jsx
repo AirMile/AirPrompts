@@ -217,6 +217,8 @@ const WorkflowEditor = ({ workflow, templates, snippets = [], workflows = [], fo
     }
   };
 
+
+
   const handleSave = () => {
     // Process steps to handle info steps with snippets/templates
     const processedSteps = formData.steps.map(step => {
@@ -274,37 +276,75 @@ const WorkflowEditor = ({ workflow, templates, snippets = [], workflows = [], fo
   };
 
   const addTemplateToStep = (stepId, template) => {
-    setFormData({
-      ...formData,
-      steps: formData.steps.map(step => {
+    setFormData(prevData => ({
+      ...prevData,
+      steps: prevData.steps.map(step => {
         if (step.id === stepId) {
-          const updatedOptions = [...step.templateOptions, template];
+          // Check if template already exists to prevent duplicates
+          const templateExists = step.templateOptions.some(t => t.id === template.id);
+          if (templateExists) {
+            console.log(`DEBUG: Template "${template.name}" already exists in step, skipping`);
+            return step;
+          }
+          
+          // Add order field for chronological sorting
+          const allExistingItems = [
+            ...(step.templateOptions || []),
+            ...(step.snippetOptions || []),
+            ...(step.workflowOptions || [])
+          ];
+          const maxOrder = allExistingItems.reduce((max, item) => Math.max(max, item.order || 0), 0);
+          
+          const templateWithOrder = { ...template, order: maxOrder + 1 };
+          const updatedOptions = [...step.templateOptions, templateWithOrder];
+          
+          console.log(`DEBUG: Adding template "${template.name}" with order ${maxOrder + 1}`);
+          
           return {
             ...step,
             templateOptions: updatedOptions,
-            name: step.templateOptions.length === 0 && step.snippetOptions.length === 0 ? `Step ${formData.steps.findIndex(s => s.id === stepId) + 1}: ${template.name}` : step.name
+            name: step.templateOptions.length === 0 && step.snippetOptions.length === 0 ? `Step ${prevData.steps.findIndex(s => s.id === stepId) + 1}: ${template.name}` : step.name
           };
         }
         return step;
       })
-    });
+    }));
   };
 
   const addSnippetToStep = (stepId, snippet) => {
-    setFormData({
-      ...formData,
-      steps: formData.steps.map(step => {
+    setFormData(prevData => ({
+      ...prevData,
+      steps: prevData.steps.map(step => {
         if (step.id === stepId) {
-          const updatedOptions = [...(step.snippetOptions || []), snippet];
+          // Check if snippet already exists to prevent duplicates
+          const snippetExists = (step.snippetOptions || []).some(s => s.id === snippet.id);
+          if (snippetExists) {
+            console.log(`DEBUG: Snippet "${snippet.name}" already exists in step, skipping`);
+            return step;
+          }
+          
+          // Add order field for chronological sorting
+          const allExistingItems = [
+            ...(step.templateOptions || []),
+            ...(step.snippetOptions || []),
+            ...(step.workflowOptions || [])
+          ];
+          const maxOrder = allExistingItems.reduce((max, item) => Math.max(max, item.order || 0), 0);
+          
+          const snippetWithOrder = { ...snippet, order: maxOrder + 1 };
+          const updatedOptions = [...(step.snippetOptions || []), snippetWithOrder];
+          
+          console.log(`DEBUG: Adding snippet "${snippet.name}" with order ${maxOrder + 1}`);
+          
           return {
             ...step,
             snippetOptions: updatedOptions,
-            name: step.templateOptions.length === 0 && step.snippetOptions.length === 0 ? `Step ${formData.steps.findIndex(s => s.id === stepId) + 1}: ${snippet.name}` : step.name
+            name: step.templateOptions.length === 0 && step.snippetOptions.length === 0 ? `Step ${prevData.steps.findIndex(s => s.id === stepId) + 1}: ${snippet.name}` : step.name
           };
         }
         return step;
       })
-    });
+    }));
   };
 
   const removeTemplateFromStep = (stepId, templateId) => {
@@ -340,22 +380,41 @@ const WorkflowEditor = ({ workflow, templates, snippets = [], workflows = [], fo
   };
 
   const addWorkflowToStep = (stepId, workflowItem) => {
-    setFormData({
-      ...formData,
-      steps: formData.steps.map(step => {
+    setFormData(prevData => ({
+      ...prevData,
+      steps: prevData.steps.map(step => {
         if (step.id === stepId) {
-          const updatedOptions = [...(step.workflowOptions || []), workflowItem];
+          // Check if workflow already exists to prevent duplicates
+          const workflowExists = (step.workflowOptions || []).some(w => w.id === workflowItem.id);
+          if (workflowExists) {
+            console.log(`DEBUG: Workflow "${workflowItem.name}" already exists in step, skipping`);
+            return step;
+          }
+          
+          // Add order field for chronological sorting
+          const allExistingItems = [
+            ...(step.templateOptions || []),
+            ...(step.snippetOptions || []),
+            ...(step.workflowOptions || [])
+          ];
+          const maxOrder = allExistingItems.reduce((max, item) => Math.max(max, item.order || 0), 0);
+          
+          const workflowWithOrder = { ...workflowItem, order: maxOrder + 1 };
+          const updatedOptions = [...(step.workflowOptions || []), workflowWithOrder];
+          
+          console.log(`DEBUG: Adding workflow "${workflowItem.name}" with order ${maxOrder + 1}`);
+          
           return {
             ...step,
             workflowOptions: updatedOptions,
             name: step.templateOptions?.length === 0 && step.snippetOptions?.length === 0 && (step.workflowOptions?.length === 0 || !step.workflowOptions) 
-              ? `Step ${formData.steps.findIndex(s => s.id === stepId) + 1}: ${workflowItem.name}` 
+              ? `Step ${prevData.steps.findIndex(s => s.id === stepId) + 1}: ${workflowItem.name}` 
               : step.name
           };
         }
         return step;
       })
-    });
+    }));
   };
 
   const removeWorkflowFromStep = (stepId, workflowId) => {
@@ -581,6 +640,7 @@ const WorkflowEditor = ({ workflow, templates, snippets = [], workflows = [], fo
                       </div>
                     </div>
                     
+                    
                     {/* Step Content Based on Type */}
                     <div className="space-y-3">
                       {/* Info Step Content */}
@@ -685,86 +745,116 @@ const WorkflowEditor = ({ workflow, templates, snippets = [], workflows = [], fo
                         </div>
                       )}
                       
-                      {/* Show existing templates */}
-                      {step.templateOptions?.map((template) => (
-                        <div key={template.id} className="bg-gray-900 rounded p-3 border border-gray-700">
-                          <div className="flex items-center justify-between mb-2">
-                            <div className="flex items-center gap-2">
-                              <FileText className="w-4 h-4 text-blue-400" />
-                              <h4 className="font-medium text-gray-100">{template.name}</h4>
-                            </div>
-                            <button
-                              onClick={() => removeTemplateFromStep(step.id, template.id)}
-                              className="p-1 text-red-500 hover:text-red-700"
-                            >
-                              <X className="w-4 h-4" />
-                            </button>
-                          </div>
-                          <div className="text-sm text-gray-200 font-mono">
-                            {template.content.split(/(\{[^}]+\})/).map((part, partIndex) => (
-                              <span key={partIndex}>
-                                {part.match(/\{[^}]+\}/) ? (
-                                  <span className="bg-green-100 text-green-800 px-1 rounded">
-                                    {part}
-                                  </span>
-                                ) : (
-                                  part
-                                )}
-                              </span>
-                            ))}
-                          </div>
-                        </div>
-                      ))}
-                      
-                      {/* Show existing snippets */}
-                      {step.snippetOptions?.map((snippet) => (
-                        <div key={snippet.id} className="bg-gray-900 rounded p-3 border border-gray-700">
-                          <div className="flex items-center justify-between mb-2">
-                            <div className="flex items-center gap-2">
-                              <Layers className="w-4 h-4 text-purple-400" />
-                              <h4 className="font-medium text-gray-100">{snippet.name}</h4>
-                            </div>
-                            <button
-                              onClick={() => removeSnippetFromStep(step.id, snippet.id)}
-                              className="p-1 text-red-500 hover:text-red-700"
-                            >
-                              <X className="w-4 h-4" />
-                            </button>
-                          </div>
-                          <div className="text-sm text-gray-200">
-                            {snippet.content.length > 100 ? `${snippet.content.substring(0, 100)}...` : snippet.content}
-                          </div>
-                          <div className="flex flex-wrap gap-1 mt-2">
-                            {snippet.tags.map(tag => (
-                              <span key={tag} className="px-2 py-1 bg-purple-100 text-purple-800 text-xs rounded">
-                                {tag}
-                              </span>
-                            ))}
-                          </div>
-                        </div>
-                      ))}
-                      
-                      {/* Show existing workflows */}
-                      {step.workflowOptions?.map((workflowItem) => (
-                        <div key={workflowItem.id} className="bg-gray-900 rounded p-3 border border-gray-700">
-                          <div className="flex items-center justify-between mb-2">
-                            <div className="flex items-center gap-2">
-                              <Workflow className="w-4 h-4 text-orange-400" />
-                              <h4 className="font-medium text-gray-100">{workflowItem.name}</h4>
-                            </div>
-                            <button
-                              onClick={() => removeWorkflowFromStep(step.id, workflowItem.id)}
-                              className="p-1 text-red-500 hover:text-red-700"
-                            >
-                              <X className="w-4 h-4" />
-                            </button>
-                          </div>
-                          <div className="text-sm text-gray-200">
-                            {workflowItem.steps?.length || 0} steps
-                            {workflowItem.description && ` - ${workflowItem.description}`}
-                          </div>
-                        </div>
-                      ))}
+                      {/* Show all items sorted by chronological order */}
+                      {(() => {
+                        // Combine all items with their order
+                        const allItems = [
+                          ...(step.templateOptions || []).map(template => ({
+                            type: 'template',
+                            item: template,
+                            order: template.order || 0
+                          })),
+                          ...(step.snippetOptions || []).map(snippet => ({
+                            type: 'snippet',
+                            item: snippet,
+                            order: snippet.order || 0
+                          })),
+                          ...(step.workflowOptions || []).map(workflowItem => ({
+                            type: 'workflow',
+                            item: workflowItem,
+                            order: workflowItem.order || 0
+                          }))
+                        ];
+                        
+                        // Sort by order (chronological)
+                        allItems.sort((a, b) => a.order - b.order);
+                        
+                        return allItems.map(({ type, item, order }) => {
+                          if (type === 'template') {
+                            return (
+                              <div key={`template-${item.id}`} className="bg-gray-900 rounded p-3 border border-gray-700">
+                                <div className="flex items-center justify-between mb-2">
+                                  <div className="flex items-center gap-2">
+                                    <FileText className="w-4 h-4 text-blue-400" />
+                                    <h4 className="font-medium text-gray-100">{item.name}</h4>
+                                    <span className="text-xs text-gray-500">#{order}</span>
+                                  </div>
+                                  <button
+                                    onClick={() => removeTemplateFromStep(step.id, item.id)}
+                                    className="p-1 text-red-500 hover:text-red-700"
+                                  >
+                                    <X className="w-4 h-4" />
+                                  </button>
+                                </div>
+                                <div className="text-sm text-gray-200 font-mono">
+                                  {item.content.split(/(\{[^}]+\})/).map((part, partIndex) => (
+                                    <span key={partIndex}>
+                                      {part.match(/\{[^}]+\}/) ? (
+                                        <span className="bg-green-100 text-green-800 px-1 rounded">
+                                          {part}
+                                        </span>
+                                      ) : (
+                                        part
+                                      )}
+                                    </span>
+                                  ))}
+                                </div>
+                              </div>
+                            );
+                          } else if (type === 'snippet') {
+                            return (
+                              <div key={`snippet-${item.id}`} className="bg-gray-900 rounded p-3 border border-gray-700">
+                                <div className="flex items-center justify-between mb-2">
+                                  <div className="flex items-center gap-2">
+                                    <Layers className="w-4 h-4 text-purple-400" />
+                                    <h4 className="font-medium text-gray-100">{item.name}</h4>
+                                    <span className="text-xs text-gray-500">#{order}</span>
+                                  </div>
+                                  <button
+                                    onClick={() => removeSnippetFromStep(step.id, item.id)}
+                                    className="p-1 text-red-500 hover:text-red-700"
+                                  >
+                                    <X className="w-4 h-4" />
+                                  </button>
+                                </div>
+                                <div className="text-sm text-gray-200">
+                                  {item.content.length > 100 ? `${item.content.substring(0, 100)}...` : item.content}
+                                </div>
+                                <div className="flex flex-wrap gap-1 mt-2">
+                                  {item.tags.map(tag => (
+                                    <span key={tag} className="px-2 py-1 bg-purple-100 text-purple-800 text-xs rounded">
+                                      {tag}
+                                    </span>
+                                  ))}
+                                </div>
+                              </div>
+                            );
+                          } else if (type === 'workflow') {
+                            return (
+                              <div key={`workflow-${item.id}`} className="bg-gray-900 rounded p-3 border border-gray-700">
+                                <div className="flex items-center justify-between mb-2">
+                                  <div className="flex items-center gap-2">
+                                    <Workflow className="w-4 h-4 text-orange-400" />
+                                    <h4 className="font-medium text-gray-100">{item.name}</h4>
+                                    <span className="text-xs text-gray-500">#{order}</span>
+                                  </div>
+                                  <button
+                                    onClick={() => removeWorkflowFromStep(step.id, item.id)}
+                                    className="p-1 text-red-500 hover:text-red-700"
+                                  >
+                                    <X className="w-4 h-4" />
+                                  </button>
+                                </div>
+                                <div className="text-sm text-gray-200">
+                                  {item.steps?.length || 0} steps
+                                  {item.description && ` - ${item.description}`}
+                                </div>
+                              </div>
+                            );
+                          }
+                          return null;
+                        });
+                      })()}
                       
                       {/* Step Information - Only show when explicitly added */}
                       {step.type !== 'info' && step.information && step.information !== '' ? (

@@ -16,33 +16,9 @@
     "updatedAt": "2025-01-13T00:00:00.000Z"
   },
   {
-    "id": "general",
-    "name": "General",
-    "parentId": "root",
-    "type": "folder",
-    "createdAt": "2025-01-13T00:00:00.000Z",
-    "updatedAt": "2025-01-13T00:00:00.000Z"
-  },
-  {
-    "id": "content",
-    "name": "Content",
-    "parentId": "general",
-    "type": "folder",
-    "createdAt": "2025-01-13T00:00:00.000Z",
-    "updatedAt": "2025-01-13T00:00:00.000Z"
-  },
-  {
     "id": "moods",
     "name": "Moods",
-    "parentId": "general",
-    "type": "folder",
-    "createdAt": "2025-01-13T00:00:00.000Z",
-    "updatedAt": "2025-01-13T00:00:00.000Z"
-  },
-  {
-    "id": "workflows",
-    "name": "Common Workflows",
-    "parentId": "general",
+    "parentId": "root",
     "type": "folder",
     "createdAt": "2025-01-13T00:00:00.000Z",
     "updatedAt": "2025-01-13T00:00:00.000Z"
@@ -80,70 +56,6 @@
     "updatedAt": "2025-01-13T00:00:00.000Z"
   },
   {
-    "id": "enhancement",
-    "name": "Enhancement",
-    "parentId": "root",
-    "type": "folder",
-    "createdAt": "2025-01-13T00:00:00.000Z",
-    "updatedAt": "2025-01-13T00:00:00.000Z"
-  },
-  {
-    "id": "formatting",
-    "name": "Formatting",
-    "parentId": "root",
-    "type": "folder",
-    "createdAt": "2025-01-13T00:00:00.000Z",
-    "updatedAt": "2025-01-13T00:00:00.000Z"
-  },
-  {
-    "id": "quality",
-    "name": "Quality",
-    "parentId": "root",
-    "type": "folder",
-    "createdAt": "2025-01-13T00:00:00.000Z",
-    "updatedAt": "2025-01-13T00:00:00.000Z"
-  },
-  {
-    "id": "accessibility",
-    "name": "Accessibility",
-    "parentId": "root",
-    "type": "folder",
-    "createdAt": "2025-01-13T00:00:00.000Z",
-    "updatedAt": "2025-01-13T00:00:00.000Z"
-  },
-  {
-    "id": "technical",
-    "name": "Technical",
-    "parentId": "root",
-    "type": "folder",
-    "createdAt": "2025-01-13T00:00:00.000Z",
-    "updatedAt": "2025-01-13T00:00:00.000Z"
-  },
-  {
-    "id": "analysis",
-    "name": "Analysis",
-    "parentId": "root",
-    "type": "folder",
-    "createdAt": "2025-01-13T00:00:00.000Z",
-    "updatedAt": "2025-01-13T00:00:00.000Z"
-  },
-  {
-    "id": "urgency",
-    "name": "Urgency",
-    "parentId": "root",
-    "type": "folder",
-    "createdAt": "2025-01-13T00:00:00.000Z",
-    "updatedAt": "2025-01-13T00:00:00.000Z"
-  },
-  {
-    "id": "financial",
-    "name": "Financial",
-    "parentId": "root",
-    "type": "folder",
-    "createdAt": "2025-01-13T00:00:00.000Z",
-    "updatedAt": "2025-01-13T00:00:00.000Z"
-  },
-  {
     "id": "creativity",
     "name": "Creativity",
     "parentId": "root",
@@ -162,14 +74,6 @@
   {
     "id": "development",
     "name": "Development",
-    "parentId": "root",
-    "type": "folder",
-    "createdAt": "2025-01-13T00:00:00.000Z",
-    "updatedAt": "2025-01-13T00:00:00.000Z"
-  },
-  {
-    "id": "architecture",
-    "name": "Architecture",
     "parentId": "root",
     "type": "folder",
     "createdAt": "2025-01-13T00:00:00.000Z",
