@@ -68,7 +68,7 @@ const FolderTree = ({
 
   const renderFolder = (folder, level = 0) => {
     const isExpanded = expandedFolders.has(folder.id);
-    const isSelected = selectedFolderId === folder.id;
+    const _isSelected = selectedFolderId === folder.id;
     const isFavorite = favoriteFolders.has(folder.id);
     const children = buildFolderTree(folder.id);
     const folderHasChildren = hasChildren(folder.id);

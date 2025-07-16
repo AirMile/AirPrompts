@@ -4,6 +4,10 @@ import ItemExecutor from './common/ItemExecutor.jsx';
 import Homepage from './dashboard/Homepage.jsx';
 import WorkflowEditor from './workflows/WorkflowEditor.jsx';
 import SnippetEditor from './snippets/SnippetEditor.jsx';
+import ErrorBoundary from './common/ErrorBoundary.jsx';
+import Loading from './common/Loading.jsx';
+import ErrorMessage from './common/ErrorMessage.jsx';
+import { PreferencesProvider } from '../contexts/PreferencesContext.jsx';
 import defaultTemplates from '../data/defaultTemplates.json';
 import defaultWorkflows from '../data/defaultWorkflows.json';
 import defaultSnippets from '../data/defaultSnippets.json';
@@ -20,33 +24,62 @@ const PromptTemplateSystem = () => {
   const [executingItem, setExecutingItem] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedFolderId, setSelectedFolderId] = useState('home');
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState(null);
 
   // Main render logic
   const handleSaveTemplate = (template) => {
-    if (template.id && templates.find(t => t.id === template.id)) {
-      setTemplates(templates.map(t => t.id === template.id ? template : t));
-    } else {
-      setTemplates([...templates, { ...template, id: Date.now() }]);
+    try {
+      setIsLoading(true);
+      setError(null);
+      
+      if (template.id && templates.find(t => t.id === template.id)) {
+        setTemplates(templates.map(t => t.id === template.id ? template : t));
+      } else {
+        setTemplates([...templates, { ...template, id: Date.now() }]);
+      }
+      setEditingTemplate(null);
+    } catch (err) {
+      setError(`Failed to save template: ${err.message}`);
+    } finally {
+      setIsLoading(false);
     }
-    setEditingTemplate(null);
   };
 
   const handleSaveWorkflow = (workflow) => {
-    if (workflow.id && workflows.find(w => w.id === workflow.id)) {
-      setWorkflows(workflows.map(w => w.id === workflow.id ? workflow : w));
-    } else {
-      setWorkflows([...workflows, { ...workflow, id: Date.now() }]);
+    try {
+      setIsLoading(true);
+      setError(null);
+      
+      if (workflow.id && workflows.find(w => w.id === workflow.id)) {
+        setWorkflows(workflows.map(w => w.id === workflow.id ? workflow : w));
+      } else {
+        setWorkflows([...workflows, { ...workflow, id: Date.now() }]);
+      }
+      setEditingWorkflow(null);
+    } catch (err) {
+      setError(`Failed to save workflow: ${err.message}`);
+    } finally {
+      setIsLoading(false);
     }
-    setEditingWorkflow(null);
   };
 
   const handleSaveSnippet = (snippet) => {
-    if (snippet.id && snippets.find(s => s.id === snippet.id)) {
-      setSnippets(snippets.map(s => s.id === snippet.id ? snippet : s));
-    } else {
-      setSnippets([...snippets, { ...snippet, id: Date.now() }]);
+    try {
+      setIsLoading(true);
+      setError(null);
+      
+      if (snippet.id && snippets.find(s => s.id === snippet.id)) {
+        setSnippets(snippets.map(s => s.id === snippet.id ? snippet : s));
+      } else {
+        setSnippets([...snippets, { ...snippet, id: Date.now() }]);
+      }
+      setEditingSnippet(null);
+    } catch (err) {
+      setError(`Failed to save snippet: ${err.message}`);
+    } finally {
+      setIsLoading(false);
     }
-    setEditingSnippet(null);
   };
 
   const handleCreateFolder = (parentId = 'root') => {
@@ -66,85 +99,127 @@ const PromptTemplateSystem = () => {
 
   if (executingItem) {
     return (
-      <ItemExecutor
-        item={executingItem.item}
-        type={executingItem.type}
-        snippets={snippets}
-        onComplete={() => {
-          setExecutingItem(null);
-        }}
-        onCancel={() => {
-          setExecutingItem(null);
-        }}
-        onEdit={(snippet) => {
-          setExecutingItem(null);
-          setEditingSnippet(snippet);
-        }}
-      />
+      <PreferencesProvider>
+        <ErrorBoundary message="An error occurred while executing this item. Please try again or go back to the dashboard.">
+          <ItemExecutor
+            item={executingItem.item}
+            type={executingItem.type}
+            snippets={snippets}
+            onComplete={() => {
+              setExecutingItem(null);
+            }}
+            onCancel={() => {
+              setExecutingItem(null);
+            }}
+            onEdit={(snippet) => {
+              setExecutingItem(null);
+              setEditingSnippet(snippet);
+            }}
+          />
+        </ErrorBoundary>
+      </PreferencesProvider>
     );
   }
 
   if (editingTemplate !== null) {
     return (
-      <TemplateEditor
-        template={editingTemplate}
-        folders={folders}
-        onSave={handleSaveTemplate}
-        onCancel={() => {
-          setEditingTemplate(null);
-        }}
-      />
+      <PreferencesProvider>
+        <ErrorBoundary message="An error occurred while editing the template. Your changes may not have been saved.">
+          <TemplateEditor
+            template={editingTemplate}
+            folders={folders}
+            onSave={handleSaveTemplate}
+            onCancel={() => {
+              setEditingTemplate(null);
+            }}
+          />
+        </ErrorBoundary>
+      </PreferencesProvider>
     );
   }
 
   if (editingWorkflow !== null) {
     return (
-      <WorkflowEditor
-        workflow={editingWorkflow}
-        templates={templates}
-        snippets={snippets}
-        workflows={workflows}
-        folders={folders}
-        onSave={handleSaveWorkflow}
-        onCancel={() => {
-          setEditingWorkflow(null);
-        }}
-      />
+      <PreferencesProvider>
+        <ErrorBoundary message="An error occurred while editing the workflow. Your changes may not have been saved.">
+          <WorkflowEditor
+            workflow={editingWorkflow}
+            templates={templates}
+            snippets={snippets}
+            workflows={workflows}
+            folders={folders}
+            onSave={handleSaveWorkflow}
+            onCancel={() => {
+              setEditingWorkflow(null);
+            }}
+          />
+        </ErrorBoundary>
+      </PreferencesProvider>
     );
   }
 
   if (editingSnippet !== null) {
     return (
-      <SnippetEditor
-        snippet={editingSnippet}
-        folders={folders}
-        onSave={handleSaveSnippet}
-        onCancel={() => {
-          setEditingSnippet(null);
-        }}
-      />
+      <PreferencesProvider>
+        <ErrorBoundary message="An error occurred while editing the snippet. Your changes may not have been saved.">
+          <SnippetEditor
+            snippet={editingSnippet}
+            folders={folders}
+            onSave={handleSaveSnippet}
+            onCancel={() => {
+              setEditingSnippet(null);
+            }}
+          />
+        </ErrorBoundary>
+      </PreferencesProvider>
     );
   }
 
   return (
-    <Homepage 
-      templates={templates}
-      workflows={workflows}
-      snippets={snippets}
-      folders={folders}
-      searchQuery={searchQuery}
-      setSearchQuery={setSearchQuery}
-      selectedFolderId={selectedFolderId}
-      setSelectedFolderId={setSelectedFolderId}
-      onEditTemplate={setEditingTemplate}
-      onEditWorkflow={setEditingWorkflow}
-      onEditSnippet={setEditingSnippet}
-      onExecuteItem={setExecutingItem}
-      onDeleteTemplate={(id) => setTemplates(templates.filter(t => t.id !== id))}
-      onDeleteWorkflow={(id) => setWorkflows(workflows.filter(w => w.id !== id))}
-      onDeleteSnippet={(id) => setSnippets(snippets.filter(s => s.id !== id))}
-      onCreateFolder={handleCreateFolder}
-    />
+    <PreferencesProvider>
+      <ErrorBoundary message="An error occurred while loading the dashboard. Please refresh the page or try again later.">
+        <div className="min-h-screen bg-gray-900">
+          {/* Global Error Message */}
+          {error && (
+            <div className="fixed top-4 right-4 z-50 max-w-md">
+              <ErrorMessage 
+                error={error}
+                onDismiss={() => setError(null)}
+                variant="critical"
+              />
+            </div>
+          )}
+          
+          {/* Global Loading Overlay */}
+          {isLoading && (
+            <div className="fixed inset-0 bg-black/50 z-40 flex items-center justify-center">
+              <div className="bg-gray-800 rounded-lg p-6">
+                <Loading message="Saving..." size="large" />
+              </div>
+            </div>
+          )}
+          
+          <Homepage 
+            templates={templates}
+            workflows={workflows}
+            snippets={snippets}
+            folders={folders}
+            searchQuery={searchQuery}
+            setSearchQuery={setSearchQuery}
+            selectedFolderId={selectedFolderId}
+            setSelectedFolderId={setSelectedFolderId}
+            onEditTemplate={setEditingTemplate}
+            onEditWorkflow={setEditingWorkflow}
+            onEditSnippet={setEditingSnippet}
+            onExecuteItem={setExecutingItem}
+            onDeleteTemplate={(id) => setTemplates(templates.filter(t => t.id !== id))}
+            onDeleteWorkflow={(id) => setWorkflows(workflows.filter(w => w.id !== id))}
+            onDeleteSnippet={(id) => setSnippets(snippets.filter(s => s.id !== id))}
+            onCreateFolder={handleCreateFolder}
+          />
+        </div>
+      </ErrorBoundary>
+    </PreferencesProvider>
   );
 };
 

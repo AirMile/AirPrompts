@@ -13,7 +13,10 @@
       "Bash(rm:*)",
       "Bash(node:*)",
       "Bash(timeout 10 npm run dev)",
-      "Bash(curl:*)"
+      "Bash(curl:*)",
+      "Bash(npm run lint:*)",
+      "Bash(npm install:*)",
+      "Bash(npx eslint:*)"
     ],
     "deny": []
   }

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Copy, ArrowLeft, ArrowRight, Check, Info, Tag, Plus, Edit, FileText, Layers, Workflow } from 'lucide-react';
 import { copyToClipboard } from '../../utils/clipboard.js';
 import { extractAllVariables } from '../../types/template.types.js';
@@ -18,7 +18,7 @@ const ItemExecutor = ({ item, type, snippets = [], onComplete, onCancel, onEdit 
   const copyButtonRef = useRef(null);
   
   // Different logic for different step types
-  const getStepType = () => {
+  const getStepType = useCallback(() => {
     if (!isWorkflow) return type; // Use the passed type prop for non-workflows
     
     // Check if info step has templates or snippets attached
@@ -37,7 +37,7 @@ const ItemExecutor = ({ item, type, snippets = [], onComplete, onCancel, onEdit 
     }
     
     return currentStepData.type || 'template';
-  };
+  }, [isWorkflow, type, currentStepData, selectedOptions]);
 
   const stepType = getStepType();
 
@@ -97,7 +97,7 @@ const ItemExecutor = ({ item, type, snippets = [], onComplete, onCancel, onEdit 
 
   
   // Get all available options (templates and snippets combined) for current step
-  const getAllStepOptions = () => {
+  const getAllStepOptions = useCallback(() => {
     if (!isWorkflow) {
       return [];
     }
@@ -216,7 +216,7 @@ const ItemExecutor = ({ item, type, snippets = [], onComplete, onCancel, onEdit 
       });
     }
     return options;
-  };
+  }, [isWorkflow, currentStepData, snippets]);
 
   // Get the current template or snippet for this step
   const getCurrentTemplate = () => {
@@ -292,7 +292,7 @@ const ItemExecutor = ({ item, type, snippets = [], onComplete, onCancel, onEdit 
   const isNestedWorkflow = currentTemplate && Array.isArray(currentTemplate.steps);
   
   // Extract all variables including snippets from current template and sort by position
-  const getAllTemplateVariables = () => {
+  const getAllTemplateVariables = useCallback(() => {
     if (!currentTemplate || !currentTemplate.content) return { variables: [], snippetVariables: [], sortedVariables: [] };
     
     const { variables, snippetVariables } = extractAllVariables(currentTemplate.content);
@@ -335,7 +335,7 @@ const ItemExecutor = ({ item, type, snippets = [], onComplete, onCancel, onEdit 
       snippetVariables, 
       sortedVariables 
     };
-  };
+  }, [currentTemplate]);
   
   const { snippetVariables, sortedVariables } = getAllTemplateVariables();
   const allVariables = sortedVariables.map(v => v.placeholder);
@@ -449,7 +449,7 @@ const ItemExecutor = ({ item, type, snippets = [], onComplete, onCancel, onEdit 
       }
     }, 100);
     return () => clearTimeout(timer);
-  }, [currentStep, selectedOptions, currentStepData.id, currentTemplate?.hasContent, sortedVariables.length]);
+  }, [currentStep, selectedOptions, currentStepData.id, currentTemplate?.hasContent, sortedVariables.length, getAllStepOptions, getStepType]);
 
   // Reset highlighted option index when step changes or options change
   useEffect(() => {
@@ -466,7 +466,7 @@ const ItemExecutor = ({ item, type, snippets = [], onComplete, onCancel, onEdit 
       // Don't auto-select, just let the highlighted index stay at 0
       // User must manually select with Enter/Tab or mouse click
     }
-  }, [currentStep, currentStepData.id]);
+  }, [currentStep, currentStepData.id, getAllStepOptions]);
 
   // Auto-fill single option snippets
   useEffect(() => {
@@ -510,7 +510,7 @@ const ItemExecutor = ({ item, type, snippets = [], onComplete, onCancel, onEdit 
         }, 150);
       }
     }
-  }, [snippetVariables, snippets, variableValues]);
+  }, [snippetVariables, snippets, variableValues, getAllTemplateVariables]);
 
   // Focus container for snippets without variables to enable Tab handling
   useEffect(() => {

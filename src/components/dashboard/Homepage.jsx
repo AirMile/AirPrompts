@@ -1,7 +1,20 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { Plus, Play, Edit, Trash2, Search, Workflow, FileText, Star, Tag, Puzzle, GripVertical, Settings } from 'lucide-react';
 import FolderTree from '../folders/FolderTree.jsx';
 import FolderBreadcrumb from '../folders/FolderBreadcrumb.jsx';
+import ViewModeToggle from '../common/ViewModeToggle.jsx';
+import ListView from '../common/ListView.jsx';
+import CompactView from '../common/CompactView.jsx';
+import FocusableCard from '../common/FocusableCard.jsx';
+import CollapsibleSection from '../common/CollapsibleSection.jsx';
+import AdvancedSearch from '../search/AdvancedSearch.jsx';
+import TagFilter from '../filters/TagFilter.jsx';
+import Pagination from '../common/Pagination.jsx';
+import useKeyboardNavigation from '../../hooks/useKeyboardNavigation.js';
+import usePagination from '../../hooks/usePagination.js';
+import useFilters from '../../hooks/useFilters.js';
+import { performAdvancedSearch } from '../../utils/searchUtils.js';
+import { useUserPreferences } from '../../hooks/useUserPreferences.js';
 
 const Homepage = ({ 
   templates, 
@@ -23,46 +36,32 @@ const Homepage = ({
 }) => {
   const [isReorderMode, setIsReorderMode] = useState(false);
   const [draggedItem, setDraggedItem] = useState(null);
-  const [itemOrders, setItemOrders] = useState(() => {
-    const saved = localStorage.getItem(`itemOrders_${selectedFolderId || 'global'}`);
-    return saved ? JSON.parse(saved) : {};
-  });
-  const searchInputRef = useRef(null);
-
-
-  useEffect(() => {
-    localStorage.setItem(`itemOrders_${selectedFolderId || 'global'}`, JSON.stringify(itemOrders));
-  }, [itemOrders, selectedFolderId]);
-
-  // Load item orders when folder changes
-  useEffect(() => {
-    const savedItemOrders = localStorage.getItem(`itemOrders_${selectedFolderId || 'global'}`);
-    if (savedItemOrders) {
-      setItemOrders(JSON.parse(savedItemOrders));
-    } else {
-      setItemOrders({});
-    }
-  }, [selectedFolderId]);
-  // Get all descendant folder IDs for the selected folder
-  const getFolderDescendants = (folderId) => {
-    const descendants = new Set();
-    descendants.add(folderId);
-    
-    const addChildren = (parentId) => {
-      const children = (folders || []).filter(f => f.parentId === parentId);
-      children.forEach(child => {
-        descendants.add(child.id);
-        addChildren(child.id);
-      });
-    };
-    
-    addChildren(folderId);
-    return descendants;
+  // Use preferences system for view mode and item orders
+  const { layout, updateLayout, getItemOrder, setItemOrder } = useUserPreferences();
+  const viewMode = layout.viewMode;
+  
+  const setViewMode = (mode) => {
+    updateLayout({ viewMode: mode });
   };
+  const mainContentRef = useRef(null);
+  
+  // Initialize filter system with item collections
+  const filterSystem = useFilters({
+    templates,
+    workflows,
+    snippets
+  }, {
+    persistFilters: true,
+    enableTagAnalytics: true,
+    cacheResults: true
+  });
 
-  // Special handling for Home folder to show root content
-  const getFilteredItems = (items, getSearchFields) => {
-    return (items || []).filter(item => {
+  // Enhanced filtering with advanced search capabilities and tag filtering
+  const getFilteredItems = useCallback((items, itemType) => {
+    if (!items || items.length === 0) return [];
+    
+    // Apply folder filtering first
+    const folderFiltered = items.filter(item => {
       // Folder filtering logic
       let folderMatch = false;
       if (!selectedFolderId || selectedFolderId === 'root') {
@@ -79,35 +78,193 @@ const Homepage = ({
         folderMatch = item.folderId === selectedFolderId;
       }
       
-      // Search filtering
-      if (searchQuery === '') {
-        return folderMatch;
+      return folderMatch;
+    });
+    
+    // Apply filter system (includes tag filtering, category, favorites, etc.)
+    const filterSystemFiltered = filterSystem.applyFilters(folderFiltered, itemType);
+    
+    // Apply search if there's a search query
+    if (!searchQuery || searchQuery.trim() === '') {
+      return filterSystemFiltered;
+    }
+    
+    // Use advanced search for better results
+    return performAdvancedSearch(filterSystemFiltered, searchQuery, itemType, {
+      minScore: 0.1,
+      maxResults: 1000,
+      sortBy: 'relevance'
+    });
+  }, [selectedFolderId, searchQuery, filterSystem]);
+
+  const filteredTemplates = useMemo(() => getFilteredItems(templates, 'template'), [templates, getFilteredItems]);
+
+  const filteredWorkflows = useMemo(() => getFilteredItems(workflows, 'workflow'), [workflows, getFilteredItems]);
+
+  const filteredSnippets = useMemo(() => getFilteredItems(snippets, 'snippet'), [snippets, getFilteredItems]);
+
+  // Get favorites from all items
+  const favorites = useMemo(() => {
+    const allItems = [];
+    
+    filteredWorkflows.filter(item => item.favorite).forEach(item => {
+      allItems.push({ ...item, type: 'workflow' });
+    });
+    
+    filteredTemplates.filter(item => item.favorite).forEach(item => {
+      allItems.push({ ...item, type: 'template' });
+    });
+    
+    filteredSnippets.filter(item => item.favorite).forEach(item => {
+      allItems.push({ ...item, type: 'snippet' });
+    });
+    
+    return allItems;
+  }, [filteredWorkflows, filteredTemplates, filteredSnippets]);
+
+  // Get recently used items
+  const recentlyUsed = useMemo(() => {
+    const allItems = [];
+    
+    filteredWorkflows.forEach(item => {
+      if (item.lastUsed) {
+        allItems.push({ ...item, type: 'workflow' });
       }
-      
-      const searchFields = getSearchFields(item);
-      const searchMatch = searchFields.some(field => 
-        field && field.toLowerCase().includes(searchQuery.toLowerCase())
-      );
-      
-      return folderMatch && searchMatch;
+    });
+    
+    filteredTemplates.forEach(item => {
+      if (item.lastUsed) {
+        allItems.push({ ...item, type: 'template' });
+      }
+    });
+    
+    filteredSnippets.forEach(item => {
+      if (item.lastUsed) {
+        allItems.push({ ...item, type: 'snippet' });
+      }
+    });
+    
+    // Sort by lastUsed date (most recent first) and take top 10
+    return allItems
+      .sort((a, b) => new Date(b.lastUsed) - new Date(a.lastUsed))
+      .slice(0, 10);
+  }, [filteredWorkflows, filteredTemplates, filteredSnippets]);
+  
+  // Pagination hooks for each section
+  const templatesPagination = usePagination(filteredTemplates, {
+    initialPageSize: 12,
+    storageKey: `templates_${selectedFolderId || 'global'}`,
+    pageSizeOptions: [12, 24, 48, 96]
+  });
+  
+  const workflowsPagination = usePagination(filteredWorkflows, {
+    initialPageSize: 12,
+    storageKey: `workflows_${selectedFolderId || 'global'}`,
+    pageSizeOptions: [12, 24, 48, 96]
+  });
+  
+  const snippetsPagination = usePagination(filteredSnippets, {
+    initialPageSize: 12,
+    storageKey: `snippets_${selectedFolderId || 'global'}`,
+    pageSizeOptions: [12, 24, 48, 96]
+  });
+  
+  // Handle advanced search filter changes
+  const handleAdvancedFilter = ({ searchTerm, filters }) => {
+    if (searchTerm !== searchQuery) {
+      setSearchQuery(searchTerm);
+    }
+    // Update filter system with new filters
+    filterSystem.updateFilters({
+      type: filters.type,
+      category: filters.category,
+      favoriteOnly: filters.favoriteOnly,
+      hasContent: filters.hasContent
     });
   };
 
-  const filteredTemplates = getFilteredItems(templates, (item) => [item.name, item.description]);
-
-  const filteredWorkflows = getFilteredItems(workflows, (item) => [item.name, item.description]);
-
-  const filteredSnippets = getFilteredItems(snippets, (item) => [item.name, item.description, item.content, ...(item.tags || [])]);
-
   // Create sections with their data in fixed order
   const sections = [
-    { type: 'workflows', data: filteredWorkflows },
-    { type: 'templates', data: filteredTemplates },
-    { type: 'snippets', data: filteredSnippets }
+    ...(favorites.length > 0 ? [{ type: 'favorites', data: favorites }] : []),
+    ...(recentlyUsed.length > 0 ? [{ type: 'recent', data: recentlyUsed }] : []),
+    { type: 'workflows', data: workflowsPagination.currentItems, pagination: workflowsPagination, fullData: filteredWorkflows },
+    { type: 'templates', data: templatesPagination.currentItems, pagination: templatesPagination, fullData: filteredTemplates },
+    { type: 'snippets', data: snippetsPagination.currentItems, pagination: snippetsPagination, fullData: filteredSnippets }
   ];
 
+  // Combine all items for keyboard navigation (use paginated data)
+  const allItems = useMemo(() => [
+    ...favorites,
+    ...recentlyUsed,
+    ...workflowsPagination.currentItems,
+    ...templatesPagination.currentItems,
+    ...snippetsPagination.currentItems
+  ], [favorites, recentlyUsed, workflowsPagination.currentItems, templatesPagination.currentItems, snippetsPagination.currentItems]);
+
+  // Set up keyboard navigation
+  const keyboardNavigation = useKeyboardNavigation(allItems, {
+    layout: viewMode,
+    columns: viewMode === 'compact' ? 6 : 4,
+    onExecute: (item) => onExecuteItem({ item, type: item.type }),
+    onSelection: () => {
+      // Optional: could add selection highlight here
+    }
+  });
+
+  // Add keyboard event listener to main content with throttling for large datasets
+  useEffect(() => {
+    let throttleTimer = null;
+    const isLargeDataset = allItems.length > 100;
+    
+    const handleKeyDown = (e) => {
+      // Only handle keyboard navigation when not in an input field
+      if (e.target.tagName !== 'INPUT' && e.target.tagName !== 'TEXTAREA') {
+        // For large datasets, throttle navigation to improve performance
+        if (isLargeDataset && ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key)) {
+          if (throttleTimer) return;
+          
+          throttleTimer = setTimeout(() => {
+            throttleTimer = null;
+          }, 50); // 50ms throttle for large datasets
+        }
+        
+        // Handle pagination keyboard shortcuts
+        if (e.ctrlKey || e.metaKey) {
+          switch (e.key) {
+            case 'ArrowLeft':
+            case 'ArrowRight':
+            case 'Home':
+            case 'End':
+              // Let pagination hooks handle these
+              templatesPagination.handleKeyDown(e);
+              workflowsPagination.handleKeyDown(e);
+              snippetsPagination.handleKeyDown(e);
+              break;
+            default:
+              keyboardNavigation.handleKeyDown(e);
+          }
+        } else {
+          keyboardNavigation.handleKeyDown(e);
+        }
+      }
+    };
+
+    const mainContent = mainContentRef.current;
+    if (mainContent) {
+      mainContent.addEventListener('keydown', handleKeyDown);
+      return () => {
+        mainContent.removeEventListener('keydown', handleKeyDown);
+        if (throttleTimer) clearTimeout(throttleTimer);
+      };
+    }
+  }, [keyboardNavigation, templatesPagination, workflowsPagination, snippetsPagination, allItems.length]);
+
   const resetToDefaultOrder = () => {
-    setItemOrders({});
+    // Reset all section orders for current folder
+    const sections = ['workflows', 'templates', 'snippets'];
+    sections.forEach(sectionType => {
+      setItemOrder(selectedFolderId, sectionType, {});
+    });
   };
 
   // Handle item drag and drop
@@ -122,8 +279,7 @@ const Homepage = ({
     e.stopPropagation();
     
     if (draggedItem && draggedItem.sectionType === targetSectionType && draggedItem.item.id !== targetItem.id) {
-      const sectionKey = `${targetSectionType}_${selectedFolderId || 'global'}`;
-      const currentOrder = itemOrders[sectionKey] || {};
+      const currentOrder = getItemOrder(selectedFolderId, targetSectionType);
       
       // Get all items in this section
       let sectionData;
@@ -165,42 +321,183 @@ const Homepage = ({
       
       Object.assign(newOrder, newOrderMap);
       
-      setItemOrders(prev => ({
-        ...prev,
-        [sectionKey]: newOrder
-      }));
+      setItemOrder(selectedFolderId, targetSectionType, newOrder);
     }
     
     setDraggedItem(null);
   };
 
   // Sort items within sections
-  const getSortedItems = (items, sectionType) => {
-    const sectionKey = `${sectionType}_${selectedFolderId || 'global'}`;
-    const currentOrder = itemOrders[sectionKey] || {};
+  const getSortedItems = useCallback((items, sectionType) => {
+    const currentOrder = getItemOrder(selectedFolderId, sectionType);
     
     return [...items].sort((a, b) => {
       const aOrder = currentOrder[a.id] ?? items.findIndex(item => item.id === a.id);
       const bOrder = currentOrder[b.id] ?? items.findIndex(item => item.id === b.id);
       return aOrder - bOrder;
     });
-  };
+  }, [selectedFolderId, getItemOrder]);
 
-  const renderSection = (section, isLast = false) => {
-    const { type, data } = section;
+  // Render items based on view mode
+  const renderItems = useCallback((items, sectionType) => {
+    const getEditFunction = (item) => {
+      if (sectionType === 'favorites') {
+        return item.type === 'workflow' ? onEditWorkflow : 
+               item.type === 'template' ? onEditTemplate : onEditSnippet;
+      }
+      return sectionType === 'workflow' ? onEditWorkflow : 
+             sectionType === 'template' ? onEditTemplate : onEditSnippet;
+    };
+
+    const getDeleteFunction = (item) => {
+      if (sectionType === 'favorites') {
+        return item.type === 'workflow' ? onDeleteWorkflow : 
+               item.type === 'template' ? onDeleteTemplate : onDeleteSnippet;
+      }
+      return sectionType === 'workflow' ? onDeleteWorkflow : 
+             sectionType === 'template' ? onDeleteTemplate : onDeleteSnippet;
+    };
+
+    const commonProps = {
+      items: getSortedItems(items, sectionType),
+      type: sectionType,
+      onExecute: onExecuteItem,
+      onEdit: getEditFunction,
+      onDelete: getDeleteFunction,
+      isReorderMode: false, // Disable reordering for favorites
+      onDragStart: handleItemDragStart,
+      onDragOver: (e) => { e.preventDefault(); e.stopPropagation(); },
+      onDrop: handleItemDrop,
+      draggedItem,
+      keyboardNavigation
+    };
+
+    // Special handling for favorites and recent sections with mixed item types
+    if (sectionType === 'favorites' || sectionType === 'recent') {
+      switch (viewMode) {
+        case 'list':
+          return (
+            <div className="space-y-2">
+              {commonProps.items.map((item) => (
+                <ListView 
+                  key={item.id}
+                  items={[item]} 
+                  type={item.type}
+                  onExecute={commonProps.onExecute}
+                  onEdit={() => getEditFunction(item)(item)}
+                  onDelete={() => getDeleteFunction(item)(item.id)}
+                  isReorderMode={false}
+                  onDragStart={commonProps.onDragStart}
+                  onDragOver={commonProps.onDragOver}
+                  onDrop={commonProps.onDrop}
+                  draggedItem={commonProps.draggedItem}
+                />
+              ))}
+            </div>
+          );
+        case 'compact':
+          return (
+            <CompactView
+              items={commonProps.items}
+              type={sectionType}
+              onExecute={commonProps.onExecute}
+              onEdit={(item) => getEditFunction(item)(item)}
+              onDelete={(item) => getDeleteFunction(item)(item.id)}
+              isReorderMode={false}
+              onDragStart={commonProps.onDragStart}
+              onDragOver={commonProps.onDragOver}
+              onDrop={commonProps.onDrop}
+              draggedItem={commonProps.draggedItem}
+              keyboardNavigation={commonProps.keyboardNavigation}
+            />
+          );
+        case 'grid':
+        default:
+          return (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+              {commonProps.items.map((item, index) => (
+                <FocusableCard
+                  key={item.id}
+                  item={item}
+                  index={index}
+                  type={item.type}
+                  onExecute={commonProps.onExecute}
+                  onEdit={() => getEditFunction(item)(item)}
+                  onDelete={() => getDeleteFunction(item)(item.id)}
+                  isReorderMode={false}
+                  onDragStart={commonProps.onDragStart}
+                  onDragOver={commonProps.onDragOver}
+                  onDrop={commonProps.onDrop}
+                  draggedItem={commonProps.draggedItem}
+                />
+              ))}
+            </div>
+          );
+      }
+    }
+
+    switch (viewMode) {
+      case 'list':
+        return <ListView {...commonProps} />;
+      case 'compact':
+        return <CompactView {...commonProps} />;
+      case 'grid':
+      default:
+        return (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+            {commonProps.items.map((item, index) => (
+              <FocusableCard
+                key={item.id}
+                item={item}
+                index={index}
+                {...commonProps}
+              />
+            ))}
+          </div>
+        );
+    }
+  }, [viewMode, getSortedItems, onExecuteItem, onEditWorkflow, onEditTemplate, onEditSnippet, onDeleteWorkflow, onDeleteTemplate, onDeleteSnippet, draggedItem, keyboardNavigation]);
+
+  const renderSection = useCallback((section, isLast = false) => {
+    const { type, data, pagination, fullData } = section;
     
     switch (type) {
+      case 'favorites':
+        return (
+          <CollapsibleSection
+            key="favorites"
+            sectionId="favorites"
+            title="Favorites"
+            itemCount={data.length}
+            className={`${isLast ? '' : 'mb-8'}`}
+          >
+            {renderItems(data, 'favorites')}
+          </CollapsibleSection>
+        );
+
+      case 'recent':
+        return (
+          <CollapsibleSection
+            key="recent"
+            sectionId="recent"
+            title="Recently Used"
+            itemCount={data.length}
+            className={`${isLast ? '' : 'mb-8'}`}
+          >
+            {renderItems(data, 'recent')}
+          </CollapsibleSection>
+        );
+
       case 'workflows':
         return (
-          <div 
-            className={`${isLast ? '' : 'mb-8'}`} 
+          <CollapsibleSection
             key="workflows"
+            sectionId="workflows"
+            title="Workflows"
+            itemCount={fullData ? fullData.length : data.length}
+            className={`${isLast ? '' : 'mb-8'}`}
           >
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-xl font-semibold text-gray-100 flex items-center gap-2">
-                <Workflow className="w-5 h-5 text-gray-300" />
-                Workflows ({data.length})
-              </h2>
+            <div className="flex items-center justify-end mb-4">
               <button
                 onClick={() => onEditWorkflow({})}
                 className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 flex items-center gap-2 font-semibold"
@@ -209,80 +506,30 @@ const Homepage = ({
                 New Workflow
               </button>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-              {getSortedItems(data, 'workflows').map(workflow => {
-                const isDraggingItem = draggedItem?.item.id === workflow.id;
-                const canDropHere = draggedItem?.sectionType === 'workflows' && draggedItem?.item.id !== workflow.id;
-                
-                return (
-                <div 
-                  key={workflow.id} 
-                  className={`bg-gray-800 rounded-lg shadow-md border border-gray-700 p-4 hover:shadow-lg transition-shadow ${
-                    isDraggingItem ? 'opacity-50' : ''
-                  } ${
-                    canDropHere ? 'border-green-400' : ''
-                  }`}
-                  draggable={isReorderMode}
-                  onDragStart={(e) => handleItemDragStart(e, workflow, 'workflows')}
-                  onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); }}
-                  onDrop={(e) => handleItemDrop(e, workflow, 'workflows')}
-                >
-                  <div className="mb-3">
-                    <div className="flex items-start justify-between">
-                      <div className="flex items-center gap-2">
-                        {isReorderMode && (
-                          <GripVertical className="w-4 h-4 text-gray-400 cursor-move" />
-                        )}
-                        <h3 className="font-semibold text-gray-100 mb-1">{workflow.name}</h3>
-                      </div>
-                      <div className="flex items-center gap-1">
-                        {workflow.favorite && <Star className="w-4 h-4 text-yellow-300 fill-current" />}
-                      </div>
-                    </div>
-                    <p className="text-sm text-gray-300 mb-2">{workflow.description}</p>
-                    <div className="text-xs text-gray-400">
-                      {workflow.steps?.length || 0} steps
-                    </div>
-                  </div>
-                  <div className="flex gap-2">
-                    <button
-                      onClick={() => onExecuteItem({item: workflow, type: 'workflow'})}
-                      className="flex-1 px-3 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 flex items-center justify-center gap-2 text-sm font-medium"
-                    >
-                      <Play className="w-4 h-4" />
-                      Execute
-                    </button>
-                    <button
-                      onClick={() => onEditWorkflow(workflow)}
-                      className="px-3 py-2 text-gray-300 border border-gray-600 rounded-md hover:bg-gray-700 flex items-center justify-center"
-                    >
-                      <Edit className="w-4 h-4" />
-                    </button>
-                    <button
-                      onClick={() => onDeleteWorkflow(workflow.id)}
-                      className="px-3 py-2 text-red-400 border border-red-600 rounded-md hover:bg-red-900 flex items-center justify-center"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                  </div>
-                </div>
-                );
-              })}
-            </div>
-          </div>
+            {renderItems(data, 'workflows')}
+            {pagination && (
+              <div className="mt-6">
+                <Pagination 
+                  paginationHook={pagination}
+                  showInfo={true}
+                  showPageSizeSelector={true}
+                  variant="default"
+                />
+              </div>
+            )}
+          </CollapsibleSection>
         );
 
       case 'templates':
         return (
-          <div 
-            className={`${isLast ? '' : 'mb-8'}`} 
+          <CollapsibleSection
             key="templates"
+            sectionId="templates"
+            title="Templates"
+            itemCount={fullData ? fullData.length : data.length}
+            className={`${isLast ? '' : 'mb-8'}`}
           >
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-xl font-semibold text-gray-100 flex items-center gap-2">
-                <FileText className="w-5 h-5 text-gray-300" />
-                Templates ({data.length})
-              </h2>
+            <div className="flex items-center justify-end mb-4">
               <button
                 onClick={() => onEditTemplate({})}
                 className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center gap-2 font-semibold"
@@ -291,80 +538,30 @@ const Homepage = ({
                 New Template
               </button>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-              {getSortedItems(data, 'templates').map(template => {
-                const isDraggingItem = draggedItem?.item.id === template.id;
-                const canDropHere = draggedItem?.sectionType === 'templates' && draggedItem?.item.id !== template.id;
-                
-                return (
-                <div 
-                  key={template.id} 
-                  className={`bg-gray-800 rounded-lg shadow-md border border-gray-700 p-4 hover:shadow-lg transition-shadow ${
-                    isDraggingItem ? 'opacity-50' : ''
-                  } ${
-                    canDropHere ? 'border-blue-400' : ''
-                  }`}
-                  draggable={isReorderMode}
-                  onDragStart={(e) => handleItemDragStart(e, template, 'templates')}
-                  onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); }}
-                  onDrop={(e) => handleItemDrop(e, template, 'templates')}
-                >
-                  <div className="mb-3">
-                    <div className="flex items-start justify-between">
-                      <div className="flex items-center gap-2">
-                        {isReorderMode && (
-                          <GripVertical className="w-4 h-4 text-gray-400 cursor-move" />
-                        )}
-                        <h3 className="font-semibold text-gray-100 mb-1">{template.name}</h3>
-                      </div>
-                      <div className="flex items-center gap-1">
-                        {template.favorite && <Star className="w-4 h-4 text-yellow-300 fill-current" />}
-                      </div>
-                    </div>
-                    <p className="text-sm text-gray-300 mb-2">{template.description}</p>
-                    <div className="text-xs text-gray-400">
-                      {template.variables?.length || 0} variables
-                    </div>
-                  </div>
-                  <div className="flex gap-2">
-                    <button
-                      onClick={() => onExecuteItem({item: template, type: 'template'})}
-                      className="flex-1 px-3 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 flex items-center justify-center gap-2 text-sm font-medium"
-                    >
-                      <Play className="w-4 h-4" />
-                      Execute
-                    </button>
-                    <button
-                      onClick={() => onEditTemplate(template)}
-                      className="px-3 py-2 text-gray-300 border border-gray-600 rounded-md hover:bg-gray-700 flex items-center justify-center"
-                    >
-                      <Edit className="w-4 h-4" />
-                    </button>
-                    <button
-                      onClick={() => onDeleteTemplate(template.id)}
-                      className="px-3 py-2 text-red-400 border border-red-600 rounded-md hover:bg-red-900 flex items-center justify-center"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                  </div>
-                </div>
-                );
-              })}
-            </div>
-          </div>
+            {renderItems(data, 'templates')}
+            {pagination && (
+              <div className="mt-6">
+                <Pagination 
+                  paginationHook={pagination}
+                  showInfo={true}
+                  showPageSizeSelector={true}
+                  variant="default"
+                />
+              </div>
+            )}
+          </CollapsibleSection>
         );
 
       case 'snippets':
         return (
-          <div 
-            className={`${isLast ? '' : 'mb-8'}`} 
+          <CollapsibleSection
             key="snippets"
+            sectionId="snippets"
+            title="Snippets"
+            itemCount={fullData ? fullData.length : data.length}
+            className={`${isLast ? '' : 'mb-8'}`}
           >
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-xl font-semibold text-gray-100 flex items-center gap-2">
-                <Tag className="w-5 h-5 text-gray-300" />
-                Snippets ({data.length})
-              </h2>
+            <div className="flex items-center justify-end mb-4">
               <button
                 onClick={() => onEditSnippet({})}
                 className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 flex items-center gap-2 font-semibold"
@@ -373,82 +570,24 @@ const Homepage = ({
                 New Snippet
               </button>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-              {getSortedItems(data, 'snippets').map(snippet => {
-                const isDraggingItem = draggedItem?.item.id === snippet.id;
-                const canDropHere = draggedItem?.sectionType === 'snippets' && draggedItem?.item.id !== snippet.id;
-                
-                return (
-                <div 
-                  key={snippet.id} 
-                  className={`bg-gray-800 rounded-lg shadow-md border border-gray-700 p-4 hover:shadow-lg transition-shadow ${
-                    isDraggingItem ? 'opacity-50' : ''
-                  } ${
-                    canDropHere ? 'border-purple-400' : ''
-                  }`}
-                  draggable={isReorderMode}
-                  onDragStart={(e) => handleItemDragStart(e, snippet, 'snippets')}
-                  onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); }}
-                  onDrop={(e) => handleItemDrop(e, snippet, 'snippets')}
-                >
-                  <div className="mb-3">
-                    <div className="flex items-start justify-between">
-                      <div className="flex items-center gap-2">
-                        {isReorderMode && (
-                          <GripVertical className="w-4 h-4 text-gray-400 cursor-move" />
-                        )}
-                        <h3 className="font-semibold text-gray-100 mb-1">{snippet.name}</h3>
-                      </div>
-                      <div className="flex items-center gap-1">
-                        {snippet.favorite && <Star className="w-4 h-4 text-yellow-300 fill-current" />}
-                      </div>
-                    </div>
-                    <div className="flex flex-wrap gap-1 mb-2">
-                      {(snippet.tags || []).slice(0, 3).map((tag, index) => (
-                        <span key={index} className="px-2 py-1 bg-gray-800 text-gray-300 border border-amber-600 rounded text-xs">
-                          {tag}
-                        </span>
-                      ))}
-                      {(snippet.tags || []).length > 3 && (
-                        <span className="px-2 py-1 bg-gray-700 text-gray-300 rounded text-xs">
-                          +{(snippet.tags || []).length - 3}
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                  <div className="flex gap-2">
-                    <button
-                      onClick={() => onExecuteItem({item: snippet, type: 'snippet'})}
-                      className="flex-1 px-3 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 flex items-center justify-center gap-2 text-sm font-medium"
-                    >
-                      <Play className="w-4 h-4" />
-                      Execute
-                    </button>
-                    <button
-                      onClick={() => onEditSnippet(snippet)}
-                      className="px-3 py-2 text-gray-300 border border-gray-600 rounded-md hover:bg-gray-700 flex items-center justify-center"
-                    >
-                      <Edit className="w-4 h-4" />
-                    </button>
-                    <button
-                      onClick={() => onDeleteSnippet(snippet.id)}
-                      className="px-3 py-2 text-red-400 border border-red-600 rounded-md hover:bg-red-900 flex items-center justify-center"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                  </div>
-                </div>
-                );
-              })}
-            </div>
-          </div>
+            {renderItems(data, 'snippets')}
+            {pagination && (
+              <div className="mt-6">
+                <Pagination 
+                  paginationHook={pagination}
+                  showInfo={true}
+                  showPageSizeSelector={true}
+                  variant="default"
+                />
+              </div>
+            )}
+          </CollapsibleSection>
         );
-
 
       default:
         return null;
     }
-  };
+  }, [renderItems, onEditWorkflow, onEditTemplate, onEditSnippet]);
 
   return (
     <div className="flex h-screen bg-gray-900">
@@ -483,20 +622,23 @@ const Homepage = ({
           {/* Search and Controls */}
           <div className="mb-8">
             <div className="flex gap-4 items-center mb-4">
-              <div className="relative flex-1">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-                <input
-                  ref={searchInputRef}
-                  type="text"
-                  key="search-input"
-                  id="searchQuery"
-                  name="searchQuery"
+              <div className="flex-1">
+                <AdvancedSearch
+                  searchQuery={searchQuery}
+                  setSearchQuery={setSearchQuery}
+                  allItems={[
+                    ...templates.map(t => ({ ...t, type: 'template' })),
+                    ...workflows.map(w => ({ ...w, type: 'workflow' })),
+                    ...snippets.map(s => ({ ...s, type: 'snippet' }))
+                  ]}
+                  onFilter={handleAdvancedFilter}
                   placeholder="Search templates, workflows, and snippets..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full pl-10 pr-4 py-3 border border-gray-600 bg-gray-800 text-gray-100 rounded-lg focus:ring-2 focus:ring-blue-400 focus:border-transparent placeholder-gray-400"
                 />
               </div>
+              <ViewModeToggle 
+                currentMode={viewMode}
+                onModeChange={setViewMode}
+              />
               <button
                 onClick={() => setIsReorderMode(!isReorderMode)}
                 className={`px-4 py-3 rounded-lg flex items-center gap-2 font-medium transition-colors ${
@@ -517,6 +659,25 @@ const Homepage = ({
                 </button>
               )}
             </div>
+            
+            {/* Tag Filter */}
+            {filterSystem.availableTags.length > 0 && (
+              <div className="mb-4">
+                <TagFilter
+                  availableTags={filterSystem.availableTags}
+                  selectedTags={filterSystem.selectedTags}
+                  onTagsChange={filterSystem.setSelectedTags}
+                  filterMode={filterSystem.filterMode}
+                  onFilterModeChange={filterSystem.setFilterMode}
+                  showFilterCount={true}
+                  filterCount={filterSystem.totalFilteredCount}
+                  isExpanded={filterSystem.isExpanded}
+                  onToggleExpanded={() => filterSystem.setIsExpanded(!filterSystem.isExpanded)}
+                  className="bg-gray-800 border border-gray-700 rounded-lg p-4"
+                />
+              </div>
+            )}
+            
             {isReorderMode && (
               <div className="bg-blue-900/20 border border-blue-600/30 rounded-lg p-4 mb-4">
                 <p className="text-blue-300 text-sm">
