@@ -138,30 +138,31 @@ const Homepage = ({
       const draggedId = draggedItem.item.id;
       const targetId = targetItem.id;
       
-      // Remove dragged item order
-      const draggedOrder = newOrder[draggedId] || sectionData.findIndex(item => item.id === draggedId);
-      const targetOrder = newOrder[targetId] || sectionData.findIndex(item => item.id === targetId);
+      // Get current sorted order to calculate correct positions
+      const sortedItems = getSortedItems(sectionData, targetSectionType);
+      const draggedOrder = sortedItems.findIndex(item => item.id === draggedId);
+      const targetOrder = sortedItems.findIndex(item => item.id === targetId);
       
-      // Shift other items
-      Object.keys(newOrder).forEach(id => {
-        const itemOrder = newOrder[id];
-        if (id !== draggedId) {
-          if (draggedOrder < targetOrder) {
-            // Moving down: shift items up
-            if (itemOrder > draggedOrder && itemOrder <= targetOrder) {
-              newOrder[id] = itemOrder - 1;
-            }
-          } else {
-            // Moving up: shift items down
-            if (itemOrder >= targetOrder && itemOrder < draggedOrder) {
-              newOrder[id] = itemOrder + 1;
-            }
-          }
-        }
-      });
+      // Create new order by reassigning all positions
+      const newOrderMap = {};
       
-      // Set new position for dragged item
-      newOrder[draggedId] = targetOrder;
+      if (draggedOrder !== targetOrder) {
+        // Create new arrangement of items
+        const newArrangement = [...sortedItems];
+        
+        // Remove dragged item from current position
+        const draggedItemData = newArrangement.splice(draggedOrder, 1)[0];
+        
+        // Insert at target position
+        newArrangement.splice(targetOrder, 0, draggedItemData);
+        
+        // Assign new order indices
+        newArrangement.forEach((item, index) => {
+          newOrderMap[item.id] = index;
+        });
+      }
+      
+      Object.assign(newOrder, newOrderMap);
       
       setItemOrders(prev => ({
         ...prev,
