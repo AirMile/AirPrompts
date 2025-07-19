@@ -1,18 +1,12 @@
 import React from 'react';
-import { Grid, List, LayoutGrid } from 'lucide-react';
+import { Grid, List } from 'lucide-react';
 
 const ViewModeToggle = ({ 
-  currentMode = 'grid', 
+  currentMode = 'list', 
   onModeChange = () => {},
   className = ''
 }) => {
   const viewModes = [
-    {
-      id: 'grid',
-      icon: Grid,
-      label: 'Grid View',
-      description: 'Standard grid layout with cards'
-    },
     {
       id: 'list',
       icon: List,
@@ -20,10 +14,10 @@ const ViewModeToggle = ({
       description: 'Single-column list layout'
     },
     {
-      id: 'compact',
-      icon: LayoutGrid,
-      label: 'Compact View',
-      description: 'Dense grid with more columns'
+      id: 'grid',
+      icon: Grid,
+      label: 'Grid View',
+      description: 'Standard grid layout with cards'
     }
   ];
 
@@ -49,7 +43,7 @@ const ViewModeToggle = ({
     >
       {/* Hidden help text for screen readers */}
       <div id="view-mode-help" className="sr-only">
-        Choose how items are displayed: Grid view shows items in a card grid, List view shows items in a single column, Compact view shows items in a dense grid with more columns.
+        Choose how items are displayed: Grid view shows items in a card grid, List view shows items in a single column.
       </div>
       
       {viewModes.map((mode) => {
@@ -73,7 +67,6 @@ const ViewModeToggle = ({
             role="radio"
             aria-checked={isActive}
             aria-label={`${mode.label}: ${mode.description}`}
-            title={mode.description}
           >
             <Icon className="w-4 h-4" aria-hidden="true" />
             <span className="ml-1 hidden sm:inline">{mode.label.split(' ')[0]}</span>

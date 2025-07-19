@@ -11,7 +11,7 @@ const AdvancedSearch = ({
   setSearchQuery, 
   allItems = [], 
   onFilter,
-  placeholder = "Search templates, workflows, and snippets...",
+  placeholder = "Search templates, workflows, snippets, and tags...",
   className = ""
 }) => {
   const [isExpanded, setIsExpanded] = useState(false);
@@ -172,6 +172,7 @@ const AdvancedSearch = ({
           value={searchQuery}
           onChange={handleSearchChange}
           onKeyDown={handleKeyDown}
+          data-search-input="true"
           onFocus={() => {
             if (searchQuery.length >= 2) {
               setShowSuggestions(true);
@@ -181,7 +182,7 @@ const AdvancedSearch = ({
             // Delay hiding suggestions to allow for clicks
             setTimeout(() => setShowSuggestions(false), 200);
           }}
-          className="w-full pl-10 pr-20 py-3 border border-gray-600 bg-gray-800 text-gray-100 rounded-lg focus:ring-2 focus:ring-blue-400 focus:border-transparent placeholder-gray-400"
+          className="w-full pl-10 pr-20 py-3 border border-gray-600 bg-gray-800 text-gray-100 rounded-lg focus:outline-none focus:border-blue-400 placeholder-gray-400"
         />
         
         {/* Clear Button */}

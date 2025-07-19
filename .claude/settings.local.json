@@ -1,22 +1,10 @@
 {
   "permissions": {
     "allow": [
-      "Bash(npm run dev:*)",
-      "Bash(mv:*)",
-      "Bash(npm run lint)",
-      "Bash(npm run build:*)",
-      "Bash(pkill:*)",
-      "Bash(true)",
-      "Bash(taskkill:*)",
-      "Bash(ls:*)",
-      "Bash(find:*)",
-      "Bash(rm:*)",
-      "Bash(node:*)",
-      "Bash(timeout 10 npm run dev)",
-      "Bash(curl:*)",
-      "Bash(npm run lint:*)",
-      "Bash(npm install:*)",
-      "Bash(npx eslint:*)"
+      "Bash",
+      "Edit",
+      "Write",
+      "MultiEdit"
     ],
     "deny": []
   }

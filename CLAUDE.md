@@ -2,6 +2,10 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## Language Preference
+
+**IMPORTANT:** Please communicate in Dutch (Nederlands) when responding to the user. All explanations, summaries, and communications should be in Dutch, while code and technical content can remain in English.
+
 ## Development Commands
 
 **Critical:** All npm commands must be run from the correct working directory. The project files are in the main directory, not a subdirectory.

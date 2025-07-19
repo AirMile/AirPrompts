@@ -211,7 +211,10 @@ const PromptTemplateSystem = () => {
             onEditTemplate={setEditingTemplate}
             onEditWorkflow={setEditingWorkflow}
             onEditSnippet={setEditingSnippet}
-            onExecuteItem={setExecutingItem}
+            onExecuteItem={(data) => {
+              console.log('🔧 PromptTemplateSystem: Setting executingItem with:', data);
+              setExecutingItem(data);
+            }}
             onDeleteTemplate={(id) => setTemplates(templates.filter(t => t.id !== id))}
             onDeleteWorkflow={(id) => setWorkflows(workflows.filter(w => w.id !== id))}
             onDeleteSnippet={(id) => setSnippets(snippets.filter(s => s.id !== id))}

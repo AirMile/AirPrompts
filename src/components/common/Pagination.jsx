@@ -104,7 +104,6 @@ const Pagination = ({
           disabled={isFirstPage}
           className="p-2 rounded-lg bg-gray-700 text-gray-300 hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed"
           aria-label="First page"
-          title="First page"
         >
           <ChevronsLeft className="w-4 h-4" />
         </button>
@@ -115,7 +114,6 @@ const Pagination = ({
           disabled={isFirstPage}
           className="p-2 rounded-lg bg-gray-700 text-gray-300 hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed"
           aria-label="Previous page"
-          title="Previous page"
         >
           <ChevronLeft className="w-4 h-4" />
         </button>
@@ -178,7 +176,6 @@ const Pagination = ({
           disabled={isLastPage}
           className="p-2 rounded-lg bg-gray-700 text-gray-300 hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed"
           aria-label="Next page"
-          title="Next page"
         >
           <ChevronRight className="w-4 h-4" />
         </button>
@@ -189,7 +186,6 @@ const Pagination = ({
           disabled={isLastPage}
           className="p-2 rounded-lg bg-gray-700 text-gray-300 hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed"
           aria-label="Last page"
-          title="Last page"
         >
           <ChevronsRight className="w-4 h-4" />
         </button>

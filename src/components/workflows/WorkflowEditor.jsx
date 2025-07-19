@@ -15,17 +15,17 @@ const SearchAndFilter = ({
   onFilterChange,
   folders 
 }) => {
-  const filteredItems = items.filter(item => {
+  const filteredItems = (items || []).filter(item => {
     const matchesSearch = !searchTerm || 
       item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       item.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (type === 'snippet' && item.tags.some(tag => tag.toLowerCase().includes(searchTerm.toLowerCase())));
+      (type === 'snippet' && (item.tags || []).some(tag => tag.toLowerCase().includes(searchTerm.toLowerCase())));
     const matchesFolder = !filterFolder || item.folderId === filterFolder;
     return matchesSearch && matchesFolder;
   });
 
-  const uniqueFolders = [...new Set(items.map(item => item.folderId))]
-    .map(id => folders.find(f => f.id === id))
+  const uniqueFolders = [...new Set((items || []).map(item => item.folderId))]
+    .map(id => (folders || []).find(f => f.id === id))
     .filter(Boolean);
   
   return (
@@ -283,7 +283,6 @@ const WorkflowEditor = ({ workflow, templates, snippets = [], workflows = [], fo
           // Check if template already exists to prevent duplicates
           const templateExists = step.templateOptions.some(t => t.id === template.id);
           if (templateExists) {
-            console.log(`DEBUG: Template "${template.name}" already exists in step, skipping`);
             return step;
           }
           
@@ -297,8 +296,6 @@ const WorkflowEditor = ({ workflow, templates, snippets = [], workflows = [], fo
           
           const templateWithOrder = { ...template, order: maxOrder + 1 };
           const updatedOptions = [...step.templateOptions, templateWithOrder];
-          
-          console.log(`DEBUG: Adding template "${template.name}" with order ${maxOrder + 1}`);
           
           return {
             ...step,
@@ -319,7 +316,6 @@ const WorkflowEditor = ({ workflow, templates, snippets = [], workflows = [], fo
           // Check if snippet already exists to prevent duplicates
           const snippetExists = (step.snippetOptions || []).some(s => s.id === snippet.id);
           if (snippetExists) {
-            console.log(`DEBUG: Snippet "${snippet.name}" already exists in step, skipping`);
             return step;
           }
           
@@ -333,8 +329,6 @@ const WorkflowEditor = ({ workflow, templates, snippets = [], workflows = [], fo
           
           const snippetWithOrder = { ...snippet, order: maxOrder + 1 };
           const updatedOptions = [...(step.snippetOptions || []), snippetWithOrder];
-          
-          console.log(`DEBUG: Adding snippet "${snippet.name}" with order ${maxOrder + 1}`);
           
           return {
             ...step,
@@ -387,7 +381,6 @@ const WorkflowEditor = ({ workflow, templates, snippets = [], workflows = [], fo
           // Check if workflow already exists to prevent duplicates
           const workflowExists = (step.workflowOptions || []).some(w => w.id === workflowItem.id);
           if (workflowExists) {
-            console.log(`DEBUG: Workflow "${workflowItem.name}" already exists in step, skipping`);
             return step;
           }
           
@@ -401,8 +394,6 @@ const WorkflowEditor = ({ workflow, templates, snippets = [], workflows = [], fo
           
           const workflowWithOrder = { ...workflowItem, order: maxOrder + 1 };
           const updatedOptions = [...(step.workflowOptions || []), workflowWithOrder];
-          
-          console.log(`DEBUG: Adding workflow "${workflowItem.name}" with order ${maxOrder + 1}`);
           
           return {
             ...step,
@@ -616,7 +607,6 @@ const WorkflowEditor = ({ workflow, templates, snippets = [], workflows = [], fo
                           onClick={() => moveStep(step.id, 'up')}
                           disabled={index === 0}
                           className="p-2 text-gray-300 hover:text-white hover:bg-gray-700 rounded disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-gray-300 transition-colors"
-                          title="Move step up"
                         >
                           ↑
                         </button>
@@ -625,7 +615,6 @@ const WorkflowEditor = ({ workflow, templates, snippets = [], workflows = [], fo
                           onClick={() => moveStep(step.id, 'down')}
                           disabled={index === formData.steps.length - 1}
                           className="p-2 text-gray-300 hover:text-white hover:bg-gray-700 rounded disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-gray-300 transition-colors"
-                          title="Move step down"
                         >
                           ↓
                         </button>
@@ -633,7 +622,6 @@ const WorkflowEditor = ({ workflow, templates, snippets = [], workflows = [], fo
                           type="button"
                           onClick={() => removeStep(step.id)}
                           className="p-2 text-red-500 hover:text-red-700 hover:bg-red-900/20 rounded ml-2 transition-colors"
-                          title="Delete step"
                         >
                           <Trash2 className="w-4 h-4" />
                         </button>
@@ -769,10 +757,10 @@ const WorkflowEditor = ({ workflow, templates, snippets = [], workflows = [], fo
                         // Sort by order (chronological)
                         allItems.sort((a, b) => a.order - b.order);
                         
-                        return allItems.map(({ type, item, order }) => {
+                        return allItems.map(({ type, item, order }, index) => {
                           if (type === 'template') {
                             return (
-                              <div key={`template-${item.id}`} className="bg-gray-900 rounded p-3 border border-gray-700">
+                              <div key={`template-${item.id || `temp-${type}-${index}`}`} className="bg-gray-900 rounded p-3 border border-gray-700">
                                 <div className="flex items-center justify-between mb-2">
                                   <div className="flex items-center gap-2">
                                     <FileText className="w-4 h-4 text-blue-400" />
@@ -787,7 +775,7 @@ const WorkflowEditor = ({ workflow, templates, snippets = [], workflows = [], fo
                                   </button>
                                 </div>
                                 <div className="text-sm text-gray-200 font-mono">
-                                  {item.content.split(/(\{[^}]+\})/).map((part, partIndex) => (
+                                  {(item.content || '').split(/(\{[^}]+\})/).map((part, partIndex) => (
                                     <span key={partIndex}>
                                       {part.match(/\{[^}]+\}/) ? (
                                         <span className="bg-green-100 text-green-800 px-1 rounded">
@@ -803,7 +791,7 @@ const WorkflowEditor = ({ workflow, templates, snippets = [], workflows = [], fo
                             );
                           } else if (type === 'snippet') {
                             return (
-                              <div key={`snippet-${item.id}`} className="bg-gray-900 rounded p-3 border border-gray-700">
+                              <div key={`snippet-${item.id || `temp-${type}-${index}`}`} className="bg-gray-900 rounded p-3 border border-gray-700">
                                 <div className="flex items-center justify-between mb-2">
                                   <div className="flex items-center gap-2">
                                     <Layers className="w-4 h-4 text-purple-400" />
@@ -831,7 +819,7 @@ const WorkflowEditor = ({ workflow, templates, snippets = [], workflows = [], fo
                             );
                           } else if (type === 'workflow') {
                             return (
-                              <div key={`workflow-${item.id}`} className="bg-gray-900 rounded p-3 border border-gray-700">
+                              <div key={`workflow-${item.id || `temp-${type}-${index}`}`} className="bg-gray-900 rounded p-3 border border-gray-700">
                                 <div className="flex items-center justify-between mb-2">
                                   <div className="flex items-center gap-2">
                                     <Workflow className="w-4 h-4 text-orange-400" />
@@ -1137,7 +1125,7 @@ const WorkflowEditor = ({ workflow, templates, snippets = [], workflows = [], fo
                                     <div className="text-xs text-gray-400 mt-1">{snippet.description}</div>
                                   )}
                                   <div className="text-xs text-gray-300 flex flex-wrap gap-1 mt-1">
-                                    {snippet.tags.map(tag => (
+                                    {(snippet.tags || []).map(tag => (
                                       <span key={tag} className="px-1 py-0.5 bg-purple-100 text-purple-800 rounded text-xs">
                                         {tag}
                                       </span>

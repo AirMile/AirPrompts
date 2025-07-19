@@ -1,14 +1,11 @@
-import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
-import { Plus, Play, Edit, Trash2, Search, Workflow, FileText, Star, Tag, Puzzle, GripVertical, Settings } from 'lucide-react';
+import React, { useEffect, useRef, useMemo, useCallback } from 'react';
+import { Plus, Play, Edit, Trash2, Search, Workflow, FileText, Star, Tag, Puzzle, GripVertical } from 'lucide-react';
 import FolderTree from '../folders/FolderTree.jsx';
 import FolderBreadcrumb from '../folders/FolderBreadcrumb.jsx';
-import ViewModeToggle from '../common/ViewModeToggle.jsx';
 import ListView from '../common/ListView.jsx';
-import CompactView from '../common/CompactView.jsx';
 import FocusableCard from '../common/FocusableCard.jsx';
 import CollapsibleSection from '../common/CollapsibleSection.jsx';
 import AdvancedSearch from '../search/AdvancedSearch.jsx';
-import TagFilter from '../filters/TagFilter.jsx';
 import Pagination from '../common/Pagination.jsx';
 import useKeyboardNavigation from '../../hooks/useKeyboardNavigation.js';
 import usePagination from '../../hooks/usePagination.js';
@@ -34,10 +31,8 @@ const Homepage = ({
   onDeleteSnippet,
   onCreateFolder
 }) => {
-  const [isReorderMode, setIsReorderMode] = useState(false);
-  const [draggedItem, setDraggedItem] = useState(null);
-  // Use preferences system for view mode and item orders
-  const { layout, updateLayout, getItemOrder, setItemOrder } = useUserPreferences();
+  // Use preferences system for view mode
+  const { layout, updateLayout } = useUserPreferences();
   const viewMode = layout.viewMode;
   
   const setViewMode = (mode) => {
@@ -192,24 +187,133 @@ const Homepage = ({
     { type: 'snippets', data: snippetsPagination.currentItems, pagination: snippetsPagination, fullData: filteredSnippets }
   ];
 
-  // Combine all items for keyboard navigation (use paginated data)
-  const allItems = useMemo(() => [
-    ...favorites,
-    ...recentlyUsed,
-    ...workflowsPagination.currentItems,
-    ...templatesPagination.currentItems,
-    ...snippetsPagination.currentItems
-  ], [favorites, recentlyUsed, workflowsPagination.currentItems, templatesPagination.currentItems, snippetsPagination.currentItems]);
+  // Create a mapping of global index to section and local index
+  const { allItems, sectionIndexMap } = useMemo(() => {
+    const items = [];
+    const indexMap = new Map();
+    let globalIndex = 0;
+    
+    // Add favorites if they exist
+    if (favorites.length > 0) {
+      favorites.forEach((item, localIndex) => {
+        items.push(item);
+        indexMap.set(globalIndex, { section: 'favorites', localIndex, item });
+        globalIndex++;
+      });
+    }
+    
+    // Add recently used if they exist
+    if (recentlyUsed.length > 0) {
+      recentlyUsed.forEach((item, localIndex) => {
+        items.push(item);
+        indexMap.set(globalIndex, { section: 'recent', localIndex, item });
+        globalIndex++;
+      });
+    }
+    
+    // Add workflows (always present, even if empty)
+    workflowsPagination.currentItems.forEach((item, localIndex) => {
+      items.push(item);
+      indexMap.set(globalIndex, { section: 'workflows', localIndex, item });
+      globalIndex++;
+    });
+    
+    // Add templates (always present, even if empty)
+    templatesPagination.currentItems.forEach((item, localIndex) => {
+      items.push(item);
+      indexMap.set(globalIndex, { section: 'templates', localIndex, item });
+      globalIndex++;
+    });
+    
+    // Add snippets (always present, even if empty)
+    snippetsPagination.currentItems.forEach((item, localIndex) => {
+      items.push(item);
+      indexMap.set(globalIndex, { section: 'snippets', localIndex, item });
+      globalIndex++;
+    });
+    
+    return { allItems: items, sectionIndexMap: indexMap };
+  }, [favorites, recentlyUsed, workflowsPagination.currentItems, templatesPagination.currentItems, snippetsPagination.currentItems]);
 
   // Set up keyboard navigation
   const keyboardNavigation = useKeyboardNavigation(allItems, {
     layout: viewMode,
-    columns: viewMode === 'compact' ? 6 : 4,
+    columns: 4,
     onExecute: (item) => onExecuteItem({ item, type: item.type }),
     onSelection: () => {
       // Optional: could add selection highlight here
     }
   });
+
+  // Add global Tab key listener for immediate card focus
+  useEffect(() => {
+    const handleGlobalKeyDown = (e) => {
+      // Handle Tab key for card navigation
+      if (e.key === 'Tab') {
+        const activeElement = document.activeElement;
+        const isInSearchInput = activeElement?.hasAttribute('data-search-input');
+        const isInCard = activeElement?.closest('[data-focusable-card]');
+        
+        // Skip handling if we're in an input/textarea (except when leaving search)
+        if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') {
+          // Only continue if we're leaving the search input with Tab (not Shift+Tab)
+          if (!isInSearchInput || e.shiftKey) {
+            return;
+          }
+        }
+        
+        // If we have items to navigate
+        if (allItems.length > 0) {
+          e.preventDefault();
+          e.stopPropagation();
+          e.stopImmediatePropagation();
+          
+          // Determine next focus position
+          if (!keyboardNavigation.isActive && !isInCard) {
+            // Not in navigation mode and not in a card - focus first card
+            keyboardNavigation.focusItem(0);
+          } else if (keyboardNavigation.isActive) {
+            // Already navigating - move to next/previous card
+            const currentIndex = keyboardNavigation.focusedIndex;
+            let nextIndex;
+            
+            if (e.shiftKey) {
+              // Shift+Tab: Move backward
+              nextIndex = currentIndex - 1;
+              if (nextIndex < 0) {
+                // At first card, wrap to last or exit to search
+                if (document.querySelector('[data-search-input]')) {
+                  // Exit navigation and focus search
+                  keyboardNavigation.clearFocus();
+                  document.querySelector('[data-search-input]').focus();
+                  return;
+                } else {
+                  // No search, wrap to last card
+                  nextIndex = allItems.length - 1;
+                }
+              }
+            } else {
+              // Tab: Move forward
+              nextIndex = (currentIndex + 1) % allItems.length;
+            }
+            
+            keyboardNavigation.focusItem(nextIndex);
+          }
+          
+          // Ensure main content has focus for keyboard navigation
+          if (mainContentRef.current && !mainContentRef.current.contains(document.activeElement)) {
+            mainContentRef.current.focus();
+          }
+        }
+      }
+    };
+
+    // Add with highest priority capture to intercept before other handlers
+    document.addEventListener('keydown', handleGlobalKeyDown, true);
+    return () => {
+      document.removeEventListener('keydown', handleGlobalKeyDown, true);
+    };
+  }, [allItems.length, keyboardNavigation]);
 
   // Add keyboard event listener to main content with throttling for large datasets
   useEffect(() => {
@@ -259,158 +363,129 @@ const Homepage = ({
     }
   }, [keyboardNavigation, templatesPagination, workflowsPagination, snippetsPagination, allItems.length]);
 
-  const resetToDefaultOrder = () => {
-    // Reset all section orders for current folder
-    const sections = ['workflows', 'templates', 'snippets'];
-    sections.forEach(sectionType => {
-      setItemOrder(selectedFolderId, sectionType, {});
-    });
-  };
-
-  // Handle item drag and drop
-  const handleItemDragStart = (e, item, sectionType) => {
-    setDraggedItem({ item, sectionType });
-    e.dataTransfer.effectAllowed = 'move';
-    e.stopPropagation();
-  };
-
-  const handleItemDrop = (e, targetItem, targetSectionType) => {
-    e.preventDefault();
-    e.stopPropagation();
-    
-    if (draggedItem && draggedItem.sectionType === targetSectionType && draggedItem.item.id !== targetItem.id) {
-      const currentOrder = getItemOrder(selectedFolderId, targetSectionType);
-      
-      // Get all items in this section
-      let sectionData;
-      switch (targetSectionType) {
-        case 'workflows': sectionData = filteredWorkflows; break;
-        case 'templates': sectionData = filteredTemplates; break;
-        case 'snippets': sectionData = filteredSnippets; break;
-        default: return;
-      }
-      
-      // Create new order based on target position
-      const newOrder = { ...currentOrder };
-      const draggedId = draggedItem.item.id;
-      const targetId = targetItem.id;
-      
-      // Get current sorted order to calculate correct positions
-      const sortedItems = getSortedItems(sectionData, targetSectionType);
-      const draggedOrder = sortedItems.findIndex(item => item.id === draggedId);
-      const targetOrder = sortedItems.findIndex(item => item.id === targetId);
-      
-      // Create new order by reassigning all positions
-      const newOrderMap = {};
-      
-      if (draggedOrder !== targetOrder) {
-        // Create new arrangement of items
-        const newArrangement = [...sortedItems];
-        
-        // Remove dragged item from current position
-        const draggedItemData = newArrangement.splice(draggedOrder, 1)[0];
-        
-        // Insert at target position
-        newArrangement.splice(targetOrder, 0, draggedItemData);
-        
-        // Assign new order indices
-        newArrangement.forEach((item, index) => {
-          newOrderMap[item.id] = index;
-        });
-      }
-      
-      Object.assign(newOrder, newOrderMap);
-      
-      setItemOrder(selectedFolderId, targetSectionType, newOrder);
-    }
-    
-    setDraggedItem(null);
-  };
-
-  // Sort items within sections
-  const getSortedItems = useCallback((items, sectionType) => {
-    const currentOrder = getItemOrder(selectedFolderId, sectionType);
-    
-    return [...items].sort((a, b) => {
-      const aOrder = currentOrder[a.id] ?? items.findIndex(item => item.id === a.id);
-      const bOrder = currentOrder[b.id] ?? items.findIndex(item => item.id === b.id);
-      return aOrder - bOrder;
-    });
-  }, [selectedFolderId, getItemOrder]);
 
   // Render items based on view mode
   const renderItems = useCallback((items, sectionType) => {
     const getEditFunction = (item) => {
-      if (sectionType === 'favorites') {
+      // For favorites and recent sections, use item.type
+      if (sectionType === 'favorites' || sectionType === 'recent') {
         return item.type === 'workflow' ? onEditWorkflow : 
                item.type === 'template' ? onEditTemplate : onEditSnippet;
       }
-      return sectionType === 'workflow' ? onEditWorkflow : 
-             sectionType === 'template' ? onEditTemplate : onEditSnippet;
+      
+      // For specific sections, use sectionType
+      return sectionType === 'workflows' ? onEditWorkflow : 
+             sectionType === 'templates' ? onEditTemplate : onEditSnippet;
     };
 
     const getDeleteFunction = (item) => {
-      if (sectionType === 'favorites') {
+      // For favorites and recent sections, use item.type
+      if (sectionType === 'favorites' || sectionType === 'recent') {
         return item.type === 'workflow' ? onDeleteWorkflow : 
                item.type === 'template' ? onDeleteTemplate : onDeleteSnippet;
       }
-      return sectionType === 'workflow' ? onDeleteWorkflow : 
-             sectionType === 'template' ? onDeleteTemplate : onDeleteSnippet;
+      // For specific sections, use sectionType
+      return sectionType === 'workflows' ? onDeleteWorkflow : 
+             sectionType === 'templates' ? onDeleteTemplate : onDeleteSnippet;
     };
 
     const commonProps = {
-      items: getSortedItems(items, sectionType),
-      type: sectionType,
-      onExecute: onExecuteItem,
-      onEdit: getEditFunction,
-      onDelete: getDeleteFunction,
-      isReorderMode: false, // Disable reordering for favorites
-      onDragStart: handleItemDragStart,
-      onDragOver: (e) => { e.preventDefault(); e.stopPropagation(); },
-      onDrop: handleItemDrop,
-      draggedItem,
-      keyboardNavigation
+      items: items,
+      type: sectionType === 'workflows' ? 'workflow' : 
+            sectionType === 'snippets' ? 'snippet' : 
+            sectionType === 'templates' ? 'template' :
+            'template', // Default fallback for mixed sections like 'recent' and 'favorites'
+      onExecute: (executeData) => {
+        // Handle both old signature (item) and new signature ({ item, type })
+        const actualItem = executeData?.item || executeData;
+        const executeType = executeData?.type;
+        
+        // Normalize type for consistency - always convert to singular
+        let itemType = executeType || 
+          ((sectionType === 'favorites' || sectionType === 'recent') 
+            ? actualItem?.type 
+            : sectionType);
+        
+        // Ensure type is singular
+        if (itemType && itemType.endsWith('s')) {
+          itemType = itemType.slice(0, -1);
+        }
+        
+        // Final safety check - ensure we have both item and type
+        if (!actualItem) {
+          console.error('❌ Homepage onExecute: actualItem is undefined', { executeData });
+          return;
+        }
+        
+        if (!itemType) {
+          console.error('❌ Homepage onExecute: itemType is undefined', { 
+            executeData, 
+            executeType, 
+            sectionType, 
+            actualItemType: actualItem?.type 
+          });
+          // Fallback to template if no type can be determined
+          itemType = 'template';
+        }
+        
+        console.log('🚀 Homepage calling onExecuteItem with:', { 
+          item: actualItem.name, 
+          type: itemType,
+          originalExecuteType: executeType,
+          wasNormalized: executeType !== itemType
+        });
+        console.log('🚀 Homepage: Full data being sent to onExecuteItem:', { item: actualItem, type: itemType });
+        onExecuteItem({ item: actualItem, type: itemType });
+      },
+      onEdit: (item) => {
+        const editFunction = getEditFunction(item);
+        editFunction(item);
+      },
+      onDelete: (itemId) => {
+        // For sections with mixed types, we need to pass the item to get the right delete function
+        const item = items.find(i => i.id === itemId);
+        if (item) {
+          const deleteFunction = getDeleteFunction(item);
+          deleteFunction(itemId);
+        }
+      },
+      keyboardNavigation: {
+        ...keyboardNavigation,
+        // Override getFocusProps to handle section-specific indexing
+        getFocusProps: (localIndex, currentSection) => {
+          // Use sectionType as fallback if currentSection is not provided
+          const effectiveSection = currentSection || sectionType;
+          
+          // Find the global index for this item in this section
+          let globalIndex = -1;
+          for (const [gIndex, mapping] of sectionIndexMap.entries()) {
+            if (mapping.section === effectiveSection && mapping.localIndex === localIndex) {
+              globalIndex = gIndex;
+              break;
+            }
+          }
+          
+          const isKeyboardFocused = keyboardNavigation.isActive && keyboardNavigation.focusedIndex === globalIndex;
+          
+          
+          return {
+            'data-keyboard-focused': isKeyboardFocused,
+            'tabIndex': isKeyboardFocused ? 0 : -1,
+            'aria-selected': isKeyboardFocused,
+            'role': 'option',
+            'aria-setsize': allItems.length,
+            'aria-posinset': globalIndex + 1
+          };
+        }
+      }
     };
 
     // Special handling for favorites and recent sections with mixed item types
     if (sectionType === 'favorites' || sectionType === 'recent') {
       switch (viewMode) {
         case 'list':
-          return (
-            <div className="space-y-2">
-              {commonProps.items.map((item) => (
-                <ListView 
-                  key={item.id}
-                  items={[item]} 
-                  type={item.type}
-                  onExecute={commonProps.onExecute}
-                  onEdit={() => getEditFunction(item)(item)}
-                  onDelete={() => getDeleteFunction(item)(item.id)}
-                  isReorderMode={false}
-                  onDragStart={commonProps.onDragStart}
-                  onDragOver={commonProps.onDragOver}
-                  onDrop={commonProps.onDrop}
-                  draggedItem={commonProps.draggedItem}
-                />
-              ))}
-            </div>
-          );
-        case 'compact':
-          return (
-            <CompactView
-              items={commonProps.items}
-              type={sectionType}
-              onExecute={commonProps.onExecute}
-              onEdit={(item) => getEditFunction(item)(item)}
-              onDelete={(item) => getDeleteFunction(item)(item.id)}
-              isReorderMode={false}
-              onDragStart={commonProps.onDragStart}
-              onDragOver={commonProps.onDragOver}
-              onDrop={commonProps.onDrop}
-              draggedItem={commonProps.draggedItem}
-              keyboardNavigation={commonProps.keyboardNavigation}
-            />
-          );
+          // Use single ListView for consistent spacing
+          return <ListView {...commonProps} sectionType={sectionType} />;
         case 'grid':
         default:
           return (
@@ -421,14 +496,14 @@ const Homepage = ({
                   item={item}
                   index={index}
                   type={item.type}
+                  sectionType={sectionType}
                   onExecute={commonProps.onExecute}
                   onEdit={() => getEditFunction(item)(item)}
                   onDelete={() => getDeleteFunction(item)(item.id)}
-                  isReorderMode={false}
-                  onDragStart={commonProps.onDragStart}
-                  onDragOver={commonProps.onDragOver}
-                  onDrop={commonProps.onDrop}
-                  draggedItem={commonProps.draggedItem}
+                  keyboardNavigation={{
+                    ...commonProps.keyboardNavigation,
+                    getFocusProps: () => commonProps.keyboardNavigation.getFocusProps(index, sectionType)
+                  }}
                 />
               ))}
             </div>
@@ -438,9 +513,7 @@ const Homepage = ({
 
     switch (viewMode) {
       case 'list':
-        return <ListView {...commonProps} />;
-      case 'compact':
-        return <CompactView {...commonProps} />;
+        return <ListView {...commonProps} sectionType={sectionType} />;
       case 'grid':
       default:
         return (
@@ -451,12 +524,14 @@ const Homepage = ({
                 item={item}
                 index={index}
                 {...commonProps}
+                type={commonProps.type}
+                sectionType={sectionType}
               />
             ))}
           </div>
         );
     }
-  }, [viewMode, getSortedItems, onExecuteItem, onEditWorkflow, onEditTemplate, onEditSnippet, onDeleteWorkflow, onDeleteTemplate, onDeleteSnippet, draggedItem, keyboardNavigation]);
+  }, [viewMode, onExecuteItem, onEditWorkflow, onEditTemplate, onEditSnippet, onDeleteWorkflow, onDeleteTemplate, onDeleteSnippet, keyboardNavigation, allItems.length, sectionIndexMap]);
 
   const renderSection = useCallback((section, isLast = false) => {
     const { type, data, pagination, fullData } = section;
@@ -469,7 +544,7 @@ const Homepage = ({
             sectionId="favorites"
             title="Favorites"
             itemCount={data.length}
-            className={`${isLast ? '' : 'mb-8'}`}
+            className="mb-6"
           >
             {renderItems(data, 'favorites')}
           </CollapsibleSection>
@@ -482,7 +557,7 @@ const Homepage = ({
             sectionId="recent"
             title="Recently Used"
             itemCount={data.length}
-            className={`${isLast ? '' : 'mb-8'}`}
+            className="mb-6"
           >
             {renderItems(data, 'recent')}
           </CollapsibleSection>
@@ -495,9 +570,8 @@ const Homepage = ({
             sectionId="workflows"
             title="Workflows"
             itemCount={fullData ? fullData.length : data.length}
-            className={`${isLast ? '' : 'mb-8'}`}
-          >
-            <div className="flex items-center justify-end mb-4">
+            className="mb-6"
+            actionButton={
               <button
                 onClick={() => onEditWorkflow({})}
                 className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 flex items-center gap-2 font-semibold"
@@ -505,10 +579,11 @@ const Homepage = ({
                 <Plus className="w-4 h-4" />
                 New Workflow
               </button>
-            </div>
+            }
+          >
             {renderItems(data, 'workflows')}
             {pagination && (
-              <div className="mt-6">
+              <div>
                 <Pagination 
                   paginationHook={pagination}
                   showInfo={true}
@@ -527,9 +602,8 @@ const Homepage = ({
             sectionId="templates"
             title="Templates"
             itemCount={fullData ? fullData.length : data.length}
-            className={`${isLast ? '' : 'mb-8'}`}
-          >
-            <div className="flex items-center justify-end mb-4">
+            className="mb-6"
+            actionButton={
               <button
                 onClick={() => onEditTemplate({})}
                 className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center gap-2 font-semibold"
@@ -537,10 +611,11 @@ const Homepage = ({
                 <Plus className="w-4 h-4" />
                 New Template
               </button>
-            </div>
+            }
+          >
             {renderItems(data, 'templates')}
             {pagination && (
-              <div className="mt-6">
+              <div>
                 <Pagination 
                   paginationHook={pagination}
                   showInfo={true}
@@ -559,9 +634,8 @@ const Homepage = ({
             sectionId="snippets"
             title="Snippets"
             itemCount={fullData ? fullData.length : data.length}
-            className={`${isLast ? '' : 'mb-8'}`}
-          >
-            <div className="flex items-center justify-end mb-4">
+            className="mb-6"
+            actionButton={
               <button
                 onClick={() => onEditSnippet({})}
                 className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 flex items-center gap-2 font-semibold"
@@ -569,10 +643,11 @@ const Homepage = ({
                 <Plus className="w-4 h-4" />
                 New Snippet
               </button>
-            </div>
+            }
+          >
             {renderItems(data, 'snippets')}
             {pagination && (
-              <div className="mt-6">
+              <div>
                 <Pagination 
                   paginationHook={pagination}
                   showInfo={true}
@@ -589,6 +664,7 @@ const Homepage = ({
     }
   }, [renderItems, onEditWorkflow, onEditTemplate, onEditSnippet]);
 
+
   return (
     <div className="flex h-screen bg-gray-900">
       {/* Sidebar */}
@@ -602,90 +678,35 @@ const Homepage = ({
       </div>
 
       {/* Main Content */}
-      <div className="flex-1 overflow-y-auto overflow-x-hidden">
+      <div 
+        ref={mainContentRef}
+        className="flex-1 overflow-y-auto overflow-x-hidden"
+        tabIndex={-1}
+        style={{ outline: 'none' }}
+      >
         <div className="max-w-7xl mx-auto px-8 py-6">
-          {/* Header */}
+          {/* Breadcrumb */}
           <div className="mb-6">
-            <h1 className="text-3xl font-bold text-gray-100 mb-2">Prompt Templates & Workflows</h1>
-            <p className="text-gray-300">Create, manage, and execute prompt templates and multi-step workflows</p>
-            
-            {/* Breadcrumb */}
-            <div className="mt-4">
-              <FolderBreadcrumb
-                folders={folders || []}
-                currentFolderId={selectedFolderId}
-                onFolderSelect={setSelectedFolderId}
-              />
-            </div>
+            <FolderBreadcrumb
+              folders={folders || []}
+              currentFolderId={selectedFolderId}
+              onFolderSelect={setSelectedFolderId}
+            />
           </div>
 
-          {/* Search and Controls */}
-          <div className="mb-8">
-            <div className="flex gap-4 items-center mb-4">
-              <div className="flex-1">
-                <AdvancedSearch
-                  searchQuery={searchQuery}
-                  setSearchQuery={setSearchQuery}
-                  allItems={[
-                    ...templates.map(t => ({ ...t, type: 'template' })),
-                    ...workflows.map(w => ({ ...w, type: 'workflow' })),
-                    ...snippets.map(s => ({ ...s, type: 'snippet' }))
-                  ]}
-                  onFilter={handleAdvancedFilter}
-                  placeholder="Search templates, workflows, and snippets..."
-                />
-              </div>
-              <ViewModeToggle 
-                currentMode={viewMode}
-                onModeChange={setViewMode}
-              />
-              <button
-                onClick={() => setIsReorderMode(!isReorderMode)}
-                className={`px-4 py-3 rounded-lg flex items-center gap-2 font-medium transition-colors ${
-                  isReorderMode 
-                    ? 'bg-blue-600 text-white hover:bg-blue-700' 
-                    : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
-                }`}
-              >
-                <Settings className="w-4 h-4" />
-                {isReorderMode ? 'Done' : 'Reorder'}
-              </button>
-              {isReorderMode && (
-                <button
-                  onClick={resetToDefaultOrder}
-                  className="px-4 py-3 bg-gray-600 text-gray-300 rounded-lg hover:bg-gray-500 font-medium"
-                >
-                  Reset Order
-                </button>
-              )}
-            </div>
-            
-            {/* Tag Filter */}
-            {filterSystem.availableTags.length > 0 && (
-              <div className="mb-4">
-                <TagFilter
-                  availableTags={filterSystem.availableTags}
-                  selectedTags={filterSystem.selectedTags}
-                  onTagsChange={filterSystem.setSelectedTags}
-                  filterMode={filterSystem.filterMode}
-                  onFilterModeChange={filterSystem.setFilterMode}
-                  showFilterCount={true}
-                  filterCount={filterSystem.totalFilteredCount}
-                  isExpanded={filterSystem.isExpanded}
-                  onToggleExpanded={() => filterSystem.setIsExpanded(!filterSystem.isExpanded)}
-                  className="bg-gray-800 border border-gray-700 rounded-lg p-4"
-                />
-              </div>
-            )}
-            
-            {isReorderMode && (
-              <div className="bg-blue-900/20 border border-blue-600/30 rounded-lg p-4 mb-4">
-                <p className="text-blue-300 text-sm">
-                  <strong>Reorder Mode:</strong> Drag and drop cards within each section to change their display order. 
-                  This order will be saved for the current folder.
-                </p>
-              </div>
-            )}
+          {/* Search */}
+          <div className="mb-6">
+            <AdvancedSearch
+              searchQuery={searchQuery}
+              setSearchQuery={setSearchQuery}
+              allItems={[
+                ...templates.map(t => ({ ...t, type: 'template' })),
+                ...workflows.map(w => ({ ...w, type: 'workflow' })),
+                ...snippets.map(s => ({ ...s, type: 'snippet' }))
+              ]}
+              onFilter={handleAdvancedFilter}
+              placeholder="Search templates, workflows, snippets, and tags..."
+            />
           </div>
 
           {/* Dynamic Sections */}

@@ -132,15 +132,6 @@ export const useUserPreferences = () => {
     updateSection('accessibility', updates);
   }, [updateSection]);
 
-  // Item orders preferences
-  const itemOrders = useMemo(() => ({
-    global: preferences.itemOrders.global,
-    folders: preferences.itemOrders.folders
-  }), [preferences.itemOrders]);
-
-  const updateItemOrders = useCallback((updates) => {
-    updateSection('itemOrders', updates);
-  }, [updateSection]);
 
   // Search preferences
   const search = useMemo(() => ({
@@ -161,42 +152,6 @@ export const useUserPreferences = () => {
     updateSection('sectionVisibility', updates);
   }, [updateSection]);
 
-  const getItemOrder = useCallback((folderId, sectionType) => {
-    const folderKey = folderId || 'global';
-    const sectionKey = `${sectionType}_${folderKey}`;
-    
-    if (folderKey === 'global') {
-      return preferences.itemOrders.global[sectionKey] || {};
-    } else {
-      return preferences.itemOrders.folders[folderKey]?.[sectionKey] || {};
-    }
-  }, [preferences.itemOrders]);
-
-  const setItemOrder = useCallback((folderId, sectionType, itemOrders) => {
-    const folderKey = folderId || 'global';
-    const sectionKey = `${sectionType}_${folderKey}`;
-    
-    if (folderKey === 'global') {
-      updateItemOrders({
-        global: {
-          ...preferences.itemOrders.global,
-          [sectionKey]: itemOrders
-        },
-        folders: preferences.itemOrders.folders
-      });
-    } else {
-      updateItemOrders({
-        global: preferences.itemOrders.global,
-        folders: {
-          ...preferences.itemOrders.folders,
-          [folderKey]: {
-            ...preferences.itemOrders.folders[folderKey],
-            [sectionKey]: itemOrders
-          }
-        }
-      });
-    }
-  }, [preferences.itemOrders, updateItemOrders]);
 
   // View mode specific helpers
   const setViewMode = useCallback((viewMode) => {
@@ -252,7 +207,7 @@ export const useUserPreferences = () => {
     const issues = [];
     
     // Validate view mode
-    if (!['grid', 'list', 'compact'].includes(layout.viewMode)) {
+    if (!['grid', 'list'].includes(layout.viewMode)) {
       issues.push('Invalid view mode');
     }
     
@@ -287,7 +242,6 @@ export const useUserPreferences = () => {
     filtering,
     pagination,
     accessibility,
-    itemOrders,
     search,
     sectionVisibility,
     
@@ -299,17 +253,12 @@ export const useUserPreferences = () => {
     updateFiltering,
     updatePagination,
     updateAccessibility,
-    updateItemOrders,
     updateSearch,
     updateSectionVisibility,
     
     // Section helpers
     toggleSectionVisibility,
     toggleSectionCollapsed,
-    
-    // Item orders helpers
-    getItemOrder,
-    setItemOrder,
     
     // Pagination helpers
     getPaginationSettings,

@@ -9,7 +9,7 @@ const PREFERENCES_STORAGE_KEY = 'airprompts_preferences_v1';
 // Default preferences structure
 export const DEFAULT_PREFERENCES = {
   layout: {
-    viewMode: 'grid', // 'grid', 'list', 'compact'
+    viewMode: 'list', // 'grid', 'list'
     cardSize: 'medium', // 'small', 'medium', 'large'
     columnsPerRow: 4, // 2-8 columns
     density: 'comfortable' // 'compact', 'comfortable'
@@ -51,11 +51,6 @@ export const DEFAULT_PREFERENCES = {
     highContrast: false,
     reducedMotion: false,
     keyboardNavigation: true
-  },
-  itemOrders: {
-    // Per-folder item ordering (key: folderId, value: { [itemId]: order })
-    global: {},
-    folders: {}
   },
   search: {
     history: [], // Array of recent search terms

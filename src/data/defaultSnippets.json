@@ -1,1 +1,14 @@
-[]
+[
+  {
+    "id": "start-claudia",
+    "name": "Start Claudia",
+    "description": "Navigate to Claudia project and start Tauri development server",
+    "content": "cd C:\\Users\\mzeil\\claudia; bun run tauri dev",
+    "folderId": "development",
+    "tags": ["tauri", "development", "bun", "powershell"],
+    "lastUsed": "2025-07-18T00:00:00.000Z",
+    "favorite": false,
+    "createdAt": "2025-07-18T00:00:00.000Z",
+    "updatedAt": "2025-07-18T00:00:00.000Z"
+  }
+]

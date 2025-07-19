@@ -12,6 +12,7 @@ import useSectionVisibility from '../../hooks/useSectionVisibility';
  * @param {boolean} props.defaultVisible - Default visibility state
  * @param {string} props.className - Additional CSS classes
  * @param {Object} props.headerProps - Additional props for the header button
+ * @param {React.ReactNode} props.actionButton - Optional action button to display in header
  */
 const CollapsibleSection = ({
   sectionId,
@@ -20,7 +21,8 @@ const CollapsibleSection = ({
   children,
   defaultVisible = true,
   className = '',
-  headerProps = {}
+  headerProps = {},
+  actionButton = null
 }) => {
   const { isVisible, toggle } = useSectionVisibility(sectionId, defaultVisible);
 
@@ -34,36 +36,45 @@ const CollapsibleSection = ({
   return (
     <div className={`collapsible-section ${className}`}>
       {/* Section Header */}
-      <button
-        type="button"
-        onClick={toggle}
-        onKeyDown={handleKeyDown}
-        className="w-full flex items-center justify-between p-3 text-left bg-gray-800 hover:bg-gray-700 rounded-lg transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
-        aria-expanded={isVisible}
-        aria-controls={`section-content-${sectionId}`}
-        {...headerProps}
-      >
-        <div className="flex items-center space-x-2">
-          {/* Collapse/Expand Icon */}
-          {isVisible ? (
-            <ChevronDownIcon className="w-5 h-5 text-gray-400" />
-          ) : (
-            <ChevronRightIcon className="w-5 h-5 text-gray-400" />
-          )}
-          
-          {/* Section Title */}
-          <h3 className="text-lg font-medium text-gray-100">
-            {title}
-          </h3>
-          
-          {/* Item Count Badge */}
-          {itemCount > 0 && (
-            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-600 text-blue-100">
-              {itemCount}
-            </span>
-          )}
-        </div>
-      </button>
+      <div className="w-full flex items-center justify-between bg-gray-800 hover:bg-gray-700 rounded-lg overflow-hidden transition-colors duration-200 group has-[.action-button:hover]:bg-gray-800">
+        <button
+          type="button"
+          onClick={toggle}
+          onKeyDown={handleKeyDown}
+          className="flex-1 flex items-center justify-start p-3 focus:outline-none focus:ring-2 focus:ring-blue-500 ring-inset"
+          aria-expanded={isVisible}
+          aria-controls={`section-content-${sectionId}`}
+          {...headerProps}
+        >
+          <div className="flex items-center space-x-2">
+            {/* Collapse/Expand Icon */}
+            {isVisible ? (
+              <ChevronDownIcon className="w-5 h-5 text-gray-400" />
+            ) : (
+              <ChevronRightIcon className="w-5 h-5 text-gray-400" />
+            )}
+            
+            {/* Section Title */}
+            <h3 className="text-lg font-medium text-gray-100">
+              {title}
+            </h3>
+            
+            {/* Item Count Badge */}
+            {itemCount > 0 && (
+              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-600 text-blue-100">
+                {itemCount}
+              </span>
+            )}
+          </div>
+        </button>
+        
+        {/* Action Button */}
+        {actionButton && (
+          <div className="flex-shrink-0 p-3 action-button">
+            {actionButton}
+          </div>
+        )}
+      </div>
 
       {/* Section Content */}
       <div
@@ -73,7 +84,7 @@ const CollapsibleSection = ({
         }`}
         aria-hidden={!isVisible}
       >
-        <div className="pt-4">
+        <div className="pt-6">
           {children}
         </div>
       </div>

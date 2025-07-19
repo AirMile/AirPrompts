@@ -6,7 +6,7 @@ import { useState, useEffect, useCallback } from 'react';
  * 
  * @param {Array} items - Array of items to navigate through
  * @param {Object} options - Configuration options
- * @param {string} options.layout - Layout type: 'grid', 'list', 'compact'
+ * @param {string} options.layout - Layout type: 'grid', 'list'
  * @param {number} options.columns - Number of columns in grid layout
  * @param {Function} options.onExecute - Callback when item is executed (Enter/Space)
  * @param {Function} options.onSelection - Callback when selection changes
@@ -90,10 +90,9 @@ export const useKeyboardNavigation = (items = [], options = {}) => {
             return currentIndex;
         }
 
-      case 'grid':
-      case 'compact': {
+      case 'grid': {
         // Grid navigation with column-based movement
-        const cols = layout === 'compact' ? Math.max(columns, 6) : columns;
+        const cols = columns;
         const currentRow = Math.floor(currentIndex / cols);
         const currentCol = currentIndex % cols;
         const totalRows = Math.ceil(totalItems / cols);
@@ -212,7 +211,7 @@ export const useKeyboardNavigation = (items = [], options = {}) => {
         setIsActive(true);
         setFocusedIndex(prev => {
           const current = prev === -1 ? 0 : prev;
-          const pageSize = layout === 'list' ? 10 : (layout === 'compact' ? 20 : 12);
+          const pageSize = layout === 'list' ? 10 : 12;
           return Math.max(0, current - pageSize);
         });
         break;
@@ -222,9 +221,13 @@ export const useKeyboardNavigation = (items = [], options = {}) => {
         setIsActive(true);
         setFocusedIndex(prev => {
           const current = prev === -1 ? 0 : prev;
-          const pageSize = layout === 'list' ? 10 : (layout === 'compact' ? 20 : 12);
+          const pageSize = layout === 'list' ? 10 : 12;
           return Math.min(items.length - 1, current + pageSize);
         });
+        break;
+
+      case 'Tab':
+        // Don't handle Tab in this hook - handled at higher level
         break;
 
       case 'Escape':
@@ -385,8 +388,7 @@ export const useKeyboardNavigation = (items = [], options = {}) => {
     getKeyboardHelpText: () => ({
       [`keyboard-nav-help-${layout}`]: `Use arrow keys to navigate. In ${layout} view: ${
         layout === 'list' ? 'Up/Down to move between items' : 
-        layout === 'grid' ? 'Arrow keys to move in grid, Left/Right within rows, Up/Down between rows' :
-        'Arrow keys to navigate in compact grid layout'
+        'Arrow keys to move in grid, Left/Right within rows, Up/Down between rows'
       }. Press Enter or Space to execute, Home/End to jump to first/last item, Escape to exit.`
     })
   };

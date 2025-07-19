@@ -195,7 +195,6 @@ const UserPreferences = ({ isOpen, onClose }) => {
                         >
                           <option value="grid">Grid View</option>
                           <option value="list">List View</option>
-                          <option value="compact">Compact View</option>
                         </select>
                       </div>
 

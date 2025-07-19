@@ -4,12 +4,66 @@ import { copyToClipboard } from '../../utils/clipboard.js';
 import { extractAllVariables } from '../../types/template.types.js';
 
 const ItemExecutor = ({ item, type, snippets = [], onComplete, onCancel, onEdit }) => {
-  const isWorkflow = type === 'workflow';
-  const steps = isWorkflow ? item.steps : [{ content: item.content, variables: item.variables }];
+  console.log('🔧 ItemExecutor DEBUG - Received props:', {
+    itemName: item?.name,
+    type,
+    hasSteps: !!item?.steps,
+    hasContent: !!item?.content,
+    snippetsCount: snippets?.length
+  });
+
+  // Add safety check for item
+  if (!item) {
+    console.error('❌ ItemExecutor: item is undefined');
+    return (
+      <div className="max-w-2xl mx-auto p-6">
+        <div className="bg-red-900 rounded-xl p-6 text-center">
+          <h2 className="text-xl font-bold text-red-100 mb-2">Error</h2>
+          <p className="text-red-200">No item data provided to execute.</p>
+          <button onClick={onCancel} className="mt-4 px-4 py-2 bg-red-700 text-white rounded">
+            Go Back
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  const isWorkflow = type === 'workflow' && item.steps && Array.isArray(item.steps);
+  const steps = isWorkflow ? item.steps : [{ 
+    content: item.content || '', 
+    variables: item.variables || [],
+    type: type === 'workflow' ? 'workflow' : type, // Add the type to the step data
+    id: item.id,
+    name: item.name
+  }];
+  
+  console.log('🔧 ItemExecutor DEBUG - Steps creation:', {
+    isWorkflow,
+    type,
+    itemHasSteps: !!item.steps,
+    stepsLength: steps?.length,
+    firstStepType: steps?.[0]?.type
+  });
+  
   
   // State voor huidige step
   const [currentStep, setCurrentStep] = useState(0);
-  const currentStepData = steps[currentStep];
+  const currentStepData = steps?.[currentStep];
+  
+  // Safety check for steps and currentStepData
+  if (!steps || steps.length === 0 || !currentStepData) {
+    return (
+      <div className="max-w-2xl mx-auto p-6">
+        <div className="bg-red-900 rounded-xl p-6 text-center">
+          <h2 className="text-xl font-bold text-red-100 mb-2">Error</h2>
+          <p className="text-red-200">Invalid step data. Unable to execute item.</p>
+          <button onClick={onCancel} className="mt-4 px-4 py-2 bg-red-700 text-white rounded">
+            Go Back
+          </button>
+        </div>
+      </div>
+    );
+  }
   
   // State for tracking selected options - must be defined before getStepType function
   const [selectedOptions, setSelectedOptions] = useState({}); // stepId -> { type: 'template'|'snippet', id: itemId }
@@ -19,7 +73,15 @@ const ItemExecutor = ({ item, type, snippets = [], onComplete, onCancel, onEdit 
   
   // Different logic for different step types
   const getStepType = useCallback(() => {
-    if (!isWorkflow) return type; // Use the passed type prop for non-workflows
+    if (!isWorkflow) {
+      // Type should already be normalized from Homepage, but double-check
+      if (!type) {
+        console.error('❌ ItemExecutor: type is undefined');
+        return 'template'; // fallback
+      }
+      const normalizedType = type.endsWith('s') ? type.slice(0, -1) : type;
+      return normalizedType;
+    }
     
     // Check if info step has templates or snippets attached
     if (currentStepData.type === 'info') {
@@ -98,16 +160,20 @@ const ItemExecutor = ({ item, type, snippets = [], onComplete, onCancel, onEdit 
   
   // Get all available options (templates and snippets combined) for current step
   const getAllStepOptions = useCallback(() => {
+    
     if (!isWorkflow) {
+      // Not a workflow, returning empty options
       return [];
     }
     
     // Check if this is an info step with templates/snippets
     if (currentStepData.type === 'info' && (currentStepData.templateId || currentStepData.snippetIds?.length > 0)) {
+      // Info step with template/snippet options
       const options = [];
       
       // If info step has a template ID, load that template
       if (currentStepData.templateId) {
+        // Info step has templateId
         // In a real app, you'd fetch the template from your data store
         // For now, we'll create a placeholder
         options.push({
@@ -124,9 +190,11 @@ const ItemExecutor = ({ item, type, snippets = [], onComplete, onCancel, onEdit 
       
       // If info step has snippet IDs, load those snippets
       if (currentStepData.snippetIds?.length > 0) {
+        // Info step has snippetIds
         currentStepData.snippetIds.forEach(snippetId => {
           // In a real app, you'd fetch the snippet from your data store
           const snippet = snippets.find(s => s.id === snippetId);
+          // Found snippet for ID
           if (snippet) {
             const { variables } = extractAllVariables(snippet.content);
             options.push({
@@ -141,6 +209,7 @@ const ItemExecutor = ({ item, type, snippets = [], onComplete, onCancel, onEdit 
         });
       }
       
+      // Final options for info step
       return options;
     }
     
@@ -220,32 +289,46 @@ const ItemExecutor = ({ item, type, snippets = [], onComplete, onCancel, onEdit 
 
   // Get the current template or snippet for this step
   const getCurrentTemplate = () => {
+    
     if (!isWorkflow) {
+      // Non-workflow, returning currentStepData
       return currentStepData;
     }
     
     // Handle info steps with templates/snippets
     if (currentStepData.type === 'info' && (currentStepData.templateId || currentStepData.snippetIds?.length > 0)) {
+      // Info step with templates/snippets
       const allOptions = getAllStepOptions();
+      // All options for info step
       
       if (allOptions.length > 0) {
         const selectedOption = selectedOptions[currentStepData.id];
+        // Selected option for info step
         
         if (selectedOption) {
           // Find the selected option
-          const option = allOptions.find(opt => 
-            opt.type === selectedOption.type && opt.id === selectedOption.id
-          );
+          const option = allOptions.find((opt, index) => {
+            const optId = opt.id || opt.item?.id || index;
+            return opt.type === selectedOption.type && optId === selectedOption.id;
+          });
+          // Found option for selection
           if (option) return option.item;
         }
         
         // Only auto-select if there's exactly one option
         if (allOptions.length === 1) {
+          // Auto-selecting single option
           return allOptions[0].item;
         }
         
-        // Otherwise return undefined to force user selection
-        return undefined;
+        // Otherwise return a placeholder to show the selection interface
+        // Multiple options, returning placeholder for selection interface
+        return {
+          id: 'selection-placeholder',
+          name: 'Select an option above',
+          content: '',
+          type: 'selection-placeholder'
+        };
       }
     }
     
@@ -258,9 +341,10 @@ const ItemExecutor = ({ item, type, snippets = [], onComplete, onCancel, onEdit 
         
         if (selectedOption) {
           // Find the selected option
-          const option = allOptions.find(opt => 
-            opt.type === selectedOption.type && opt.id === selectedOption.id
-          );
+          const option = allOptions.find((opt, index) => {
+            const optId = opt.id || opt.item?.id || index;
+            return opt.type === selectedOption.type && optId === selectedOption.id;
+          });
           if (option) {
             return option.item;
           }
@@ -271,22 +355,25 @@ const ItemExecutor = ({ item, type, snippets = [], onComplete, onCancel, onEdit 
           return allOptions[0].item;
         }
         
-        // Otherwise return undefined to force user selection
-        return undefined;
+        // Otherwise return a placeholder to show the selection interface
+        return {
+          id: 'selection-placeholder',
+          name: 'Select an option above',
+          content: '',
+          type: 'selection-placeholder'
+        };
       }
     }
     
     // For info and insert steps, or fallback to step data
+    // Fallback: returning currentStepData
     return currentStepData;
   };
   
   const currentTemplate = getCurrentTemplate();
-  
-  // // console.log('DEBUG currentTemplate after selection:', {
-  //   currentTemplate: currentTemplate ? currentTemplate.name : 'undefined',
-  //   hasContent: currentTemplate ? !!currentTemplate.content : false,
-  //   content: currentTemplate ? currentTemplate.content?.substring(0, 100) : 'no content'
-  // });
+  const allStepOptions = getAllStepOptions();
+  const hasMultipleOptions = allStepOptions.length > 1;
+  const needsSelection = hasMultipleOptions && !selectedOptions[currentStepData.id];
   
   // Check if currentTemplate is actually a workflow (has steps property)
   const isNestedWorkflow = currentTemplate && Array.isArray(currentTemplate.steps);
@@ -371,21 +458,21 @@ const ItemExecutor = ({ item, type, snippets = [], onComplete, onCancel, onEdit 
   useEffect(() => {
     const currentStepType = getStepType();
     const timer = setTimeout(() => {
-      const allStepOptions = getAllStepOptions();
-      const hasMultipleOptions = allStepOptions.length > 1;
-      const needsSelection = hasMultipleOptions && !selectedOptions[currentStepData.id];
+      const currentAllStepOptions = getAllStepOptions();
+      const currentHasMultipleOptions = currentAllStepOptions.length > 1;
+      const currentNeedsSelection = currentHasMultipleOptions && !selectedOptions[currentStepData.id];
       
       // console.log('DEBUG Focus effect triggered:', {
       //   currentStep,
       //   currentStepType,
-      //   hasMultipleOptions,
-      //   needsSelection,
+      //   currentHasMultipleOptions,
+      //   currentNeedsSelection,
       //   selectedOptionsForStep: selectedOptions[currentStepData.id],
       //   hasCurrentTemplate: currentTemplate?.hasContent,
       //   sortedVariablesLength: sortedVariables.length
       // });
       
-      if (needsSelection) {
+      if (currentNeedsSelection) {
         // Focus the option selection area
         const optionSelectionArea = document.querySelector('div[tabIndex="0"]');
         if (optionSelectionArea) {
@@ -458,10 +545,10 @@ const ItemExecutor = ({ item, type, snippets = [], onComplete, onCancel, onEdit 
 
   // Reset selection when step changes (don't auto-select, just highlight)
   useEffect(() => {
-    const allStepOptions = getAllStepOptions();
-    const hasMultipleOptions = allStepOptions.length > 1;
+    const currentAllStepOptions = getAllStepOptions();
+    const currentHasMultipleOptions = currentAllStepOptions.length > 1;
     
-    if (hasMultipleOptions) {
+    if (currentHasMultipleOptions) {
       // console.log('DEBUG Multiple options available, first option highlighted but not selected');
       // Don't auto-select, just let the highlighted index stay at 0
       // User must manually select with Enter/Tab or mouse click
@@ -863,7 +950,8 @@ const ItemExecutor = ({ item, type, snippets = [], onComplete, onCancel, onEdit 
         const selectedOption = allStepOptions[highlightedOptionIndex];
         if (selectedOption) {
           // console.log('DEBUG Selecting option:', selectedOption.item.name);
-          const newSelection = { type: selectedOption.type, id: selectedOption.id };
+          const selectedOptionId = selectedOption.id || selectedOption.item?.id || highlightedOptionIndex;
+          const newSelection = { type: selectedOption.type, id: selectedOptionId };
           // console.log('DEBUG New selection object:', newSelection);
           
           setSelectedOptions(prevOptions => {
@@ -962,11 +1050,6 @@ const ItemExecutor = ({ item, type, snippets = [], onComplete, onCancel, onEdit 
       }, 1500);
     }
   };
-
-
-  const allStepOptions = getAllStepOptions();
-  const hasMultipleOptions = allStepOptions.length > 1;
-  const needsSelection = hasMultipleOptions && !selectedOptions[currentStepData.id];
   
   const canProceed = (() => {
     if (stepType === 'info') return true; // Info steps don't need variables
@@ -1078,7 +1161,8 @@ const ItemExecutor = ({ item, type, snippets = [], onComplete, onCancel, onEdit 
                 const selectedOption = allStepOptions[highlightedOptionIndex];
                 if (selectedOption) {
                   // console.log('DEBUG Button click selecting option:', selectedOption.item.name);
-                  const newSelection = { type: selectedOption.type, id: selectedOption.id };
+                  const selectedOptionId = selectedOption.id || selectedOption.item?.id || highlightedOptionIndex;
+                  const newSelection = { type: selectedOption.type, id: selectedOptionId };
                   // console.log('DEBUG Button click new selection object:', newSelection);
                   
                   setSelectedOptions(prevOptions => {
@@ -1301,8 +1385,9 @@ const ItemExecutor = ({ item, type, snippets = [], onComplete, onCancel, onEdit 
                 </h3>
                 <div className="space-y-2">
                   {allStepOptions.map((option, mapIndex) => {                    
+                    const optionId = option.id || option.item?.id || mapIndex;
                     const isSelected = selectedOptions[currentStepData.id]?.type === option.type && 
-                                     selectedOptions[currentStepData.id]?.id === option.id;
+                                     selectedOptions[currentStepData.id]?.id === optionId;
                     const isHighlighted = highlightedOptionIndex === mapIndex;
                     const isTemplate = option.type === 'template';
                     const isWorkflow = option.type === 'workflow';
@@ -1315,7 +1400,7 @@ const ItemExecutor = ({ item, type, snippets = [], onComplete, onCancel, onEdit 
                     
                     return (
                       <div
-                        key={`${option.type}-${option.id}`}
+                        key={`${option.type}-${optionId}`}
                         className={`p-3 border rounded-lg cursor-pointer transition-colors ${
                           isSelected
                             ? isTemplate 
@@ -1330,7 +1415,7 @@ const ItemExecutor = ({ item, type, snippets = [], onComplete, onCancel, onEdit 
                         onClick={() => {
                           setSelectedOptions({
                             ...selectedOptions,
-                            [currentStepData.id]: { type: option.type, id: option.id }
+                            [currentStepData.id]: { type: option.type, id: optionId }
                           });
                           setVariableValues({}); // Reset variables when selection changes
                         }}
