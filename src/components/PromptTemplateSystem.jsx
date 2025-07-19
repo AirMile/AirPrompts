@@ -217,6 +217,9 @@ const PromptTemplateSystem = () => {
             onDeleteTemplate={(id) => setTemplates(templates.filter(t => t.id !== id))}
             onDeleteWorkflow={(id) => setWorkflows(workflows.filter(w => w.id !== id))}
             onDeleteSnippet={(id) => setSnippets(snippets.filter(s => s.id !== id))}
+            onUpdateTemplate={(template) => setTemplates(templates.map(t => t.id === template.id ? template : t))}
+            onUpdateWorkflow={(workflow) => setWorkflows(workflows.map(w => w.id === workflow.id ? workflow : w))}
+            onUpdateSnippet={(snippet) => setSnippets(snippets.map(s => s.id === snippet.id ? snippet : s))}
             onCreateFolder={handleCreateFolder}
           />
         </div>

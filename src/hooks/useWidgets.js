@@ -20,13 +20,14 @@ export const useWidgets = () => {
       sortBy: 'name',
       filterType: 'all'
     },
-    'recent-widget': {
-      maxItems: 10,
-      timeRange: 'week',
+    'folder-management-widget': {
+      showFavorites: true,
+      showWorkflows: true,
+      showTemplates: true,
+      showSnippets: true,
+      maxItemsPerSection: 10,
       showDescription: true,
-      showLastUsed: true,
-      sortBy: 'recent',
-      filterType: 'all'
+      showTags: false
     },
     'stats-widget': {
       timeRange: 'month',

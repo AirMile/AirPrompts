@@ -7,9 +7,12 @@ import FocusableCard from '../common/FocusableCard.jsx';
 import CollapsibleSection from '../common/CollapsibleSection.jsx';
 import AdvancedSearch from '../search/AdvancedSearch.jsx';
 import Pagination from '../common/Pagination.jsx';
+import FolderManagementWidget from '../widgets/FolderManagementWidget.jsx';
+import FavoritesWidget from '../widgets/FavoritesWidget.jsx';
 import useKeyboardNavigation from '../../hooks/useKeyboardNavigation.js';
 import usePagination from '../../hooks/usePagination.js';
 import useFilters from '../../hooks/useFilters.js';
+import { useWidgets } from '../../hooks/useWidgets.js';
 import { performAdvancedSearch } from '../../utils/searchUtils.js';
 import { useUserPreferences } from '../../hooks/useUserPreferences.js';
 
@@ -29,6 +32,9 @@ const Homepage = ({
   onDeleteTemplate,
   onDeleteWorkflow,
   onDeleteSnippet,
+  onUpdateTemplate,
+  onUpdateWorkflow, 
+  onUpdateSnippet,
   onCreateFolder
 }) => {
   // Use preferences system for view mode
@@ -38,6 +44,10 @@ const Homepage = ({
   const setViewMode = (mode) => {
     updateLayout({ viewMode: mode });
   };
+  
+  // Initialize widgets system
+  const { activeWidgets, widgetConfigs } = useWidgets();
+  
   const mainContentRef = useRef(null);
   
   // Initialize filter system with item collections
@@ -710,6 +720,53 @@ const Homepage = ({
           {/* Dynamic Sections */}
           {sections.map((section, index) => 
             renderSection(section, index === sections.length - 1)
+          )}
+        </div>
+      </div>
+      
+      {/* Widgets Area */}
+      <div className="absolute inset-0 pointer-events-none">
+        <div className="relative w-full h-full pointer-events-none">
+          {/* Folder Management Widget */}
+          {(activeWidgets.includes('folder-management-widget') || !activeWidgets.length) && (
+            <div className="pointer-events-auto">
+              <FolderManagementWidget
+                templates={templates}
+                workflows={workflows}
+                snippets={snippets}
+                selectedFolderId={selectedFolderId}
+                onExecuteItem={onExecuteItem}
+                onEditTemplate={onEditTemplate}
+                onEditWorkflow={onEditWorkflow}
+                onEditSnippet={onEditSnippet}
+                onDeleteTemplate={onDeleteTemplate}
+                onDeleteWorkflow={onDeleteWorkflow}
+                onDeleteSnippet={onDeleteSnippet}
+                onUpdateTemplate={onUpdateTemplate}
+                onUpdateWorkflow={onUpdateWorkflow}
+                onUpdateSnippet={onUpdateSnippet}
+                widgetId="folder-management-widget"
+              />
+            </div>
+          )}
+          
+          {/* Legacy Favorites Widget (if enabled) */}
+          {activeWidgets.includes('favorites-widget') && (
+            <div className="pointer-events-auto">
+              <FavoritesWidget
+                templates={templates}
+                workflows={workflows}
+                snippets={snippets}
+                onExecuteItem={onExecuteItem}
+                onEditTemplate={onEditTemplate}
+                onEditWorkflow={onEditWorkflow}
+                onEditSnippet={onEditSnippet}
+                onDeleteTemplate={onDeleteTemplate}
+                onDeleteWorkflow={onDeleteWorkflow}
+                onDeleteSnippet={onDeleteSnippet}
+                widgetId="favorites-widget"
+              />
+            </div>
           )}
         </div>
       </div>

@@ -33,11 +33,11 @@ const WidgetManager = ({
       defaultEnabled: true
     },
     {
-      id: 'recent-widget',
-      name: 'Recent Items',
-      description: 'Recently used templates and workflows',
+      id: 'folder-management-widget',
+      name: 'Folder Management',
+      description: 'Folder-specific favorites and items with drag-and-drop ordering',
       category: 'Quick Access',
-      icon: '🕐',
+      icon: '📁',
       defaultEnabled: true
     },
     {
