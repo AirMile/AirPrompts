@@ -323,27 +323,28 @@ const FavoritesWidget = ({
                       )}
                     </div>
                     
-                    <div className="flex gap-1 ml-2">
+                    <div className="flex gap-1.5 ml-2">
                       <button
-                        onClick={() => handleExecute(item)}
-                        className="p-1 text-gray-400 hover:text-green-400 rounded"
-                        title="Execute"
-                      >
-                        <Play className="w-4 h-4" />
-                      </button>
-                      <button
-                        onClick={() => handlers.onEdit(item)}
-                        className="p-1 text-gray-400 hover:text-blue-400 rounded"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          handlers.onEdit(item);
+                        }}
+                        className="p-2 text-gray-300 bg-gray-700 border border-gray-600 rounded-md hover:bg-gray-600 hover:border-gray-500 flex items-center justify-center transition-all duration-200 hover:shadow-md"
                         title="Edit"
                       >
-                        <Edit className="w-4 h-4" />
+                        <Edit className="w-3.5 h-3.5" />
                       </button>
                       <button
-                        onClick={() => handlers.onDelete(item.id)}
-                        className="p-1 text-gray-400 hover:text-red-400 rounded"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          handlers.onDelete(item.id);
+                        }}
+                        className="p-2 text-red-400 bg-red-900/20 border border-red-600/50 rounded-md hover:bg-red-900/40 hover:border-red-500 hover:text-red-300 flex items-center justify-center transition-all duration-200 hover:shadow-md"
                         title="Delete"
                       >
-                        <Trash2 className="w-4 h-4" />
+                        <Trash2 className="w-3.5 h-3.5" />
                       </button>
                     </div>
                   </div>

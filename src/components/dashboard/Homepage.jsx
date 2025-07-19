@@ -1,9 +1,13 @@
 import React, { useEffect, useRef, useMemo, useCallback } from 'react';
 import { Plus, Play, Edit, Trash2, Search, Workflow, FileText, Star, Tag, Puzzle, GripVertical } from 'lucide-react';
+import { DndContext, DragOverlay, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
+import { SortableContext, verticalListSortingStrategy, rectSortingStrategy } from '@dnd-kit/sortable';
 import FolderTree from '../folders/FolderTree.jsx';
 import FolderBreadcrumb from '../folders/FolderBreadcrumb.jsx';
 import ListView from '../common/ListView.jsx';
 import FocusableCard from '../common/FocusableCard.jsx';
+import SortableCard from '../common/SortableCard.jsx';
+import SortableListItem from '../common/SortableListItem.jsx';
 import CollapsibleSection from '../common/CollapsibleSection.jsx';
 import AdvancedSearch from '../search/AdvancedSearch.jsx';
 import Pagination from '../common/Pagination.jsx';
@@ -11,6 +15,7 @@ import FavoritesWidget from '../widgets/FavoritesWidget.jsx';
 import useKeyboardNavigation from '../../hooks/useKeyboardNavigation.js';
 import usePagination from '../../hooks/usePagination.js';
 import useFilters from '../../hooks/useFilters.js';
+import useDragAndDrop from '../../hooks/useDragAndDrop.js';
 import { useWidgets } from '../../hooks/useWidgets.js';
 import { performAdvancedSearch } from '../../utils/searchUtils.js';
 import { useUserPreferences } from '../../hooks/useUserPreferences.js';
@@ -168,6 +173,71 @@ const Homepage = ({
       hasContent: filters.hasContent
     });
   };
+
+  // Setup drag and drop sensors
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 8,
+      },
+    }),
+    useSensor(KeyboardSensor)
+  );
+
+  // Drag and drop handlers for each section
+  const favoritesReorderHandler = useCallback((reorderedItems) => {
+    reorderedItems.forEach(item => {
+      const itemType = item.type;
+      if (itemType === 'workflow') {
+        onUpdateWorkflow(item);
+      } else if (itemType === 'template') {
+        onUpdateTemplate(item);
+      } else if (itemType === 'snippet') {
+        onUpdateSnippet(item);
+      }
+    });
+  }, [onUpdateWorkflow, onUpdateTemplate, onUpdateSnippet]);
+
+  const workflowsReorderHandler = useCallback((reorderedItems) => {
+    reorderedItems.forEach(item => onUpdateWorkflow(item));
+  }, [onUpdateWorkflow]);
+
+  const templatesReorderHandler = useCallback((reorderedItems) => {
+    reorderedItems.forEach(item => onUpdateTemplate(item));
+  }, [onUpdateTemplate]);
+
+  const snippetsReorderHandler = useCallback((reorderedItems) => {
+    reorderedItems.forEach(item => onUpdateSnippet(item));
+  }, [onUpdateSnippet]);
+
+  // Initialize drag and drop hooks for each section
+  const favoritesDragDrop = useDragAndDrop({
+    items: favorites,
+    onReorder: favoritesReorderHandler,
+    sectionType: 'favorites',
+    selectedFolderId
+  });
+
+  const workflowsDragDrop = useDragAndDrop({
+    items: workflowsPagination.currentItems,
+    onReorder: workflowsReorderHandler,
+    sectionType: 'workflows',
+    selectedFolderId
+  });
+
+  const templatesDragDrop = useDragAndDrop({
+    items: templatesPagination.currentItems,
+    onReorder: templatesReorderHandler,
+    sectionType: 'templates',
+    selectedFolderId
+  });
+
+  const snippetsDragDrop = useDragAndDrop({
+    items: snippetsPagination.currentItems,
+    onReorder: snippetsReorderHandler,
+    sectionType: 'snippets',
+    selectedFolderId
+  });
 
   // Handle favorite toggle for folder-specific favorites
   const handleFavoriteToggle = useCallback((item, sectionType) => {
@@ -364,6 +434,17 @@ const Homepage = ({
   }, [keyboardNavigation, templatesPagination, workflowsPagination, snippetsPagination, allItems.length]);
 
 
+  // Get the appropriate drag and drop handler for a section
+  const getDragDropHandler = useCallback((sectionType) => {
+    switch (sectionType) {
+      case 'favorites': return favoritesDragDrop;
+      case 'workflows': return workflowsDragDrop;
+      case 'templates': return templatesDragDrop;
+      case 'snippets': return snippetsDragDrop;
+      default: return favoritesDragDrop;
+    }
+  }, [favoritesDragDrop, workflowsDragDrop, templatesDragDrop, snippetsDragDrop]);
+
   // Render items based on view mode
   const renderItems = useCallback((items, sectionType) => {
     const getEditFunction = (item) => {
@@ -475,66 +556,107 @@ const Homepage = ({
       }
     };
 
+    const itemIds = items.map(item => item.id);
+
     // Special handling for favorites and recent sections with mixed item types
     if (sectionType === 'favorites' || sectionType === 'recent') {
       switch (viewMode) {
         case 'list':
-          // Use single ListView for consistent spacing
-          return <ListView {...commonProps} sectionType={sectionType} />;
+          return (
+            <SortableContext items={itemIds} strategy={verticalListSortingStrategy}>
+              <div className="space-y-2">
+                {commonProps.items.map((item, index) => (
+                  <SortableListItem key={item.id} id={item.id} item={item}>
+                    <ListView 
+                      {...commonProps} 
+                      items={[item]} 
+                      sectionType={sectionType}
+                      hideDragHandle={true}
+                    />
+                  </SortableListItem>
+                ))}
+              </div>
+            </SortableContext>
+          );
         case 'grid':
         default:
           return (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-              {commonProps.items.map((item, index) => (
-                <FocusableCard
-                  key={item.id}
-                  item={item}
-                  index={index}
-                  type={item.type}
-                  sectionType={sectionType}
-                  onExecute={commonProps.onExecute}
-                  onEdit={() => getEditFunction(item)(item)}
-                  onDelete={() => getDeleteFunction(item)(item.id)}
-                  onToggleFavorite={commonProps.onToggleFavorite}
-                  isItemFavorite={commonProps.isItemFavorite}
-                  keyboardNavigation={{
-                    ...commonProps.keyboardNavigation,
-                    getFocusProps: () => commonProps.keyboardNavigation.getFocusProps(index, sectionType)
-                  }}
-                />
-              ))}
-            </div>
+            <SortableContext items={itemIds} strategy={rectSortingStrategy}>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                {commonProps.items.map((item, index) => (
+                  <SortableCard
+                    key={item.id}
+                    id={item.id}
+                    item={item}
+                    index={index}
+                    type={item.type}
+                    sectionType={sectionType}
+                    onExecute={commonProps.onExecute}
+                    onEdit={() => getEditFunction(item)(item)}
+                    onDelete={() => getDeleteFunction(item)(item.id)}
+                    onToggleFavorite={commonProps.onToggleFavorite}
+                    isItemFavorite={commonProps.isItemFavorite}
+                    keyboardNavigation={{
+                      ...commonProps.keyboardNavigation,
+                      getFocusProps: () => commonProps.keyboardNavigation.getFocusProps(index, sectionType)
+                    }}
+                  />
+                ))}
+              </div>
+            </SortableContext>
           );
       }
     }
 
     switch (viewMode) {
       case 'list':
-        return <ListView {...commonProps} sectionType={sectionType} />;
+        return (
+          <SortableContext items={itemIds} strategy={verticalListSortingStrategy}>
+            <div className="space-y-2">
+              {commonProps.items.map((item, index) => (
+                <SortableListItem key={item.id} id={item.id} item={item}>
+                  <ListView 
+                    {...commonProps} 
+                    items={[item]} 
+                    sectionType={sectionType}
+                    hideDragHandle={true}
+                  />
+                </SortableListItem>
+              ))}
+            </div>
+          </SortableContext>
+        );
       case 'grid':
       default:
         return (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-            {commonProps.items.map((item, index) => (
-              <FocusableCard
-                key={item.id}
-                item={item}
-                index={index}
-                {...commonProps}
-                type={commonProps.type}
-                sectionType={sectionType}
-              />
-            ))}
-          </div>
+          <SortableContext items={itemIds} strategy={rectSortingStrategy}>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+              {commonProps.items.map((item, index) => (
+                <SortableCard
+                  key={item.id}
+                  id={item.id}
+                  item={item}
+                  index={index}
+                  {...commonProps}
+                  type={commonProps.type}
+                  sectionType={sectionType}
+                />
+              ))}
+            </div>
+          </SortableContext>
         );
     }
-  }, [viewMode, onExecuteItem, onEditWorkflow, onEditTemplate, onEditSnippet, onDeleteWorkflow, onDeleteTemplate, onDeleteSnippet, keyboardNavigation, allItems.length, sectionIndexMap, handleFavoriteToggle, selectedFolderId]);
+  }, [viewMode, onExecuteItem, onEditWorkflow, onEditTemplate, onEditSnippet, onDeleteWorkflow, onDeleteTemplate, onDeleteSnippet, keyboardNavigation, allItems.length, sectionIndexMap, handleFavoriteToggle, selectedFolderId, getDragDropHandler]);
 
   const renderSection = useCallback((section, isLast = false) => {
     const { type, data, pagination, fullData } = section;
     
     switch (type) {
       case 'favorites':
+        // Only render favorites section if there are favorites
+        if (data.length === 0) {
+          return null;
+        }
         return (
           <CollapsibleSection
             key="favorites"
@@ -543,15 +665,24 @@ const Homepage = ({
             itemCount={data.length}
             className="mb-6"
           >
-            {data.length === 0 ? (
-              <div className="text-center py-8 text-gray-400">
-                <Star className="w-8 h-8 mx-auto mb-3 opacity-50" />
-                <p className="text-sm">No favorites in this folder yet</p>
-                <p className="text-xs mt-1">Click the star icon on any item to add it to favorites</p>
-              </div>
-            ) : (
-              renderItems(data, 'favorites')
-            )}
+            <DndContext 
+              sensors={sensors}
+              collisionDetection={closestCenter}
+              onDragStart={favoritesDragDrop.handleDragStart}
+              onDragEnd={favoritesDragDrop.handleDragEnd}
+              onDragCancel={favoritesDragDrop.handleDragCancel}
+            >
+              {renderItems(data, 'favorites')}
+              <DragOverlay>
+                {favoritesDragDrop.dragOverlay ? (
+                  <FocusableCard
+                    item={favoritesDragDrop.dragOverlay}
+                    type={favoritesDragDrop.dragOverlay.type}
+                    isDragOverlay
+                  />
+                ) : null}
+              </DragOverlay>
+            </DndContext>
           </CollapsibleSection>
         );
 
@@ -566,14 +697,38 @@ const Homepage = ({
             actionButton={
               <button
                 onClick={() => onEditWorkflow({})}
-                className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 flex items-center gap-2 font-semibold"
+                className="
+                  p-3 bg-green-600 text-white rounded-lg font-semibold
+                  flex items-center justify-center
+                  hover:bg-green-700 hover:shadow-lg hover:scale-105
+                  focus:outline-none focus:ring-2 focus:ring-green-400 focus:ring-opacity-50
+                  transition-all duration-200 ease-in-out
+                  border border-green-500 hover:border-green-400
+                "
+                title="New Workflow"
               >
-                <Plus className="w-4 h-4" />
-                New Workflow
+                <Plus className="w-5 h-5" />
               </button>
             }
           >
-            {renderItems(data, 'workflows')}
+            <DndContext 
+              sensors={sensors}
+              collisionDetection={closestCenter}
+              onDragStart={workflowsDragDrop.handleDragStart}
+              onDragEnd={workflowsDragDrop.handleDragEnd}
+              onDragCancel={workflowsDragDrop.handleDragCancel}
+            >
+              {renderItems(data, 'workflows')}
+              <DragOverlay>
+                {workflowsDragDrop.dragOverlay ? (
+                  <FocusableCard
+                    item={workflowsDragDrop.dragOverlay}
+                    type="workflow"
+                    isDragOverlay
+                  />
+                ) : null}
+              </DragOverlay>
+            </DndContext>
             {pagination && (
               <div>
                 <Pagination 
@@ -598,14 +753,38 @@ const Homepage = ({
             actionButton={
               <button
                 onClick={() => onEditTemplate({})}
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center gap-2 font-semibold"
+                className="
+                  p-3 bg-blue-600 text-white rounded-lg font-semibold
+                  flex items-center justify-center
+                  hover:bg-blue-700 hover:shadow-lg hover:scale-105
+                  focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-opacity-50
+                  transition-all duration-200 ease-in-out
+                  border border-blue-500 hover:border-blue-400
+                "
+                title="New Template"
               >
-                <Plus className="w-4 h-4" />
-                New Template
+                <Plus className="w-5 h-5" />
               </button>
             }
           >
-            {renderItems(data, 'templates')}
+            <DndContext 
+              sensors={sensors}
+              collisionDetection={closestCenter}
+              onDragStart={templatesDragDrop.handleDragStart}
+              onDragEnd={templatesDragDrop.handleDragEnd}
+              onDragCancel={templatesDragDrop.handleDragCancel}
+            >
+              {renderItems(data, 'templates')}
+              <DragOverlay>
+                {templatesDragDrop.dragOverlay ? (
+                  <FocusableCard
+                    item={templatesDragDrop.dragOverlay}
+                    type="template"
+                    isDragOverlay
+                  />
+                ) : null}
+              </DragOverlay>
+            </DndContext>
             {pagination && (
               <div>
                 <Pagination 
@@ -630,14 +809,38 @@ const Homepage = ({
             actionButton={
               <button
                 onClick={() => onEditSnippet({})}
-                className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 flex items-center gap-2 font-semibold"
+                className="
+                  p-3 bg-purple-600 text-white rounded-lg font-semibold
+                  flex items-center justify-center
+                  hover:bg-purple-700 hover:shadow-lg hover:scale-105
+                  focus:outline-none focus:ring-2 focus:ring-purple-400 focus:ring-opacity-50
+                  transition-all duration-200 ease-in-out
+                  border border-purple-500 hover:border-purple-400
+                "
+                title="New Snippet"
               >
-                <Plus className="w-4 h-4" />
-                New Snippet
+                <Plus className="w-5 h-5" />
               </button>
             }
           >
-            {renderItems(data, 'snippets')}
+            <DndContext 
+              sensors={sensors}
+              collisionDetection={closestCenter}
+              onDragStart={snippetsDragDrop.handleDragStart}
+              onDragEnd={snippetsDragDrop.handleDragEnd}
+              onDragCancel={snippetsDragDrop.handleDragCancel}
+            >
+              {renderItems(data, 'snippets')}
+              <DragOverlay>
+                {snippetsDragDrop.dragOverlay ? (
+                  <FocusableCard
+                    item={snippetsDragDrop.dragOverlay}
+                    type="snippet"
+                    isDragOverlay
+                  />
+                ) : null}
+              </DragOverlay>
+            </DndContext>
             {pagination && (
               <div>
                 <Pagination 

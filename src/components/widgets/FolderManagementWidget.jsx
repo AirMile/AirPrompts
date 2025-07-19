@@ -283,34 +283,39 @@ const FolderManagementWidget = ({
           )}
         </div>
         
-        <div className="flex gap-1">
+        <div className="flex gap-1.5">
           <button 
-            onClick={() => onExecute(item)} 
-            className="p-1 text-gray-400 hover:text-green-400 rounded"
-            title="Execute"
-          >
-            <Play className="w-4 h-4" />
-          </button>
-          <button 
-            onClick={() => onEdit(item)} 
-            className="p-1 text-gray-400 hover:text-blue-400 rounded"
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              onEdit(item);
+            }}
+            className="p-2 text-gray-300 bg-gray-700 border border-gray-600 rounded-md hover:bg-gray-600 hover:border-gray-500 flex items-center justify-center transition-all duration-200 hover:shadow-md"
             title="Edit"
           >
-            <Edit className="w-4 h-4" />
+            <Edit className="w-3.5 h-3.5" />
           </button>
           <button 
-            onClick={() => onFavoriteToggle(item)} 
-            className={`p-1 rounded ${isFavorite ? 'text-yellow-400' : 'text-gray-400 hover:text-yellow-400'}`}
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              onFavoriteToggle(item);
+            }}
+            className={`p-2 rounded-md border flex items-center justify-center transition-all duration-200 hover:shadow-md ${isFavorite ? 'text-yellow-400 bg-yellow-900/20 border-yellow-600/50 hover:bg-yellow-900/40 hover:border-yellow-500' : 'text-gray-400 bg-gray-700 border-gray-600 hover:text-yellow-400 hover:bg-yellow-900/20 hover:border-yellow-600/50'}`}
             title={isFavorite ? 'Remove from favorites' : 'Add to favorites'}
           >
-            <Star className={`w-4 h-4 ${isFavorite ? 'fill-current' : ''}`} />
+            <Star className={`w-3.5 h-3.5 ${isFavorite ? 'fill-current' : ''}`} />
           </button>
           <button 
-            onClick={() => onDelete(item.id)} 
-            className="p-1 text-gray-400 hover:text-red-400 rounded"
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              onDelete(item.id);
+            }}
+            className="p-2 text-red-400 bg-red-900/20 border border-red-600/50 rounded-md hover:bg-red-900/40 hover:border-red-500 hover:text-red-300 flex items-center justify-center transition-all duration-200 hover:shadow-md"
             title="Delete"
           >
-            <Trash2 className="w-4 h-4" />
+            <Trash2 className="w-3.5 h-3.5" />
           </button>
         </div>
       </div>

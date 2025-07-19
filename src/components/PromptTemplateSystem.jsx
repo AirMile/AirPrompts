@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import TemplateEditor from './templates/TemplateEditor.jsx';
 import ItemExecutor from './common/ItemExecutor.jsx';
 import Homepage from './dashboard/Homepage.jsx';
@@ -8,16 +8,50 @@ import ErrorBoundary from './common/ErrorBoundary.jsx';
 import Loading from './common/Loading.jsx';
 import ErrorMessage from './common/ErrorMessage.jsx';
 import { PreferencesProvider } from '../contexts/PreferencesContext.jsx';
+import { usePersistedAppState } from '../hooks/usePersistedState.js';
+import { loadAllData, getStorageInfo } from '../utils/dataStorage.js';
 import defaultTemplates from '../data/defaultTemplates.json';
 import defaultWorkflows from '../data/defaultWorkflows.json';
 import defaultSnippets from '../data/defaultSnippets.json';
 import defaultFolders from '../data/defaultFolders.json';
 
 const PromptTemplateSystem = () => {
-  const [templates, setTemplates] = useState(defaultTemplates);
-  const [workflows, setWorkflows] = useState(defaultWorkflows);
-  const [snippets, setSnippets] = useState(defaultSnippets);
-  const [folders, setFolders] = useState(defaultFolders);
+  // Load initial data from localStorage with fallback to defaults
+  const initialData = loadAllData({
+    templates: defaultTemplates,
+    workflows: defaultWorkflows,
+    snippets: defaultSnippets,
+    folders: defaultFolders
+  });
+
+  // Use persisted state that auto-saves to localStorage
+  const {
+    templates,
+    workflows,
+    snippets,
+    folders,
+    setTemplates,
+    setWorkflows,
+    setSnippets,
+    setFolders,
+    updateTemplate,
+    updateWorkflow,
+    updateSnippet,
+    deleteTemplate,
+    deleteWorkflow,
+    deleteSnippet
+  } = usePersistedAppState(initialData, {
+    debounceMs: 300, // Snellere save voor betere UX
+    onSaveError: (type, error) => {
+      console.error(`💾 Error bij opslaan van ${type}:`, error);
+      setError(`Kon ${type} niet opslaan. Wijzigingen kunnen verloren gaan.`);
+    },
+    onSaveSuccess: (type) => {
+      console.log(`💾 ${type} succesvol opgeslagen`);
+    }
+  });
+
+  // UI state (niet persistent)
   const [editingTemplate, setEditingTemplate] = useState(null);
   const [editingWorkflow, setEditingWorkflow] = useState(null);
   const [editingSnippet, setEditingSnippet] = useState(null);
@@ -27,20 +61,36 @@ const PromptTemplateSystem = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  // Main render logic
+  // Log storage info bij opstarten
+  useEffect(() => {
+    const storageInfo = getStorageInfo();
+    if (storageInfo.available) {
+      console.log('💾 localStorage status:', storageInfo);
+      if (initialData.migrated) {
+        console.log('🔄 Data migratie uitgevoerd');
+      }
+    } else {
+      console.warn('⚠️ LocalStorage niet beschikbaar, wijzigingen gaan verloren bij refresh');
+      setError('LocalStorage niet beschikbaar. Wijzigingen worden niet opgeslagen.');
+    }
+  }, [initialData.migrated]);
+
+  // Save handlers voor editors
   const handleSaveTemplate = (template) => {
     try {
       setIsLoading(true);
       setError(null);
       
       if (template.id && templates.find(t => t.id === template.id)) {
+        // Update bestaande template
         setTemplates(templates.map(t => t.id === template.id ? template : t));
       } else {
+        // Nieuwe template
         setTemplates([...templates, { ...template, id: Date.now() }]);
       }
       setEditingTemplate(null);
     } catch (err) {
-      setError(`Failed to save template: ${err.message}`);
+      setError(`Kon template niet opslaan: ${err.message}`);
     } finally {
       setIsLoading(false);
     }
@@ -52,13 +102,15 @@ const PromptTemplateSystem = () => {
       setError(null);
       
       if (workflow.id && workflows.find(w => w.id === workflow.id)) {
+        // Update bestaande workflow
         setWorkflows(workflows.map(w => w.id === workflow.id ? workflow : w));
       } else {
+        // Nieuwe workflow
         setWorkflows([...workflows, { ...workflow, id: Date.now() }]);
       }
       setEditingWorkflow(null);
     } catch (err) {
-      setError(`Failed to save workflow: ${err.message}`);
+      setError(`Kon workflow niet opslaan: ${err.message}`);
     } finally {
       setIsLoading(false);
     }
@@ -70,30 +122,33 @@ const PromptTemplateSystem = () => {
       setError(null);
       
       if (snippet.id && snippets.find(s => s.id === snippet.id)) {
+        // Update bestaande snippet
         setSnippets(snippets.map(s => s.id === snippet.id ? snippet : s));
       } else {
+        // Nieuwe snippet
         setSnippets([...snippets, { ...snippet, id: Date.now() }]);
       }
       setEditingSnippet(null);
     } catch (err) {
-      setError(`Failed to save snippet: ${err.message}`);
+      setError(`Kon snippet niet opslaan: ${err.message}`);
     } finally {
       setIsLoading(false);
     }
   };
 
   const handleCreateFolder = (parentId = 'root') => {
-    const folderName = prompt('Enter folder name:');
-    if (folderName) {
+    const folderName = prompt('Voer folder naam in:');
+    if (folderName && folderName.trim()) {
       const newFolder = {
         id: `folder_${Date.now()}`,
-        name: folderName,
+        name: folderName.trim(),
         parentId: parentId,
         type: 'folder',
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString()
       };
       setFolders([...folders, newFolder]);
+      console.log('📁 Nieuwe folder aangemaakt:', newFolder.name);
     }
   };
 
@@ -214,12 +269,12 @@ const PromptTemplateSystem = () => {
             onExecuteItem={(data) => {
               setExecutingItem(data);
             }}
-            onDeleteTemplate={(id) => setTemplates(templates.filter(t => t.id !== id))}
-            onDeleteWorkflow={(id) => setWorkflows(workflows.filter(w => w.id !== id))}
-            onDeleteSnippet={(id) => setSnippets(snippets.filter(s => s.id !== id))}
-            onUpdateTemplate={(template) => setTemplates(templates.map(t => t.id === template.id ? template : t))}
-            onUpdateWorkflow={(workflow) => setWorkflows(workflows.map(w => w.id === workflow.id ? workflow : w))}
-            onUpdateSnippet={(snippet) => setSnippets(snippets.map(s => s.id === snippet.id ? snippet : s))}
+            onDeleteTemplate={deleteTemplate}
+            onDeleteWorkflow={deleteWorkflow}
+            onDeleteSnippet={deleteSnippet}
+            onUpdateTemplate={updateTemplate}
+            onUpdateWorkflow={updateWorkflow}
+            onUpdateSnippet={updateSnippet}
             onCreateFolder={handleCreateFolder}
           />
         </div>

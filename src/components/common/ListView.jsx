@@ -13,15 +13,17 @@ const ListView = ({
   keyboardNavigation = {}
 }) => {
   const getTypeIcon = (itemType) => {
-    switch (itemType) {
+    const normalizedType = normalizeType(itemType);
+    
+    switch (normalizedType) {
       case 'workflow':
-        return <Workflow className="w-4 h-4 text-gray-300" />;
+        return <Workflow className="w-4 h-4 text-gray-400" />;
       case 'template':
-        return <FileText className="w-4 h-4 text-gray-300" />;
+        return <FileText className="w-4 h-4 text-gray-400" />;
       case 'snippet':
-        return <Tag className="w-4 h-4 text-gray-300" />;
+        return <Tag className="w-4 h-4 text-gray-400" />;
       default:
-        return <FileText className="w-4 h-4 text-gray-300" />;
+        return <FileText className="w-4 h-4 text-gray-400" />;
     }
   };
 
@@ -148,24 +150,9 @@ const ListView = ({
             
             <div className="flex items-center gap-4">
 
-              {/* Favorite Button */}
+              {/* Type Icon - where favorite button used to be */}
               <div className="flex-shrink-0">
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onToggleFavorite(item);
-                  }}
-                  className={`
-                    p-1 rounded-full transition-colors
-                    ${isItemFavorite(item) 
-                      ? 'text-yellow-400 hover:text-yellow-300' 
-                      : 'text-gray-500 hover:text-gray-400'
-                    }
-                  `}
-                  aria-label={`${isItemFavorite(item) ? 'Remove from' : 'Add to'} favorites`}
-                >
-                  <Star className={`w-5 h-5 ${isItemFavorite(item) ? 'fill-current' : ''}`} />
-                </button>
+                {getTypeIcon(item.type || type)}
               </div>
 
               {/* Content */}
@@ -174,9 +161,6 @@ const ListView = ({
                   <h3 className="font-semibold text-gray-100 truncate">
                     {item.name}
                   </h3>
-                  {item.favorite && (
-                    <Star className="w-4 h-4 text-yellow-300 fill-current flex-shrink-0" />
-                  )}
                 </div>
 
                 <p className="text-sm text-gray-300 mb-3 line-clamp-2">
@@ -187,22 +171,28 @@ const ListView = ({
 
               {/* Actions */}
               <div className="flex items-center gap-2 flex-shrink-0">
+                {/* Favorite Button */}
                 <button
                   onClick={(e) => {
                     e.preventDefault();
                     e.stopPropagation();
-                    onExecute({ item, type: item.type || type });
+                    onToggleFavorite(item);
                   }}
                   className={`
-                    px-4 py-2 text-white rounded-md text-sm font-medium
-                    flex items-center gap-2 ${getTypeColor(item.type || type)}
+                    p-2.5 rounded-md flex items-center justify-center
                     focus:outline-none focus:ring-2 focus:ring-opacity-50
+                    transition-all duration-200 hover:shadow-md
+                    ${isItemFavorite(item) 
+                      ? 'text-yellow-400 bg-yellow-900/20 hover:bg-yellow-900/40 focus:ring-yellow-400' 
+                      : 'text-gray-400 bg-gray-700 hover:text-yellow-400 hover:bg-yellow-900/20 focus:ring-yellow-400'
+                    }
                   `}
+                  aria-label={`${isItemFavorite(item) ? 'Remove from' : 'Add to'} favorites`}
+                  title={isItemFavorite(item) ? 'Remove from favorites' : 'Add to favorites'}
                 >
-                  <Play className="w-4 h-4" />
-                  Execute
+                  <Star className={`w-4 h-4 ${isItemFavorite(item) ? 'fill-current' : ''}`} />
                 </button>
-
+                
                 <button
                   onClick={(e) => {
                     e.preventDefault();
@@ -210,10 +200,12 @@ const ListView = ({
                     onEdit(item);
                   }}
                   className="
-                    px-3 py-2 text-gray-300 border border-gray-600 rounded-md
-                    hover:bg-gray-700 flex items-center justify-center
+                    p-2.5 text-gray-300 bg-gray-700 border border-gray-600 rounded-md
+                    hover:bg-gray-600 hover:border-gray-500 flex items-center justify-center
                     focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-opacity-50
+                    transition-all duration-200 hover:shadow-md
                   "
+                  title="Edit"
                 >
                   <Edit className="w-4 h-4" />
                 </button>
@@ -225,10 +217,12 @@ const ListView = ({
                     onDelete(item.id);
                   }}
                   className="
-                    px-3 py-2 text-red-400 border border-red-600 rounded-md
-                    hover:bg-red-900 flex items-center justify-center
+                    p-2.5 text-red-400 bg-red-900/20 border border-red-600/50 rounded-md
+                    hover:bg-red-900/40 hover:border-red-500 hover:text-red-300 flex items-center justify-center
                     focus:outline-none focus:ring-2 focus:ring-red-400 focus:ring-opacity-50
+                    transition-all duration-200 hover:shadow-md
                   "
+                  title="Delete"
                 >
                   <Trash2 className="w-4 h-4" />
                 </button>

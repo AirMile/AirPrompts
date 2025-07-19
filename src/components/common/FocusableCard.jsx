@@ -73,6 +73,21 @@ const FocusableCard = ({
     }
   };
 
+  const getTypeIcon = (itemType) => {
+    const normalizedType = normalizeType(itemType);
+    
+    switch (normalizedType) {
+      case 'workflow':
+        return <Workflow className="w-5 h-5 text-gray-400" />;
+      case 'template':
+        return <FileText className="w-5 h-5 text-gray-400" />;
+      case 'snippet':
+        return <Tag className="w-5 h-5 text-gray-400" />;
+      default:
+        return <FileText className="w-5 h-5 text-gray-400" />;
+    }
+  };
+
   const getItemDetail = (item, itemType) => {
     switch (itemType) {
       case 'workflow':
@@ -129,24 +144,10 @@ const FocusableCard = ({
       {/* Header */}
       <div className="mb-3">
         <div className="flex items-start justify-between">
-          <div className="flex items-center gap-2">
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                onToggleFavorite(item);
-              }}
-              className={`
-                p-1 rounded-full transition-colors mr-2
-                ${isItemFavorite(item) 
-                  ? 'text-yellow-400 hover:text-yellow-300' 
-                  : 'text-gray-500 hover:text-gray-400'
-                }
-              `}
-              aria-label={`${isItemFavorite(item) ? 'Remove from' : 'Add to'} favorites`}
-            >
-              <Star className={`w-5 h-5 ${isItemFavorite(item) ? 'fill-current' : ''}`} />
-            </button>
-            <h3 className="font-semibold text-gray-100 mb-1">{item.name}</h3>
+          <div className="flex items-center gap-2 flex-1">
+            {/* Type Icon */}
+            {getTypeIcon(item.type || type)}
+            <h3 className="font-semibold text-gray-100 mb-1 flex-1">{item.name}</h3>
           </div>
         </div>
         
@@ -163,39 +164,59 @@ const FocusableCard = ({
       {/* Actions */}
       <div className="flex gap-2 mt-auto" role="group" aria-label="Item actions">
         <button
-          onClick={() => onExecute({ item, type: item.type || type })}
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            onToggleFavorite(item);
+          }}
           className={`
-            flex-1 px-3 py-2 text-white rounded-md text-sm font-medium
-            flex items-center justify-center gap-2 ${getTypeColor(item.type || type)}
-            focus:outline-none focus:ring-2 focus:ring-white focus:ring-opacity-50
+            p-2.5 rounded-md flex items-center justify-center
+            focus:outline-none focus:ring-2 focus:ring-opacity-50
+            transition-all duration-200 hover:shadow-md
+            ${isItemFavorite(item) 
+              ? 'text-yellow-400 bg-yellow-900/20 hover:bg-yellow-900/40 focus:ring-yellow-400' 
+              : 'text-gray-400 bg-gray-700 hover:text-yellow-400 hover:bg-yellow-900/20 focus:ring-yellow-400'
+            }
           `}
-          aria-label={`Execute ${type} ${item.name}`}
+          aria-label={`${isItemFavorite(item) ? 'Remove from' : 'Add to'} favorites`}
+          title={isItemFavorite(item) ? 'Remove from favorites' : 'Add to favorites'}
         >
-          <Play className="w-4 h-4" aria-hidden="true" />
-          Execute
+          <Star className={`w-4 h-4 ${isItemFavorite(item) ? 'fill-current' : ''}`} aria-hidden="true" />
         </button>
 
         <button
-          onClick={() => onEdit(item)}
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            onEdit(item);
+          }}
           className="
-            px-3 py-2 text-gray-300 border border-gray-600 rounded-md
-            hover:bg-gray-700 flex items-center justify-center
+            flex-1 p-2.5 text-gray-300 bg-gray-700 border border-gray-600 rounded-md
+            hover:bg-gray-600 hover:border-gray-500 flex items-center justify-center
             focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-opacity-50
+            transition-all duration-200 hover:shadow-md
           "
           aria-label={`Edit ${type} ${item.name}`}
+          title="Edit"
         >
           <Edit className="w-4 h-4" aria-hidden="true" />
           <span className="sr-only">Edit</span>
         </button>
 
         <button
-          onClick={() => onDelete(item.id)}
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            onDelete(item.id);
+          }}
           className="
-            px-3 py-2 text-red-400 border border-red-600 rounded-md
-            hover:bg-red-900 flex items-center justify-center
+            p-2.5 text-red-400 bg-red-900/20 border border-red-600/50 rounded-md
+            hover:bg-red-900/40 hover:border-red-500 hover:text-red-300 flex items-center justify-center
             focus:outline-none focus:ring-2 focus:ring-red-400 focus:ring-opacity-50
+            transition-all duration-200 hover:shadow-md
           "
           aria-label={`Delete ${type} ${item.name}`}
+          title="Delete"
         >
           <Trash2 className="w-4 h-4" aria-hidden="true" />
           <span className="sr-only">Delete</span>
