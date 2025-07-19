@@ -255,7 +255,7 @@ const FavoritesWidget = ({
           <div className="flex items-center gap-2">
             <Star className="w-5 h-5 text-yellow-400 fill-current" />
             <span className="text-sm font-medium text-gray-300">
-              {favorites.length} favorite{favorites.length !== 1 ? 's' : ''}
+              <span className="text-yellow-400 font-bold">{favorites.length}</span> favorite{favorites.length !== 1 ? 's' : ''}
             </span>
           </div>
           <button

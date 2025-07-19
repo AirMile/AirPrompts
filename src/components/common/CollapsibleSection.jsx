@@ -18,6 +18,8 @@ const CollapsibleSection = ({
   sectionId,
   title,
   itemCount = 0,
+  count = 0, // Support both itemCount and count for backward compatibility
+  icon = null,
   children,
   defaultVisible = true,
   className = '',
@@ -25,6 +27,21 @@ const CollapsibleSection = ({
   actionButton = null
 }) => {
   const { isVisible, toggle } = useSectionVisibility(sectionId, defaultVisible);
+
+  // Get color based on section title/type
+  const getCountBadgeColor = (title) => {
+    const titleLower = title.toLowerCase();
+    if (titleLower.includes('favorite')) {
+      return 'bg-yellow-600 text-yellow-100';
+    } else if (titleLower.includes('workflow')) {
+      return 'bg-green-600 text-green-100';
+    } else if (titleLower.includes('template')) {
+      return 'bg-blue-600 text-blue-100';
+    } else if (titleLower.includes('snippet')) {
+      return 'bg-purple-600 text-purple-100';
+    }
+    return 'bg-blue-600 text-blue-100'; // default
+  };
 
   const handleKeyDown = (e) => {
     if (e.key === 'Enter' || e.key === ' ') {
@@ -54,15 +71,22 @@ const CollapsibleSection = ({
               <ChevronRightIcon className="w-5 h-5 text-gray-400" />
             )}
             
+            {/* Section Icon */}
+            {icon && (
+              <div className="flex items-center">
+                {icon}
+              </div>
+            )}
+            
             {/* Section Title */}
             <h3 className="text-lg font-medium text-gray-100">
               {title}
             </h3>
             
             {/* Item Count Badge */}
-            {itemCount > 0 && (
-              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-600 text-blue-100">
-                {itemCount}
+            {(count > 0 || itemCount > 0) && (
+              <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold ${getCountBadgeColor(title)}`}>
+                {count || itemCount}
               </span>
             )}
           </div>

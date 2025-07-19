@@ -317,7 +317,7 @@ const RecentWidget = ({
           <div className="flex items-center gap-2">
             <Clock className="w-5 h-5 text-blue-400" />
             <span className="text-sm font-medium text-gray-300">
-              {recentItems.length} recent item{recentItems.length !== 1 ? 's' : ''}
+              <span className="text-blue-400 font-bold">{recentItems.length}</span> recent item{recentItems.length !== 1 ? 's' : ''}
             </span>
           </div>
           <button
