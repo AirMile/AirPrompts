@@ -146,26 +146,113 @@ const FolderManagementWidget = ({
     e.dataTransfer.dropEffect = 'move';
   }, []);
 
+  const reorderItems = useCallback((draggedItem, targetIndex, sectionType) => {
+    let items, updateFunction;
+    
+    switch (sectionType) {
+      case 'favorites':
+        // Update favorite order - special handling needed
+        const favoriteItems = folderFavorites;
+        const draggedIndex = favoriteItems.findIndex(item => 
+          item.id === draggedItem.id && item.type === draggedItem.type
+        );
+        
+        if (draggedIndex === -1) return;
+        
+        // Bereken nieuwe order voor favorites
+        const reorderedFavorites = [...favoriteItems];
+        reorderedFavorites.splice(draggedIndex, 1);
+        reorderedFavorites.splice(targetIndex, 0, draggedItem);
+        
+        // Update favorite order voor alle items
+        reorderedFavorites.forEach((item, index) => {
+          const handlers = getHandlers(item);
+          const updatedItem = updateFolderFavoriteOrder(item, selectedFolderId, index);
+          handlers.onUpdate(updatedItem);
+        });
+        return;
+        
+      case 'workflows':
+        items = folderWorkflows;
+        updateFunction = onUpdateWorkflow;
+        break;
+      case 'templates':
+        items = folderTemplates; 
+        updateFunction = onUpdateTemplate;
+        break;
+      case 'snippets':
+        items = folderSnippets;
+        updateFunction = onUpdateSnippet;
+        break;
+      default:
+        return;
+    }
+    
+    // Bereken nieuwe orders en update items
+    const reorderedItems = [...items];
+    const draggedIndex = items.findIndex(item => item.id === draggedItem.id);
+    
+    if (draggedIndex === -1) return;
+    
+    // Remove dragged item en insert op nieuwe positie
+    reorderedItems.splice(draggedIndex, 1);
+    reorderedItems.splice(targetIndex, 0, draggedItem);
+    
+    // Update order numbers
+    reorderedItems.forEach((item, index) => {
+      const updatedItem = updateItemFolderOrder(item, selectedFolderId, index);
+      updateFunction(updatedItem);
+    });
+  }, [folderFavorites, folderWorkflows, folderTemplates, folderSnippets, 
+      selectedFolderId, onUpdateWorkflow, onUpdateTemplate, onUpdateSnippet, getHandlers]);
+
   const handleDrop = useCallback((e, targetIndex, sectionType) => {
     e.preventDefault();
-    // Basic implementation - will be enhanced in Fase 3
+    
+    if (!draggedItem || draggedFromSection !== sectionType) {
+      setDraggedItem(null);
+      setDraggedFromSection(null);
+      return;
+    }
+    
+    // Reorder logic hier
+    reorderItems(draggedItem, targetIndex, sectionType);
+    
     setDraggedItem(null);
     setDraggedFromSection(null);
-  }, []);
+  }, [draggedItem, draggedFromSection, reorderItems]);
 
   // ItemCard component
-  const ItemCard = ({ item, type, onExecute, onEdit, onDelete, onFavoriteToggle, sectionType }) => {
+  const ItemCard = ({ item, type, onExecute, onEdit, onDelete, onFavoriteToggle, sectionType, index }) => {
     const isFavorite = isItemFavoriteInFolder(item, selectedFolderId);
-    const isDragging = draggedItem?.id === item.id;
+    const isDragging = draggedItem?.id === item.id && draggedItem?.type === item.type;
+    const [isDragOver, setIsDragOver] = useState(false);
     
     return (
-      <div 
-        className={`flex items-center gap-2 p-2 bg-gray-800 rounded border border-gray-700 hover:border-gray-600 transition-colors ${
-          isDragging ? 'opacity-50 transform rotate-1' : ''
-        }`}
-        draggable
-        onDragStart={(e) => handleDragStart(e, item, sectionType)}
-      >
+      <>
+        {/* Drop zone before item */}
+        <div 
+          className={`h-1 transition-all ${
+            isDragOver ? 'h-8 border-2 border-dashed border-blue-400 bg-blue-400/10' : ''
+          }`}
+          onDragOver={(e) => {
+            e.preventDefault();
+            setIsDragOver(true);
+          }}
+          onDragLeave={() => setIsDragOver(false)}
+          onDrop={(e) => {
+            handleDrop(e, index, sectionType);
+            setIsDragOver(false);
+          }}
+        />
+        
+        <div 
+          className={`flex items-center gap-2 p-2 bg-gray-800 rounded border border-gray-700 hover:border-gray-600 transition-all ${
+            isDragging ? 'opacity-50 transform rotate-1 scale-95' : ''
+          }`}
+          draggable
+          onDragStart={(e) => handleDragStart(e, item, sectionType)}
+        >
         <GripVertical className="w-4 h-4 text-gray-500 cursor-grab hover:text-gray-400" />
         
         <div className="flex-1 min-w-0">
@@ -227,6 +314,7 @@ const FolderManagementWidget = ({
           </button>
         </div>
       </div>
+      </>
     );
   };
 
@@ -337,18 +425,27 @@ const FolderManagementWidget = ({
                   <p className="text-xs">No favorites in this folder</p>
                 </div>
               ) : (
-                folderFavorites.map((item) => (
-                  <ItemCard
-                    key={`fav-${item.type}-${item.id}`}
-                    item={item}
-                    type={item.type}
-                    onExecute={handleExecute}
-                    onEdit={getHandlers(item).onEdit}
-                    onDelete={getHandlers(item).onDelete}
-                    onFavoriteToggle={handleFavoriteToggle}
-                    sectionType="favorites"
+                <>
+                  {folderFavorites.map((item, index) => (
+                    <ItemCard
+                      key={`fav-${item.type}-${item.id}`}
+                      item={item}
+                      type={item.type}
+                      onExecute={handleExecute}
+                      onEdit={getHandlers(item).onEdit}
+                      onDelete={getHandlers(item).onDelete}
+                      onFavoriteToggle={handleFavoriteToggle}
+                      sectionType="favorites"
+                      index={index}
+                    />
+                  ))}
+                  {/* Drop zone after last item */}
+                  <div 
+                    className="h-1"
+                    onDragOver={handleDragOver}
+                    onDrop={(e) => handleDrop(e, folderFavorites.length, 'favorites')}
                   />
-                ))
+                </>
               )}
             </div>
           </CollapsibleSection>
@@ -373,18 +470,26 @@ const FolderManagementWidget = ({
                   <p className="text-xs">No workflows in this folder</p>
                 </div>
               ) : (
-                folderWorkflows.map((item) => (
-                  <ItemCard
-                    key={`workflow-${item.id}`}
-                    item={item}
-                    type="workflow"
-                    onExecute={handleExecute}
-                    onEdit={getHandlers({...item, type: 'workflow'}).onEdit}
-                    onDelete={getHandlers({...item, type: 'workflow'}).onDelete}
-                    onFavoriteToggle={handleFavoriteToggle}
-                    sectionType="workflows"
+                <>
+                  {folderWorkflows.map((item, index) => (
+                    <ItemCard
+                      key={`workflow-${item.id}`}
+                      item={item}
+                      type="workflow"
+                      onExecute={handleExecute}
+                      onEdit={getHandlers({...item, type: 'workflow'}).onEdit}
+                      onDelete={getHandlers({...item, type: 'workflow'}).onDelete}
+                      onFavoriteToggle={handleFavoriteToggle}
+                      sectionType="workflows"
+                      index={index}
+                    />
+                  ))}
+                  <div 
+                    className="h-1"
+                    onDragOver={handleDragOver}
+                    onDrop={(e) => handleDrop(e, folderWorkflows.length, 'workflows')}
                   />
-                ))
+                </>
               )}
             </div>
           </CollapsibleSection>
@@ -409,18 +514,26 @@ const FolderManagementWidget = ({
                   <p className="text-xs">No templates in this folder</p>
                 </div>
               ) : (
-                folderTemplates.map((item) => (
-                  <ItemCard
-                    key={`template-${item.id}`}
-                    item={item}
-                    type="template"
-                    onExecute={handleExecute}
-                    onEdit={getHandlers({...item, type: 'template'}).onEdit}
-                    onDelete={getHandlers({...item, type: 'template'}).onDelete}
-                    onFavoriteToggle={handleFavoriteToggle}
-                    sectionType="templates"
+                <>
+                  {folderTemplates.map((item, index) => (
+                    <ItemCard
+                      key={`template-${item.id}`}
+                      item={item}
+                      type="template"
+                      onExecute={handleExecute}
+                      onEdit={getHandlers({...item, type: 'template'}).onEdit}
+                      onDelete={getHandlers({...item, type: 'template'}).onDelete}
+                      onFavoriteToggle={handleFavoriteToggle}
+                      sectionType="templates"
+                      index={index}
+                    />
+                  ))}
+                  <div 
+                    className="h-1"
+                    onDragOver={handleDragOver}
+                    onDrop={(e) => handleDrop(e, folderTemplates.length, 'templates')}
                   />
-                ))
+                </>
               )}
             </div>
           </CollapsibleSection>
@@ -445,18 +558,26 @@ const FolderManagementWidget = ({
                   <p className="text-xs">No snippets in this folder</p>
                 </div>
               ) : (
-                folderSnippets.map((item) => (
-                  <ItemCard
-                    key={`snippet-${item.id}`}
-                    item={item}
-                    type="snippet"
-                    onExecute={handleExecute}
-                    onEdit={getHandlers({...item, type: 'snippet'}).onEdit}
-                    onDelete={getHandlers({...item, type: 'snippet'}).onDelete}
-                    onFavoriteToggle={handleFavoriteToggle}
-                    sectionType="snippets"
+                <>
+                  {folderSnippets.map((item, index) => (
+                    <ItemCard
+                      key={`snippet-${item.id}`}
+                      item={item}
+                      type="snippet"
+                      onExecute={handleExecute}
+                      onEdit={getHandlers({...item, type: 'snippet'}).onEdit}
+                      onDelete={getHandlers({...item, type: 'snippet'}).onDelete}
+                      onFavoriteToggle={handleFavoriteToggle}
+                      sectionType="snippets"
+                      index={index}
+                    />
+                  ))}
+                  <div 
+                    className="h-1"
+                    onDragOver={handleDragOver}
+                    onDrop={(e) => handleDrop(e, folderSnippets.length, 'snippets')}
                   />
-                ))
+                </>
               )}
             </div>
           </CollapsibleSection>
