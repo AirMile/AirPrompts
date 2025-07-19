@@ -133,6 +133,7 @@ const FocusableCard = ({
             <button
               onClick={(e) => {
                 e.stopPropagation();
+                console.log('🌟 FocusableCard favorite clicked:', { item: item.name, type: item.type });
                 onToggleFavorite(item);
               }}
               className={`

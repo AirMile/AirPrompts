@@ -153,6 +153,7 @@ const ListView = ({
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
+                    console.log('🌟 ListView favorite clicked:', { item: item.name, type: item.type });
                     onToggleFavorite(item);
                   }}
                   className={`

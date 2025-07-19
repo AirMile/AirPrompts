@@ -170,16 +170,31 @@ const Homepage = ({
   };
 
   // Handle favorite toggle for folder-specific favorites
-  const handleFavoriteToggle = useCallback((item) => {
+  const handleFavoriteToggle = useCallback((item, sectionType) => {
+    // Determine the item type from either the item itself or the section
+    const itemType = item.type || 
+      (sectionType === 'workflows' ? 'workflow' :
+       sectionType === 'templates' ? 'template' :
+       sectionType === 'snippets' ? 'snippet' : 
+       'template');
+    
+    console.log('🌟 Favorite toggle clicked:', { item: item.name, selectedFolderId, itemType, sectionType });
+    
     const updatedItem = toggleFolderFavorite(item, selectedFolderId);
+    console.log('🌟 Updated item:', updatedItem);
     
     // Update the appropriate collection based on item type
-    if (item.type === 'workflow') {
+    if (itemType === 'workflow') {
+      console.log('🌟 Updating workflow');
       onUpdateWorkflow(updatedItem);
-    } else if (item.type === 'template') {
+    } else if (itemType === 'template') {
+      console.log('🌟 Updating template');
       onUpdateTemplate(updatedItem);
-    } else if (item.type === 'snippet') {
+    } else if (itemType === 'snippet') {
+      console.log('🌟 Updating snippet');
       onUpdateSnippet(updatedItem);
+    } else {
+      console.log('❌ Unknown item type:', itemType);
     }
   }, [selectedFolderId, onUpdateWorkflow, onUpdateTemplate, onUpdateSnippet]);
 
@@ -388,8 +403,12 @@ const Homepage = ({
             sectionType === 'snippets' ? 'snippet' : 
             sectionType === 'templates' ? 'template' :
             'template', // Default fallback for mixed sections like 'recent' and 'favorites'
-      onToggleFavorite: handleFavoriteToggle,
-      isItemFavorite: (item) => isItemFavoriteInFolder(item, selectedFolderId),
+      onToggleFavorite: (item) => handleFavoriteToggle(item, sectionType),
+      isItemFavorite: (item) => {
+        const isFav = isItemFavoriteInFolder(item, selectedFolderId);
+        console.log('🌟 isItemFavorite check:', { item: item.name, selectedFolderId, isFav });
+        return isFav;
+      },
       onExecute: (executeData) => {
         // Handle both old signature (item) and new signature ({ item, type })
         const actualItem = executeData?.item || executeData;
