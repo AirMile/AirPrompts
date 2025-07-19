@@ -7,7 +7,6 @@ import FocusableCard from '../common/FocusableCard.jsx';
 import CollapsibleSection from '../common/CollapsibleSection.jsx';
 import AdvancedSearch from '../search/AdvancedSearch.jsx';
 import Pagination from '../common/Pagination.jsx';
-import FolderManagementWidget from '../widgets/FolderManagementWidget.jsx';
 import FavoritesWidget from '../widgets/FavoritesWidget.jsx';
 import useKeyboardNavigation from '../../hooks/useKeyboardNavigation.js';
 import usePagination from '../../hooks/usePagination.js';
@@ -15,6 +14,11 @@ import useFilters from '../../hooks/useFilters.js';
 import { useWidgets } from '../../hooks/useWidgets.js';
 import { performAdvancedSearch } from '../../utils/searchUtils.js';
 import { useUserPreferences } from '../../hooks/useUserPreferences.js';
+import { 
+  getFolderFavorites, 
+  toggleFolderFavorite,
+  isItemFavoriteInFolder
+} from '../../types/template.types.js';
 
 const Homepage = ({ 
   templates, 
@@ -108,52 +112,29 @@ const Homepage = ({
 
   const filteredSnippets = useMemo(() => getFilteredItems(snippets, 'snippet'), [snippets, getFilteredItems]);
 
-  // Get favorites from all items
+  // Get folder-specific favorites from all items
   const favorites = useMemo(() => {
     const allItems = [];
     
-    filteredWorkflows.filter(item => item.favorite).forEach(item => {
+    getFolderFavorites(filteredWorkflows, selectedFolderId).forEach(item => {
       allItems.push({ ...item, type: 'workflow' });
     });
     
-    filteredTemplates.filter(item => item.favorite).forEach(item => {
+    getFolderFavorites(filteredTemplates, selectedFolderId).forEach(item => {
       allItems.push({ ...item, type: 'template' });
     });
     
-    filteredSnippets.filter(item => item.favorite).forEach(item => {
+    getFolderFavorites(filteredSnippets, selectedFolderId).forEach(item => {
       allItems.push({ ...item, type: 'snippet' });
     });
     
-    return allItems;
-  }, [filteredWorkflows, filteredTemplates, filteredSnippets]);
+    // Sort by favorite order
+    return allItems.sort((a, b) => 
+      (a.folderFavorites?.[selectedFolderId]?.favoriteOrder || 0) - 
+      (b.folderFavorites?.[selectedFolderId]?.favoriteOrder || 0)
+    );
+  }, [filteredWorkflows, filteredTemplates, filteredSnippets, selectedFolderId]);
 
-  // Get recently used items
-  const recentlyUsed = useMemo(() => {
-    const allItems = [];
-    
-    filteredWorkflows.forEach(item => {
-      if (item.lastUsed) {
-        allItems.push({ ...item, type: 'workflow' });
-      }
-    });
-    
-    filteredTemplates.forEach(item => {
-      if (item.lastUsed) {
-        allItems.push({ ...item, type: 'template' });
-      }
-    });
-    
-    filteredSnippets.forEach(item => {
-      if (item.lastUsed) {
-        allItems.push({ ...item, type: 'snippet' });
-      }
-    });
-    
-    // Sort by lastUsed date (most recent first) and take top 10
-    return allItems
-      .sort((a, b) => new Date(b.lastUsed) - new Date(a.lastUsed))
-      .slice(0, 10);
-  }, [filteredWorkflows, filteredTemplates, filteredSnippets]);
   
   // Pagination hooks for each section
   const templatesPagination = usePagination(filteredTemplates, {
@@ -188,10 +169,23 @@ const Homepage = ({
     });
   };
 
-  // Create sections with their data in fixed order
+  // Handle favorite toggle for folder-specific favorites
+  const handleFavoriteToggle = useCallback((item) => {
+    const updatedItem = toggleFolderFavorite(item, selectedFolderId);
+    
+    // Update the appropriate collection based on item type
+    if (item.type === 'workflow') {
+      onUpdateWorkflow(updatedItem);
+    } else if (item.type === 'template') {
+      onUpdateTemplate(updatedItem);
+    } else if (item.type === 'snippet') {
+      onUpdateSnippet(updatedItem);
+    }
+  }, [selectedFolderId, onUpdateWorkflow, onUpdateTemplate, onUpdateSnippet]);
+
+  // Create sections with their data in fixed order - always show favorites section
   const sections = [
-    ...(favorites.length > 0 ? [{ type: 'favorites', data: favorites }] : []),
-    ...(recentlyUsed.length > 0 ? [{ type: 'recent', data: recentlyUsed }] : []),
+    { type: 'favorites', data: favorites },
     { type: 'workflows', data: workflowsPagination.currentItems, pagination: workflowsPagination, fullData: filteredWorkflows },
     { type: 'templates', data: templatesPagination.currentItems, pagination: templatesPagination, fullData: filteredTemplates },
     { type: 'snippets', data: snippetsPagination.currentItems, pagination: snippetsPagination, fullData: filteredSnippets }
@@ -203,23 +197,12 @@ const Homepage = ({
     const indexMap = new Map();
     let globalIndex = 0;
     
-    // Add favorites if they exist
-    if (favorites.length > 0) {
-      favorites.forEach((item, localIndex) => {
-        items.push(item);
-        indexMap.set(globalIndex, { section: 'favorites', localIndex, item });
-        globalIndex++;
-      });
-    }
-    
-    // Add recently used if they exist
-    if (recentlyUsed.length > 0) {
-      recentlyUsed.forEach((item, localIndex) => {
-        items.push(item);
-        indexMap.set(globalIndex, { section: 'recent', localIndex, item });
-        globalIndex++;
-      });
-    }
+    // Add favorites (always present, even if empty)
+    favorites.forEach((item, localIndex) => {
+      items.push(item);
+      indexMap.set(globalIndex, { section: 'favorites', localIndex, item });
+      globalIndex++;
+    });
     
     // Add workflows (always present, even if empty)
     workflowsPagination.currentItems.forEach((item, localIndex) => {
@@ -243,7 +226,7 @@ const Homepage = ({
     });
     
     return { allItems: items, sectionIndexMap: indexMap };
-  }, [favorites, recentlyUsed, workflowsPagination.currentItems, templatesPagination.currentItems, snippetsPagination.currentItems]);
+  }, [favorites, workflowsPagination.currentItems, templatesPagination.currentItems, snippetsPagination.currentItems]);
 
   // Set up keyboard navigation
   const keyboardNavigation = useKeyboardNavigation(allItems, {
@@ -405,6 +388,8 @@ const Homepage = ({
             sectionType === 'snippets' ? 'snippet' : 
             sectionType === 'templates' ? 'template' :
             'template', // Default fallback for mixed sections like 'recent' and 'favorites'
+      onToggleFavorite: handleFavoriteToggle,
+      isItemFavorite: (item) => isItemFavoriteInFolder(item, selectedFolderId),
       onExecute: (executeData) => {
         // Handle both old signature (item) and new signature ({ item, type })
         const actualItem = executeData?.item || executeData;
@@ -503,6 +488,8 @@ const Homepage = ({
                   onExecute={commonProps.onExecute}
                   onEdit={() => getEditFunction(item)(item)}
                   onDelete={() => getDeleteFunction(item)(item.id)}
+                  onToggleFavorite={commonProps.onToggleFavorite}
+                  isItemFavorite={commonProps.isItemFavorite}
                   keyboardNavigation={{
                     ...commonProps.keyboardNavigation,
                     getFocusProps: () => commonProps.keyboardNavigation.getFocusProps(index, sectionType)
@@ -534,7 +521,7 @@ const Homepage = ({
           </div>
         );
     }
-  }, [viewMode, onExecuteItem, onEditWorkflow, onEditTemplate, onEditSnippet, onDeleteWorkflow, onDeleteTemplate, onDeleteSnippet, keyboardNavigation, allItems.length, sectionIndexMap]);
+  }, [viewMode, onExecuteItem, onEditWorkflow, onEditTemplate, onEditSnippet, onDeleteWorkflow, onDeleteTemplate, onDeleteSnippet, keyboardNavigation, allItems.length, sectionIndexMap, handleFavoriteToggle, selectedFolderId]);
 
   const renderSection = useCallback((section, isLast = false) => {
     const { type, data, pagination, fullData } = section;
@@ -549,20 +536,15 @@ const Homepage = ({
             itemCount={data.length}
             className="mb-6"
           >
-            {renderItems(data, 'favorites')}
-          </CollapsibleSection>
-        );
-
-      case 'recent':
-        return (
-          <CollapsibleSection
-            key="recent"
-            sectionId="recent"
-            title="Recently Used"
-            itemCount={data.length}
-            className="mb-6"
-          >
-            {renderItems(data, 'recent')}
+            {data.length === 0 ? (
+              <div className="text-center py-8 text-gray-400">
+                <Star className="w-8 h-8 mx-auto mb-3 opacity-50" />
+                <p className="text-sm">No favorites in this folder yet</p>
+                <p className="text-xs mt-1">Click the star icon on any item to add it to favorites</p>
+              </div>
+            ) : (
+              renderItems(data, 'favorites')
+            )}
           </CollapsibleSection>
         );
 
@@ -727,29 +709,6 @@ const Homepage = ({
       {/* Widgets Area */}
       <div className="absolute inset-0 pointer-events-none">
         <div className="relative w-full h-full pointer-events-none">
-          {/* Folder Management Widget */}
-          {(activeWidgets.includes('folder-management-widget') || !activeWidgets.length) && (
-            <div className="pointer-events-auto">
-              <FolderManagementWidget
-                templates={templates}
-                workflows={workflows}
-                snippets={snippets}
-                selectedFolderId={selectedFolderId}
-                onExecuteItem={onExecuteItem}
-                onEditTemplate={onEditTemplate}
-                onEditWorkflow={onEditWorkflow}
-                onEditSnippet={onEditSnippet}
-                onDeleteTemplate={onDeleteTemplate}
-                onDeleteWorkflow={onDeleteWorkflow}
-                onDeleteSnippet={onDeleteSnippet}
-                onUpdateTemplate={onUpdateTemplate}
-                onUpdateWorkflow={onUpdateWorkflow}
-                onUpdateSnippet={onUpdateSnippet}
-                widgetId="folder-management-widget"
-              />
-            </div>
-          )}
-          
           {/* Legacy Favorites Widget (if enabled) */}
           {activeWidgets.includes('favorites-widget') && (
             <div className="pointer-events-auto">

@@ -8,6 +8,8 @@ const ListView = ({
   onExecute = () => {},
   onEdit = () => {},
   onDelete = () => {},
+  onToggleFavorite = () => {},
+  isItemFavorite = () => false,
   keyboardNavigation = {}
 }) => {
   const getTypeIcon = (itemType) => {
@@ -146,9 +148,24 @@ const ListView = ({
             
             <div className="flex items-center gap-4">
 
-              {/* Type Icon */}
+              {/* Favorite Button */}
               <div className="flex-shrink-0">
-                {getTypeIcon(type)}
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onToggleFavorite(item);
+                  }}
+                  className={`
+                    p-1 rounded-full transition-colors
+                    ${isItemFavorite(item) 
+                      ? 'text-yellow-400 hover:text-yellow-300' 
+                      : 'text-gray-500 hover:text-gray-400'
+                    }
+                  `}
+                  aria-label={`${isItemFavorite(item) ? 'Remove from' : 'Add to'} favorites`}
+                >
+                  <Star className={`w-5 h-5 ${isItemFavorite(item) ? 'fill-current' : ''}`} />
+                </button>
               </div>
 
               {/* Content */}
