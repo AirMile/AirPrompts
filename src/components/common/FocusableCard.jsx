@@ -153,7 +153,7 @@ const FocusableCard = ({
           onClick={() => onExecute({ item, type: item.type || type })}
           className={`
             flex-1 px-3 py-2 text-white rounded-md text-sm font-medium
-            flex items-center justify-center gap-2 ${getTypeColor(type)}
+            flex items-center justify-center gap-2 ${getTypeColor(item.type || type)}
             focus:outline-none focus:ring-2 focus:ring-white focus:ring-opacity-50
           `}
           aria-label={`Execute ${type} ${item.name}`}

@@ -68,6 +68,8 @@ export const createTemplate = (data = {}) => {
     snippetTags: data.snippetTags || [],
     lastUsed: data.lastUsed || now,
     favorite: data.favorite || false,
+    folderFavorites: data.folderFavorites || {}, // { [folderId]: { isFavorite: boolean, favoriteOrder: number } }
+    folderOrder: data.folderOrder || {}, // { [folderId]: number } - voor algemene item volgorde per folder
     createdAt: data.createdAt || now,
     updatedAt: data.updatedAt || now
   };
@@ -115,6 +117,8 @@ export const createWorkflow = (data = {}) => {
     snippetTags: data.snippetTags || [],
     lastUsed: data.lastUsed || now,
     favorite: data.favorite || false,
+    folderFavorites: data.folderFavorites || {}, // { [folderId]: { isFavorite: boolean, favoriteOrder: number } }
+    folderOrder: data.folderOrder || {}, // { [folderId]: number } - voor algemene item volgorde per folder
     createdAt: data.createdAt || now,
     updatedAt: data.updatedAt || now
   };
@@ -210,6 +214,8 @@ export const createSnippet = (data = {}) => {
     tags: data.tags || [],
     folderId: data.folderId || 'moods',
     enabled: data.enabled !== undefined ? data.enabled : true,
+    folderFavorites: data.folderFavorites || {}, // { [folderId]: { isFavorite: boolean, favoriteOrder: number } }
+    folderOrder: data.folderOrder || {}, // { [folderId]: number } - voor algemene item volgorde per folder
     createdAt: data.createdAt || now,
     updatedAt: data.updatedAt || now
   };
@@ -348,4 +354,130 @@ export const validateAddon = (addon) => {
     isValid: errors.length === 0,
     errors
   };
+};
+
+// ====================================
+// FOLDER-SPECIFIC FAVORITES SYSTEM
+// ====================================
+
+/**
+ * Get all favorite items from a specific folder
+ * @param {Array} items - Array of templates, workflows, or snippets
+ * @param {string} folderId - Folder ID to filter by
+ * @returns {Array} Sorted array of favorite items
+ */
+export const getFolderFavorites = (items, folderId) => {
+  return items.filter(item => 
+    item.folderFavorites?.[folderId]?.isFavorite === true
+  ).sort((a, b) => 
+    (a.folderFavorites?.[folderId]?.favoriteOrder || 0) - 
+    (b.folderFavorites?.[folderId]?.favoriteOrder || 0)
+  );
+};
+
+/**
+ * Get all items from a specific folder sorted by their folder order
+ * @param {Array} items - Array of templates, workflows, or snippets
+ * @param {string} folderId - Folder ID to filter by
+ * @returns {Array} Sorted array of folder items
+ */
+export const getFolderItems = (items, folderId) => {
+  return items.filter(item => item.folderId === folderId)
+    .sort((a, b) => 
+      (a.folderOrder?.[folderId] || 0) - (b.folderOrder?.[folderId] || 0)
+    );
+};
+
+/**
+ * Update the folder order for a specific item
+ * @param {Object} item - Item to update
+ * @param {string} folderId - Folder ID
+ * @param {number} newOrder - New order position
+ * @returns {Object} Updated item
+ */
+export const updateItemFolderOrder = (item, folderId, newOrder) => {
+  return {
+    ...item,
+    folderOrder: {
+      ...item.folderOrder,
+      [folderId]: newOrder
+    }
+  };
+};
+
+/**
+ * Toggle favorite status for an item in a specific folder
+ * @param {Object} item - Item to update
+ * @param {string} folderId - Folder ID
+ * @returns {Object} Updated item
+ */
+export const toggleFolderFavorite = (item, folderId) => {
+  const currentFavorite = item.folderFavorites?.[folderId];
+  const isFavorite = !currentFavorite?.isFavorite;
+  
+  return {
+    ...item,
+    folderFavorites: {
+      ...item.folderFavorites,
+      [folderId]: {
+        isFavorite,
+        favoriteOrder: currentFavorite?.favoriteOrder || 0
+      }
+    }
+  };
+};
+
+/**
+ * Update favorite order for an item in a specific folder
+ * @param {Object} item - Item to update
+ * @param {string} folderId - Folder ID
+ * @param {number} newOrder - New favorite order position
+ * @returns {Object} Updated item
+ */
+export const updateFolderFavoriteOrder = (item, folderId, newOrder) => {
+  const currentFavorite = item.folderFavorites?.[folderId];
+  
+  return {
+    ...item,
+    folderFavorites: {
+      ...item.folderFavorites,
+      [folderId]: {
+        isFavorite: currentFavorite?.isFavorite || false,
+        favoriteOrder: newOrder
+      }
+    }
+  };
+};
+
+/**
+ * Migration helper to convert from old global favorites to folder-specific favorites
+ * @param {Array} items - Array of items to migrate
+ * @returns {Array} Migrated items
+ */
+export const migrateToFolderSystem = (items) => {
+  return items.map(item => ({
+    ...item,
+    folderFavorites: item.folderFavorites || {},
+    folderOrder: item.folderOrder || {},
+    // Migrate old global favorite to folder-specific (for current folder)
+    ...(item.favorite && {
+      folderFavorites: {
+        ...item.folderFavorites,
+        [item.folderId || 'general']: {
+          isFavorite: true,
+          favoriteOrder: 0
+        }
+      }
+    })
+  }));
+};
+
+/**
+ * Check if an item is favorite in a specific folder
+ * @param {Object} item - Item to check
+ * @param {string} folderId - Folder ID
+ * @returns {boolean} True if item is favorite in folder
+ */
+export const isItemFavoriteInFolder = (item, folderId) => {
+  return item.folderFavorites?.[folderId]?.isFavorite === true;
 };

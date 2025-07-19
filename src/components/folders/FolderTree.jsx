@@ -1,14 +1,15 @@
 import React, { useState, useEffect } from 'react';
+import { Settings, User } from 'lucide-react';
 
 const FolderTree = ({ 
   folders = [], 
   selectedFolderId, 
   onFolderSelect, 
   onCreateFolder,
-  className = '' 
+  className = '',
+  onSettingsClick
 }) => {
   const [expandedFolders, setExpandedFolders] = useState(new Set(['root', 'general']));
-  const [isCompactView, setIsCompactView] = useState(false);
   const [favoriteFolders, setFavoriteFolders] = useState(new Set());
 
   // Initialize favorite folders from props
@@ -80,7 +81,7 @@ const FolderTree = ({
             flex items-center px-2 cursor-pointer rounded-md text-sm group
             hover:bg-gray-100 dark:hover:bg-gray-800
             text-gray-700 dark:text-gray-300
-            ${isCompactView ? 'py-0.5' : 'py-1'}
+            py-1
           `}
           style={{ paddingLeft: `${level * 12 + 8}px` }}
           onClick={() => onFolderSelect(folder.id)}
@@ -139,26 +140,14 @@ const FolderTree = ({
   const topLevelFolders = buildFolderTree('root');
 
   return (
-    <div className={`h-full overflow-y-auto ${className}`}>
-      <div className="p-3">
-        <div className="flex items-center justify-between mb-3">
-          <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300">
-            Folders
-          </h3>
+    <div className={`h-full flex flex-col ${className}`}>
+      <div className="flex-1 overflow-y-auto">
+        <div className="p-3">
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300">
+              Folders
+            </h3>
           <div className="flex items-center gap-1">
-            <button
-              onClick={() => setIsCompactView(!isCompactView)}
-              className="p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-400"
-              title={isCompactView ? 'Normal view' : 'Compact view'}
-            >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                {isCompactView ? (
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 10h16M4 14h16M4 18h16" />
-                ) : (
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8h16M4 16h16" />
-                )}
-              </svg>
-            </button>
             {onCreateFolder && (
               <button
                 onClick={() => onCreateFolder(selectedFolderId || 'root')}
@@ -206,7 +195,7 @@ const FolderTree = ({
                       flex items-center cursor-pointer rounded-md text-sm group
                       hover:bg-gray-100 dark:hover:bg-gray-800
                       text-gray-700 dark:text-gray-300
-                      ${isCompactView ? 'py-0.5' : 'py-1'}
+                      py-1
                     `}
                     style={{ paddingLeft: '8px', paddingRight: '8px' }}
                     onClick={() => onFolderSelect(folder.id)}
@@ -227,6 +216,32 @@ const FolderTree = ({
         </div>
       </div>
     </div>
+    
+    {/* Account & Settings Section */}
+    <div className="border-t border-gray-700 p-3">
+      <div className="flex items-center justify-between">
+        {/* Account Placeholder */}
+        <div className="flex items-center gap-3 flex-1">
+          <div className="w-8 h-8 bg-gray-700 rounded-full flex items-center justify-center">
+            <User className="w-4 h-4 text-gray-400" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <div className="text-sm font-medium text-gray-300 truncate">Account</div>
+            <div className="text-xs text-gray-500">Not signed in</div>
+          </div>
+        </div>
+        
+        {/* Settings Button */}
+        <button
+          onClick={onSettingsClick}
+          className="p-2 rounded-lg hover:bg-gray-700 text-gray-400 hover:text-gray-300 transition-colors"
+          title="Settings"
+        >
+          <Settings className="w-5 h-5" />
+        </button>
+      </div>
+    </div>
+  </div>
   );
 };
 

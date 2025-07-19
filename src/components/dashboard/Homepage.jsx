@@ -428,13 +428,6 @@ const Homepage = ({
           itemType = 'template';
         }
         
-        console.log('🚀 Homepage calling onExecuteItem with:', { 
-          item: actualItem.name, 
-          type: itemType,
-          originalExecuteType: executeType,
-          wasNormalized: executeType !== itemType
-        });
-        console.log('🚀 Homepage: Full data being sent to onExecuteItem:', { item: actualItem, type: itemType });
         onExecuteItem({ item: actualItem, type: itemType });
       },
       onEdit: (item) => {
@@ -674,6 +667,11 @@ const Homepage = ({
           selectedFolderId={selectedFolderId}
           onFolderSelect={setSelectedFolderId}
           onCreateFolder={onCreateFolder}
+          onSettingsClick={() => {
+            // Placeholder voor settings - kan later worden geïmplementeerd
+            console.log('Settings clicked');
+            alert('Settings functionaliteit komt binnenkort!');
+          }}
         />
       </div>
 
