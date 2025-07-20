@@ -105,10 +105,6 @@ const FocusableCard = ({
   const isKeyboardFocused = focusProps['data-keyboard-focused'];
   const keyboardHelpText = keyboardNavigation.getKeyboardHelpText ? keyboardNavigation.getKeyboardHelpText() : {};
   
-  // Debug alleen als er focus zou moeten zijn
-  if (isKeyboardFocused) {
-    console.log('🎯 Card has focus:', { itemName: item.name, index, isKeyboardFocused });
-  }
 
 
 

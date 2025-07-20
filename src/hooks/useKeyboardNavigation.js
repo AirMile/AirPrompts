@@ -38,7 +38,77 @@ export const useKeyboardNavigation = (items = [], options = {}) => {
     };
   }, [searchTimeout, throttleTimeout]);
 
-  // Clear selection when items change, with focus restoration
+  // Smart focus preservation when items change due to section visibility
+  const handleItemsChange = useCallback((newItems, oldItems, currentFocusedIndex, sectionChanges = null) => {
+    // Prevent infinite loops by checking if we actually need to change focus
+    if (newItems.length === 0) {
+      if (focusedIndex !== -1) {
+        setFocusedIndex(-1);
+        setIsActive(false);
+        setLastFocusedId(null);
+      }
+      return;
+    }
+
+    // If no current focus, nothing to preserve
+    if (currentFocusedIndex < 0 || !isActive) {
+      return;
+    }
+
+    // Get the currently focused item from old items
+    const currentFocusedItem = oldItems?.[currentFocusedIndex];
+    if (!currentFocusedItem) {
+      return;
+    }
+
+    // Try to find the same item in new items
+    const newIndex = newItems.findIndex(item => item.id === currentFocusedItem.id);
+    
+    if (newIndex >= 0) {
+      // Item still exists, only update if index actually changed
+      if (newIndex !== focusedIndex) {
+        setFocusedIndex(newIndex);
+      }
+    } else {
+      // Item no longer exists, find the best alternative
+      const bestAlternativeIndex = findBestAlternativeFocus(newItems, currentFocusedIndex, oldItems);
+      if (bestAlternativeIndex !== focusedIndex) {
+        setFocusedIndex(bestAlternativeIndex);
+      }
+    }
+  }, [isActive, focusedIndex]);
+
+  // Find the best alternative focus when current item is removed
+  const findBestAlternativeFocus = useCallback((newItems, oldFocusedIndex, oldItems) => {
+    if (newItems.length === 0) return -1;
+
+    // Strategy for finding the next best focus position:
+    // 1. If items were removed before current position, adjust index down
+    // 2. If current item was removed, try next item, then previous
+    // 3. If items were removed after current position, keep same index
+    
+    const currentItem = oldItems[oldFocusedIndex];
+    
+    // Count how many items before the current position were removed
+    let itemsRemovedBefore = 0;
+    for (let i = 0; i < oldFocusedIndex; i++) {
+      const oldItem = oldItems[i];
+      if (!newItems.find(newItem => newItem.id === oldItem.id)) {
+        itemsRemovedBefore++;
+      }
+    }
+    
+    // Calculate the adjusted target index
+    let targetIndex = oldFocusedIndex - itemsRemovedBefore;
+    
+    // Ensure target index is within bounds
+    targetIndex = Math.max(0, Math.min(targetIndex, newItems.length - 1));
+    
+    
+    return targetIndex;
+  }, []);
+
+  // Clear selection when items change, with smart focus restoration
   useEffect(() => {
     if (items.length === 0) {
       setFocusedIndex(-1);
@@ -368,6 +438,7 @@ export const useKeyboardNavigation = (items = [], options = {}) => {
     focusItem,
     clearFocus,
     moveFocus,
+    handleItemsChange,
     
     // Focus restoration
     saveCurrentFocus,
