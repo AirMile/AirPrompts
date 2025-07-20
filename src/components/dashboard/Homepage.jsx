@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useMemo, useCallback } from 'react';
+import React, { useEffect, useRef, useMemo, useCallback, memo } from 'react';
 import { Plus, Play, Edit, Trash2, Search, Workflow, FileText, Star, Tag, Puzzle, GripVertical } from 'lucide-react';
 import { DndContext, DragOverlay, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
 import { SortableContext, verticalListSortingStrategy, rectSortingStrategy } from '@dnd-kit/sortable';
@@ -8,6 +8,7 @@ import ListView from '../common/ListView.jsx';
 import FocusableCard from '../common/FocusableCard.jsx';
 import SortableCard from '../common/SortableCard.jsx';
 import SortableListItem from '../common/SortableListItem.jsx';
+import DragCard from '../common/DragCard.jsx';
 import CollapsibleSection from '../common/CollapsibleSection.jsx';
 import AdvancedSearch from '../search/AdvancedSearch.jsx';
 import Pagination from '../common/Pagination.jsx';
@@ -17,10 +18,12 @@ import usePagination from '../../hooks/usePagination.js';
 import useFilters from '../../hooks/useFilters.js';
 import useDragAndDrop from '../../hooks/useDragAndDrop.js';
 import { useWidgets } from '../../hooks/useWidgets.js';
+import useSectionVisibility from '../../hooks/useSectionVisibility.js';
 import { performAdvancedSearch } from '../../utils/searchUtils.js';
 import { useUserPreferences } from '../../hooks/useUserPreferences.js';
 import { 
   getFolderFavorites, 
+  getFolderItems,
   toggleFolderFavorite,
   isItemFavoriteInFolder
 } from '../../types/template.types.js';
@@ -44,6 +47,9 @@ const Homepage = ({
   onUpdateTemplate,
   onUpdateWorkflow, 
   onUpdateSnippet,
+  setTemplates,
+  setWorkflows,
+  setSnippets,
   onCreateFolder
 }) => {
   // Use preferences system for view mode
@@ -57,6 +63,12 @@ const Homepage = ({
   // Initialize widgets system
   const { activeWidgets, widgetConfigs } = useWidgets();
   
+  // Section visibility state
+  const favoritesVisibility = useSectionVisibility('favorites', true);
+  const workflowsVisibility = useSectionVisibility('workflows', true);
+  const templatesVisibility = useSectionVisibility('templates', true);
+  const snippetsVisibility = useSectionVisibility('snippets', true);
+  
   const mainContentRef = useRef(null);
   
   // Initialize filter system with item collections
@@ -69,6 +81,13 @@ const Homepage = ({
     enableTagAnalytics: true,
     cacheResults: true
   });
+
+  // Helper function to apply folder order sorting
+  const applySorting = useCallback((items) => {
+    return items.sort((a, b) => 
+      (a.folderOrder?.[selectedFolderId] || 0) - (b.folderOrder?.[selectedFolderId] || 0)
+    );
+  }, [selectedFolderId]);
 
   // Enhanced filtering with advanced search capabilities and tag filtering
   const getFilteredItems = useCallback((items, itemType) => {
@@ -100,16 +119,20 @@ const Homepage = ({
     
     // Apply search if there's a search query
     if (!searchQuery || searchQuery.trim() === '') {
-      return filterSystemFiltered;
+      // Sort by folder order for consistent drag & drop behavior
+      return applySorting(filterSystemFiltered);
     }
     
-    // Use advanced search for better results
-    return performAdvancedSearch(filterSystemFiltered, searchQuery, itemType, {
+    // Use advanced search for better results, then apply sorting
+    const searchResults = performAdvancedSearch(filterSystemFiltered, searchQuery, itemType, {
       minScore: 0.1,
       maxResults: 1000,
       sortBy: 'relevance'
     });
-  }, [selectedFolderId, searchQuery, filterSystem]);
+    
+    // For search results, apply folder order sorting to maintain drag & drop consistency
+    return applySorting(searchResults);
+  }, [selectedFolderId, searchQuery, filterSystem, applySorting]);
 
   const filteredTemplates = useMemo(() => getFilteredItems(templates, 'template'), [templates, getFilteredItems]);
 
@@ -199,16 +222,31 @@ const Homepage = ({
   }, [onUpdateWorkflow, onUpdateTemplate, onUpdateSnippet]);
 
   const workflowsReorderHandler = useCallback((reorderedItems) => {
-    reorderedItems.forEach(item => onUpdateWorkflow(item));
-  }, [onUpdateWorkflow]);
+    // Update the complete workflows array with the reordered items
+    const updatedWorkflows = workflows.map(workflow => {
+      const reorderedItem = reorderedItems.find(item => item.id === workflow.id);
+      return reorderedItem || workflow;
+    });
+    setWorkflows(updatedWorkflows);
+  }, [workflows, setWorkflows]);
 
   const templatesReorderHandler = useCallback((reorderedItems) => {
-    reorderedItems.forEach(item => onUpdateTemplate(item));
-  }, [onUpdateTemplate]);
+    // Update the complete templates array with the reordered items
+    const updatedTemplates = templates.map(template => {
+      const reorderedItem = reorderedItems.find(item => item.id === template.id);
+      return reorderedItem || template;
+    });
+    setTemplates(updatedTemplates);
+  }, [templates, setTemplates]);
 
   const snippetsReorderHandler = useCallback((reorderedItems) => {
-    reorderedItems.forEach(item => onUpdateSnippet(item));
-  }, [onUpdateSnippet]);
+    // Update the complete snippets array with the reordered items
+    const updatedSnippets = snippets.map(snippet => {
+      const reorderedItem = reorderedItems.find(item => item.id === snippet.id);
+      return reorderedItem || snippet;
+    });
+    setSnippets(updatedSnippets);
+  }, [snippets, setSnippets]);
 
   // Initialize drag and drop hooks for each section
   const favoritesDragDrop = useDragAndDrop({
@@ -268,42 +306,76 @@ const Homepage = ({
     { type: 'snippets', data: snippetsPagination.currentItems, pagination: snippetsPagination, fullData: filteredSnippets }
   ];
 
-  // Create a mapping of global index to section and local index
+  // Create a mapping of global index to section and local index, only including visible sections
   const { allItems, sectionIndexMap } = useMemo(() => {
     const items = [];
     const indexMap = new Map();
     let globalIndex = 0;
     
-    // Add favorites (always present, even if empty)
-    favorites.forEach((item, localIndex) => {
-      items.push(item);
-      indexMap.set(globalIndex, { section: 'favorites', localIndex, item });
-      globalIndex++;
-    });
+    // Add favorites only if section is visible and has items
+    if (favoritesVisibility.isVisible && favorites.length > 0) {
+      favorites.forEach((item, localIndex) => {
+        items.push(item);
+        indexMap.set(globalIndex, { section: 'favorites', localIndex, item });
+        globalIndex++;
+      });
+    }
     
-    // Add workflows (always present, even if empty)
-    workflowsPagination.currentItems.forEach((item, localIndex) => {
-      items.push(item);
-      indexMap.set(globalIndex, { section: 'workflows', localIndex, item });
-      globalIndex++;
-    });
+    // Add workflows only if section is visible
+    if (workflowsVisibility.isVisible) {
+      workflowsPagination.currentItems.forEach((item, localIndex) => {
+        items.push(item);
+        indexMap.set(globalIndex, { section: 'workflows', localIndex, item });
+        globalIndex++;
+      });
+    }
     
-    // Add templates (always present, even if empty)
-    templatesPagination.currentItems.forEach((item, localIndex) => {
-      items.push(item);
-      indexMap.set(globalIndex, { section: 'templates', localIndex, item });
-      globalIndex++;
-    });
+    // Add templates only if section is visible
+    if (templatesVisibility.isVisible) {
+      templatesPagination.currentItems.forEach((item, localIndex) => {
+        items.push(item);
+        indexMap.set(globalIndex, { section: 'templates', localIndex, item });
+        globalIndex++;
+      });
+    }
     
-    // Add snippets (always present, even if empty)
-    snippetsPagination.currentItems.forEach((item, localIndex) => {
-      items.push(item);
-      indexMap.set(globalIndex, { section: 'snippets', localIndex, item });
-      globalIndex++;
-    });
+    // Add snippets only if section is visible
+    if (snippetsVisibility.isVisible) {
+      snippetsPagination.currentItems.forEach((item, localIndex) => {
+        items.push(item);
+        indexMap.set(globalIndex, { section: 'snippets', localIndex, item });
+        globalIndex++;
+      });
+    }
+    
+    console.log('📊 AllItems built:', items.length, 'total items');
     
     return { allItems: items, sectionIndexMap: indexMap };
-  }, [favorites, workflowsPagination.currentItems, templatesPagination.currentItems, snippetsPagination.currentItems]);
+  }, [
+    favorites.length, 
+    workflowsPagination.currentItems.length,
+    workflowsPagination.currentPage,
+    templatesPagination.currentItems.length,
+    templatesPagination.currentPage,
+    snippetsPagination.currentItems.length,
+    snippetsPagination.currentPage,
+    favoritesVisibility.isVisible,
+    workflowsVisibility.isVisible,
+    templatesVisibility.isVisible,
+    snippetsVisibility.isVisible,
+    selectedFolderId
+  ]);
+
+  // Helper function to get global index for an item in a specific section
+  const getGlobalIndex = useCallback((sectionType, localIndex) => {
+    // Find the item in the sectionIndexMap
+    for (const [globalIndex, mapEntry] of sectionIndexMap) {
+      if (mapEntry.section === sectionType && mapEntry.localIndex === localIndex) {
+        return globalIndex;
+      }
+    }
+    return -1; // Not found (section might be collapsed)
+  }, [sectionIndexMap]);
 
   // Set up keyboard navigation
   const keyboardNavigation = useKeyboardNavigation(allItems, {
@@ -315,11 +387,28 @@ const Homepage = ({
     }
   });
 
+  // Update keyboard navigation when sections visibility changes
+  useEffect(() => {
+    console.log('🔄 Section visibility changed - clearing focus. Items:', allItems.length);
+    // Force update of keyboard navigation when section visibility changes
+    if (keyboardNavigation.clearFocus) {
+      keyboardNavigation.clearFocus();
+    }
+  }, [
+    favoritesVisibility.isVisible,
+    workflowsVisibility.isVisible,
+    templatesVisibility.isVisible,
+    snippetsVisibility.isVisible,
+    allItems.length
+  ]);
+
   // Add global Tab key listener for immediate card focus
   useEffect(() => {
     const handleGlobalKeyDown = (e) => {
       // Handle Tab key for card navigation
       if (e.key === 'Tab') {
+        console.log('⌨️ Tab pressed - items:', allItems.length, 'active:', keyboardNavigation.isActive, 'index:', keyboardNavigation.focusedIndex);
+        
         const activeElement = document.activeElement;
         const isInSearchInput = activeElement?.hasAttribute('data-search-input');
         const isInCard = activeElement?.closest('[data-focusable-card]');
@@ -341,6 +430,7 @@ const Homepage = ({
           // Determine next focus position
           if (!keyboardNavigation.isActive && !isInCard) {
             // Not in navigation mode and not in a card - focus first card
+            console.log('🎯 Starting navigation - focusing first item');
             keyboardNavigation.focusItem(0);
           } else if (keyboardNavigation.isActive) {
             // Already navigating - move to next/previous card
@@ -354,6 +444,7 @@ const Homepage = ({
                 // At first card, wrap to last or exit to search
                 if (document.querySelector('[data-search-input]')) {
                   // Exit navigation and focus search
+                  console.log('🔍 Exiting navigation to search input');
                   keyboardNavigation.clearFocus();
                   document.querySelector('[data-search-input]').focus();
                   return;
@@ -367,7 +458,10 @@ const Homepage = ({
               nextIndex = (currentIndex + 1) % allItems.length;
             }
             
+            console.log('📍 Focus transition:', currentIndex, '->', nextIndex);
             keyboardNavigation.focusItem(nextIndex);
+          } else {
+            keyboardNavigation.focusItem(0);
           }
           
           // Ensure main content has focus for keyboard navigation
@@ -383,7 +477,7 @@ const Homepage = ({
     return () => {
       document.removeEventListener('keydown', handleGlobalKeyDown, true);
     };
-  }, [allItems.length, keyboardNavigation]);
+  }, [allItems.length, keyboardNavigation.isActive, keyboardNavigation.focusedIndex, keyboardNavigation.focusItem, keyboardNavigation.clearFocus]);
 
   // Add keyboard event listener to main content with throttling for large datasets
   useEffect(() => {
@@ -431,7 +525,7 @@ const Homepage = ({
         if (throttleTimer) clearTimeout(throttleTimer);
       };
     }
-  }, [keyboardNavigation, templatesPagination, workflowsPagination, snippetsPagination, allItems.length]);
+  }, [keyboardNavigation.handleKeyDown, templatesPagination.handleKeyDown, workflowsPagination.handleKeyDown, snippetsPagination.handleKeyDown, allItems.length]);
 
 
   // Get the appropriate drag and drop handler for a section
@@ -525,35 +619,7 @@ const Homepage = ({
           deleteFunction(itemId);
         }
       },
-      keyboardNavigation: {
-        ...keyboardNavigation,
-        // Override getFocusProps to handle section-specific indexing
-        getFocusProps: (localIndex, currentSection) => {
-          // Use sectionType as fallback if currentSection is not provided
-          const effectiveSection = currentSection || sectionType;
-          
-          // Find the global index for this item in this section
-          let globalIndex = -1;
-          for (const [gIndex, mapping] of sectionIndexMap.entries()) {
-            if (mapping.section === effectiveSection && mapping.localIndex === localIndex) {
-              globalIndex = gIndex;
-              break;
-            }
-          }
-          
-          const isKeyboardFocused = keyboardNavigation.isActive && keyboardNavigation.focusedIndex === globalIndex;
-          
-          
-          return {
-            'data-keyboard-focused': isKeyboardFocused,
-            'tabIndex': isKeyboardFocused ? 0 : -1,
-            'aria-selected': isKeyboardFocused,
-            'role': 'option',
-            'aria-setsize': allItems.length,
-            'aria-posinset': globalIndex + 1
-          };
-        }
-      }
+      keyboardNavigation
     };
 
     const itemIds = items.map(item => item.id);
@@ -571,7 +637,23 @@ const Homepage = ({
                       {...commonProps} 
                       items={[item]} 
                       sectionType={sectionType}
-                      hideDragHandle={true}
+                      keyboardNavigation={{
+                        ...commonProps.keyboardNavigation,
+                        getFocusProps: () => {
+                          // Calculate the global index for this card using the helper
+                          const globalIndex = getGlobalIndex(sectionType, index);
+                          const isKeyboardFocused = keyboardNavigation.isActive && keyboardNavigation.focusedIndex === globalIndex;
+                          
+                          return {
+                            'data-keyboard-focused': isKeyboardFocused,
+                            'tabIndex': isKeyboardFocused ? 0 : -1,
+                            'aria-selected': isKeyboardFocused,
+                            'role': 'option',
+                            'aria-setsize': allItems.length,
+                            'aria-posinset': globalIndex >= 0 ? globalIndex + 1 : -1
+                          };
+                        }
+                      }}
                     />
                   </SortableListItem>
                 ))}
@@ -598,7 +680,20 @@ const Homepage = ({
                     isItemFavorite={commonProps.isItemFavorite}
                     keyboardNavigation={{
                       ...commonProps.keyboardNavigation,
-                      getFocusProps: () => commonProps.keyboardNavigation.getFocusProps(index, sectionType)
+                      getFocusProps: () => {
+                        // Calculate the global index for this card using the helper
+                        const globalIndex = getGlobalIndex(sectionType, index);
+                        const isKeyboardFocused = keyboardNavigation.isActive && keyboardNavigation.focusedIndex === globalIndex;
+                        
+                        return {
+                          'data-keyboard-focused': isKeyboardFocused,
+                          'tabIndex': isKeyboardFocused ? 0 : -1,
+                          'aria-selected': isKeyboardFocused,
+                          'role': 'option',
+                          'aria-setsize': allItems.length,
+                          'aria-posinset': globalIndex >= 0 ? globalIndex + 1 : -1
+                        };
+                      }
                     }}
                   />
                 ))}
@@ -619,7 +714,23 @@ const Homepage = ({
                     {...commonProps} 
                     items={[item]} 
                     sectionType={sectionType}
-                    hideDragHandle={true}
+                    keyboardNavigation={{
+                      ...commonProps.keyboardNavigation,
+                      getFocusProps: () => {
+                        // Calculate the global index for this card using the helper
+                        const globalIndex = getGlobalIndex(sectionType, index);
+                        const isKeyboardFocused = keyboardNavigation.isActive && keyboardNavigation.focusedIndex === globalIndex;
+                        
+                        return {
+                          'data-keyboard-focused': isKeyboardFocused,
+                          'tabIndex': isKeyboardFocused ? 0 : -1,
+                          'aria-selected': isKeyboardFocused,
+                          'role': 'option',
+                          'aria-setsize': allItems.length,
+                          'aria-posinset': globalIndex >= 0 ? globalIndex + 1 : -1
+                        };
+                      }
+                    }}
                   />
                 </SortableListItem>
               ))}
@@ -637,16 +748,37 @@ const Homepage = ({
                   id={item.id}
                   item={item}
                   index={index}
-                  {...commonProps}
-                  type={commonProps.type}
+                  type={item.type}
                   sectionType={sectionType}
+                  onExecute={commonProps.onExecute}
+                  onEdit={() => getEditFunction(item)(item)}
+                  onDelete={() => getDeleteFunction(item)(item.id)}
+                  onToggleFavorite={commonProps.onToggleFavorite}
+                  isItemFavorite={commonProps.isItemFavorite}
+                  keyboardNavigation={{
+                    ...commonProps.keyboardNavigation,
+                    getFocusProps: () => {
+                      // Calculate the global index for this card using the helper
+                      const globalIndex = getGlobalIndex(sectionType, index);
+                      const isKeyboardFocused = keyboardNavigation.isActive && keyboardNavigation.focusedIndex === globalIndex;
+                      
+                      return {
+                        'data-keyboard-focused': isKeyboardFocused,
+                        'tabIndex': isKeyboardFocused ? 0 : -1,
+                        'aria-selected': isKeyboardFocused,
+                        'role': 'option',
+                        'aria-setsize': allItems.length,
+                        'aria-posinset': globalIndex >= 0 ? globalIndex + 1 : -1
+                      };
+                    }
+                  }}
                 />
               ))}
             </div>
           </SortableContext>
         );
     }
-  }, [viewMode, onExecuteItem, onEditWorkflow, onEditTemplate, onEditSnippet, onDeleteWorkflow, onDeleteTemplate, onDeleteSnippet, keyboardNavigation, allItems.length, sectionIndexMap, handleFavoriteToggle, selectedFolderId, getDragDropHandler]);
+  }, [viewMode, onExecuteItem, onEditWorkflow, onEditTemplate, onEditSnippet, onDeleteWorkflow, onDeleteTemplate, onDeleteSnippet, keyboardNavigation, allItems.length, sectionIndexMap, handleFavoriteToggle, selectedFolderId, getGlobalIndex]);
 
   const renderSection = useCallback((section, isLast = false) => {
     const { type, data, pagination, fullData } = section;
@@ -664,6 +796,10 @@ const Homepage = ({
             title="Favorites"
             itemCount={data.length}
             className="mb-6"
+            externalVisible={favoritesVisibility.isVisible}
+            onVisibilityChange={(isVisible) => {
+              favoritesVisibility.setVisible(isVisible);
+            }}
           >
             <DndContext 
               sensors={sensors}
@@ -675,11 +811,19 @@ const Homepage = ({
               {renderItems(data, 'favorites')}
               <DragOverlay>
                 {favoritesDragDrop.dragOverlay ? (
-                  <FocusableCard
-                    item={favoritesDragDrop.dragOverlay}
-                    type={favoritesDragDrop.dragOverlay.type}
-                    isDragOverlay
-                  />
+                  <DragCard
+                      key={favoritesDragDrop.dragOverlay.id}
+                      item={favoritesDragDrop.dragOverlay}
+                      index={0}
+                      type={favoritesDragDrop.dragOverlay.type}
+                      sectionType="favorites"
+                      onExecute={({ item, type }) => {}}
+                      onEdit={() => {}}
+                      onDelete={() => {}}
+                      onToggleFavorite={(item) => handleFavoriteToggle(item, 'favorites')}
+                      isItemFavorite={(item) => isItemFavoriteInFolder(item, selectedFolderId)}
+                      keyboardNavigation={{}}
+                    />
                 ) : null}
               </DragOverlay>
             </DndContext>
@@ -694,6 +838,7 @@ const Homepage = ({
             title="Workflows"
             itemCount={fullData ? fullData.length : data.length}
             className="mb-6"
+            externalVisible={workflowsVisibility.isVisible}
             actionButton={
               <button
                 onClick={() => onEditWorkflow({})}
@@ -710,6 +855,9 @@ const Homepage = ({
                 <Plus className="w-5 h-5" />
               </button>
             }
+            onVisibilityChange={(isVisible) => {
+              workflowsVisibility.setVisible(isVisible);
+            }}
           >
             <DndContext 
               sensors={sensors}
@@ -721,11 +869,19 @@ const Homepage = ({
               {renderItems(data, 'workflows')}
               <DragOverlay>
                 {workflowsDragDrop.dragOverlay ? (
-                  <FocusableCard
-                    item={workflowsDragDrop.dragOverlay}
-                    type="workflow"
-                    isDragOverlay
-                  />
+                  <DragCard
+                      key={workflowsDragDrop.dragOverlay.id}
+                      item={workflowsDragDrop.dragOverlay}
+                      index={0}
+                      type="workflow"
+                      sectionType="workflows"
+                      onExecute={({ item, type }) => {}}
+                      onEdit={() => {}}
+                      onDelete={() => {}}
+                      onToggleFavorite={(item) => handleFavoriteToggle(item, 'workflows')}
+                      isItemFavorite={(item) => isItemFavoriteInFolder(item, selectedFolderId)}
+                      keyboardNavigation={{}}
+                    />
                 ) : null}
               </DragOverlay>
             </DndContext>
@@ -750,6 +906,7 @@ const Homepage = ({
             title="Templates"
             itemCount={fullData ? fullData.length : data.length}
             className="mb-6"
+            externalVisible={templatesVisibility.isVisible}
             actionButton={
               <button
                 onClick={() => onEditTemplate({})}
@@ -766,6 +923,9 @@ const Homepage = ({
                 <Plus className="w-5 h-5" />
               </button>
             }
+            onVisibilityChange={(isVisible) => {
+              templatesVisibility.setVisible(isVisible);
+            }}
           >
             <DndContext 
               sensors={sensors}
@@ -777,11 +937,19 @@ const Homepage = ({
               {renderItems(data, 'templates')}
               <DragOverlay>
                 {templatesDragDrop.dragOverlay ? (
-                  <FocusableCard
-                    item={templatesDragDrop.dragOverlay}
-                    type="template"
-                    isDragOverlay
-                  />
+                  <DragCard
+                      key={templatesDragDrop.dragOverlay.id}
+                      item={templatesDragDrop.dragOverlay}
+                      index={0}
+                      type="template"
+                      sectionType="templates"
+                      onExecute={({ item, type }) => {}}
+                      onEdit={() => {}}
+                      onDelete={() => {}}
+                      onToggleFavorite={(item) => handleFavoriteToggle(item, 'templates')}
+                      isItemFavorite={(item) => isItemFavoriteInFolder(item, selectedFolderId)}
+                      keyboardNavigation={{}}
+                    />
                 ) : null}
               </DragOverlay>
             </DndContext>
@@ -806,6 +974,7 @@ const Homepage = ({
             title="Snippets"
             itemCount={fullData ? fullData.length : data.length}
             className="mb-6"
+            externalVisible={snippetsVisibility.isVisible}
             actionButton={
               <button
                 onClick={() => onEditSnippet({})}
@@ -822,6 +991,9 @@ const Homepage = ({
                 <Plus className="w-5 h-5" />
               </button>
             }
+            onVisibilityChange={(isVisible) => {
+              snippetsVisibility.setVisible(isVisible);
+            }}
           >
             <DndContext 
               sensors={sensors}
@@ -833,11 +1005,19 @@ const Homepage = ({
               {renderItems(data, 'snippets')}
               <DragOverlay>
                 {snippetsDragDrop.dragOverlay ? (
-                  <FocusableCard
-                    item={snippetsDragDrop.dragOverlay}
-                    type="snippet"
-                    isDragOverlay
-                  />
+                  <DragCard
+                      key={snippetsDragDrop.dragOverlay.id}
+                      item={snippetsDragDrop.dragOverlay}
+                      index={0}
+                      type="snippet"
+                      sectionType="snippets"
+                      onExecute={({ item, type }) => {}}
+                      onEdit={() => {}}
+                      onDelete={() => {}}
+                      onToggleFavorite={(item) => handleFavoriteToggle(item, 'snippets')}
+                      isItemFavorite={(item) => isItemFavoriteInFolder(item, selectedFolderId)}
+                      keyboardNavigation={{}}
+                    />
                 ) : null}
               </DragOverlay>
             </DndContext>
@@ -871,7 +1051,6 @@ const Homepage = ({
           onCreateFolder={onCreateFolder}
           onSettingsClick={() => {
             // Placeholder voor settings - kan later worden geïmplementeerd
-            console.log('Settings clicked');
             alert('Settings functionaliteit komt binnenkort!');
           }}
         />

@@ -63,13 +63,13 @@ const FocusableCard = ({
     
     switch (normalizedType) {
       case 'workflow':
-        return 'border-green-500 border';
+        return 'border-green-400 border-2 ring-2 ring-green-400/50 bg-green-900/20';
       case 'template':
-        return 'border-blue-400 border';
+        return 'border-blue-400 border-2 ring-2 ring-blue-400/50 bg-blue-900/20';
       case 'snippet':
-        return 'border-purple-500 border';
+        return 'border-purple-400 border-2 ring-2 ring-purple-400/50 bg-purple-900/20';
       default:
-        return 'border-blue-400 border';
+        return 'border-blue-400 border-2 ring-2 ring-blue-400/50 bg-blue-900/20';
     }
   };
 
@@ -101,9 +101,17 @@ const FocusableCard = ({
     }
   };
 
-  const focusProps = keyboardNavigation.getFocusProps ? keyboardNavigation.getFocusProps(index, sectionType || type) : {};
+  const focusProps = keyboardNavigation.getFocusProps ? keyboardNavigation.getFocusProps() : {};
   const isKeyboardFocused = focusProps['data-keyboard-focused'];
   const keyboardHelpText = keyboardNavigation.getKeyboardHelpText ? keyboardNavigation.getKeyboardHelpText() : {};
+  
+  // Debug alleen als er focus zou moeten zijn
+  if (isKeyboardFocused) {
+    console.log('🎯 Card has focus:', { itemName: item.name, index, isKeyboardFocused });
+  }
+
+
+
 
   // Handle Enter key to execute the item when focused
   const handleKeyDown = (e) => {
@@ -133,6 +141,7 @@ const FocusableCard = ({
           return `
             bg-gray-800 rounded-lg shadow-md border border-gray-700 p-4 
             hover:shadow-lg transition-all duration-200 flex flex-col
+            focus:outline-none
             ${getHoverBorderColor(actualItemType)}
             ${isKeyboardFocused ? getKeyboardFocusColor(actualItemType) : ''}
           `;
@@ -170,12 +179,12 @@ const FocusableCard = ({
             onToggleFavorite(item);
           }}
           className={`
-            p-2.5 rounded-md flex items-center justify-center
-            focus:outline-none focus:ring-2 focus:ring-opacity-50
+            p-2.5 rounded-md flex items-center justify-center border
+            focus:outline-none
             transition-all duration-200 hover:shadow-md
             ${isItemFavorite(item) 
-              ? 'text-yellow-400 bg-yellow-900/20 hover:bg-yellow-900/40 focus:ring-yellow-400' 
-              : 'text-gray-400 bg-gray-700 hover:text-yellow-400 hover:bg-yellow-900/20 focus:ring-yellow-400'
+              ? 'text-yellow-400 bg-yellow-900/20 border-yellow-600/50 hover:bg-yellow-900/40 hover:border-yellow-500' 
+              : 'text-gray-400 bg-gray-700 border-gray-600 hover:text-yellow-400 hover:bg-yellow-900/20 hover:border-yellow-600/50'
             }
           `}
           aria-label={`${isItemFavorite(item) ? 'Remove from' : 'Add to'} favorites`}
