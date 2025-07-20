@@ -2,11 +2,7 @@
 
 /* Dragging state for cards */
 .card-dragging {
-  opacity: 0.7;
-  transform: rotate(2deg);
-  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
-  border: 2px solid rgba(59, 130, 246, 0.5);
-  background: rgba(31, 41, 55, 0.95);
+  /* Keep original appearance - no visual changes */
   z-index: 1000;
 }
 
@@ -64,7 +60,7 @@
   transition: transform 0.2s ease;
 }
 
-.sortable-grid-item:hover {
+.sortable-grid-item:hover:not(.card-dragging) {
   transform: translateY(-2px);
 }
 
@@ -72,9 +68,6 @@
 .drag-overlay {
   pointer-events: none;
   z-index: 9999;
-  transform: rotate(5deg);
-  opacity: 0.9;
-  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.4);
 }
 
 /* Section drop indicators */

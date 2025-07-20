@@ -13,6 +13,8 @@ import useSectionVisibility from '../../hooks/useSectionVisibility';
  * @param {string} props.className - Additional CSS classes
  * @param {Object} props.headerProps - Additional props for the header button
  * @param {React.ReactNode} props.actionButton - Optional action button to display in header
+ * @param {Function} props.onVisibilityChange - Callback when visibility changes
+ * @param {boolean} props.externalVisible - External visibility state that overrides internal state
  */
 const CollapsibleSection = ({
   sectionId,
@@ -24,9 +26,15 @@ const CollapsibleSection = ({
   defaultVisible = true,
   className = '',
   headerProps = {},
-  actionButton = null
+  actionButton = null,
+  onVisibilityChange = null,
+  externalVisible = null
 }) => {
-  const { isVisible, toggle } = useSectionVisibility(sectionId, defaultVisible);
+  const { isVisible: internalVisible, toggle } = useSectionVisibility(sectionId, defaultVisible);
+  
+  // Use external visibility if provided, otherwise use internal state
+  const isVisible = externalVisible !== null ? externalVisible : internalVisible;
+  
 
   // Get color based on section title/type
   const getCountBadgeColor = (title) => {
@@ -43,10 +51,21 @@ const CollapsibleSection = ({
     return 'bg-blue-600 text-blue-100'; // default
   };
 
+  const handleToggle = () => {
+    if (externalVisible !== null && onVisibilityChange) {
+      // When using external control, only call the callback
+      const newState = !externalVisible;
+      onVisibilityChange(newState);
+    } else {
+      // When using internal state, toggle normally
+      toggle();
+    }
+  };
+
   const handleKeyDown = (e) => {
     if (e.key === 'Enter' || e.key === ' ') {
       e.preventDefault();
-      toggle();
+      handleToggle();
     }
   };
 
@@ -56,9 +75,9 @@ const CollapsibleSection = ({
       <div className="w-full flex items-center justify-between bg-gray-800 hover:bg-gray-700 rounded-lg overflow-hidden transition-colors duration-200 group has-[.action-button:hover]:bg-gray-800">
         <button
           type="button"
-          onClick={toggle}
+          onClick={handleToggle}
           onKeyDown={handleKeyDown}
-          className="flex-1 flex items-center justify-start p-3 focus:outline-none focus:ring-2 focus:ring-blue-500 ring-inset"
+          className="flex-1 flex items-center justify-start p-3 focus:outline-none"
           aria-expanded={isVisible}
           aria-controls={`section-content-${sectionId}`}
           {...headerProps}

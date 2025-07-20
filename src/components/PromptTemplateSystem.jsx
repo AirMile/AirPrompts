@@ -46,9 +46,7 @@ const PromptTemplateSystem = () => {
       console.error(`💾 Error bij opslaan van ${type}:`, error);
       setError(`Kon ${type} niet opslaan. Wijzigingen kunnen verloren gaan.`);
     },
-    onSaveSuccess: (type) => {
-      console.log(`💾 ${type} succesvol opgeslagen`);
-    }
+    onSaveSuccess: (type) => {}
   });
 
   // UI state (niet persistent)
@@ -65,9 +63,7 @@ const PromptTemplateSystem = () => {
   useEffect(() => {
     const storageInfo = getStorageInfo();
     if (storageInfo.available) {
-      console.log('💾 localStorage status:', storageInfo);
       if (initialData.migrated) {
-        console.log('🔄 Data migratie uitgevoerd');
       }
     } else {
       console.warn('⚠️ LocalStorage niet beschikbaar, wijzigingen gaan verloren bij refresh');
@@ -148,7 +144,6 @@ const PromptTemplateSystem = () => {
         updatedAt: new Date().toISOString()
       };
       setFolders([...folders, newFolder]);
-      console.log('📁 Nieuwe folder aangemaakt:', newFolder.name);
     }
   };
 
@@ -275,6 +270,9 @@ const PromptTemplateSystem = () => {
             onUpdateTemplate={updateTemplate}
             onUpdateWorkflow={updateWorkflow}
             onUpdateSnippet={updateSnippet}
+            setTemplates={setTemplates}
+            setWorkflows={setWorkflows}
+            setSnippets={setSnippets}
             onCreateFolder={handleCreateFolder}
           />
         </div>

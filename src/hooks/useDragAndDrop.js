@@ -26,7 +26,7 @@ export const useDragAndDrop = ({
     // Vind het item dat gedragged wordt
     const draggedItem = items.find(item => item.id === active.id);
     setDragOverlay(draggedItem);
-  }, [items]);
+  }, [items, sectionType]);
 
   const handleDragEnd = useCallback((event) => {
     const { active, over } = event;
@@ -55,9 +55,11 @@ export const useDragAndDrop = ({
               ...item.folderFavorites,
               [selectedFolderId]: {
                 ...item.folderFavorites?.[selectedFolderId],
-                favoriteOrder: index
+                favoriteOrder: index,
+                isFavorite: item.folderFavorites?.[selectedFolderId]?.isFavorite || false
               }
-            }
+            },
+            updatedAt: new Date().toISOString()
           };
         } else {
           return {
@@ -65,7 +67,8 @@ export const useDragAndDrop = ({
             folderOrder: {
               ...item.folderOrder,
               [selectedFolderId]: index
-            }
+            },
+            updatedAt: new Date().toISOString()
           };
         }
       });

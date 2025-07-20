@@ -41,31 +41,16 @@ const SortableListItem = ({
       ref={setNodeRef}
       style={style}
       className={`
-        relative flex items-center
-        ${isDragging ? 'z-50 opacity-70 bg-gray-700 rounded-lg shadow-2xl' : ''}
+        ${isDragging ? 'z-50 opacity-0' : ''}
         ${className}
       `}
     >
-      {/* Drag Handle */}
-      <div
-        {...attributes}
-        {...listeners}
-        className={`
-          flex-shrink-0 mr-3 p-1 rounded
-          text-gray-500 hover:text-gray-400 hover:bg-gray-700
-          cursor-grab active:cursor-grabbing
-          transition-colors
-          ${disabled ? 'hidden' : ''}
-        `}
-        aria-label="Drag to reorder"
-      >
-        <GripVertical className="w-4 h-4" />
-      </div>
-
-      {/* List Item Content */}
-      <div className="flex-1 min-w-0">
-        {children}
-      </div>
+      {/* Pass drag functionality to children */}
+      {React.cloneElement(children, {
+        dragAttributes: attributes,
+        dragListeners: listeners,
+        isDragging
+      })}
     </div>
   );
 };

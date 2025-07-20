@@ -303,6 +303,15 @@ export const useKeyboardNavigation = (items = [], options = {}) => {
     if (index >= 0 && index < items.length) {
       setFocusedIndex(index);
       setIsActive(true);
+      
+      // Also focus the actual DOM element
+      setTimeout(() => {
+        const element = document.querySelector(`[data-focusable-card="true"][data-card-index="${index}"]`);
+        if (element) {
+          element.focus();
+        }
+      }, 10); // Small delay to ensure state update is applied
+    } else {
     }
   }, [items.length]);
 

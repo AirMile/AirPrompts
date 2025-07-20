@@ -44,12 +44,10 @@ export const loadFromStorage = (key, defaultValue) => {
   try {
     const item = localStorage.getItem(key);
     if (item === null) {
-      console.log(`Geen data gevonden voor ${key}, gebruik default waarde`);
       return defaultValue;
     }
 
     const parsed = JSON.parse(item);
-    console.log(`Data geladen van localStorage voor ${key}:`, parsed.length || Object.keys(parsed).length, 'items');
     return parsed;
   } catch (error) {
     console.error(`Error bij laden van ${key}:`, error);
@@ -73,7 +71,6 @@ export const saveToStorage = (key, data) => {
   try {
     const serialized = JSON.stringify(data);
     localStorage.setItem(key, serialized);
-    console.log(`Data opgeslagen in localStorage voor ${key}:`, data.length || Object.keys(data).length, 'items');
     return true;
   } catch (error) {
     if (error.name === 'QuotaExceededError') {
@@ -103,7 +100,6 @@ export const loadAllData = (defaults) => {
   // Check data version for migrations
   const version = loadFromStorage(STORAGE_KEYS.VERSION, null);
   if (version !== CURRENT_VERSION) {
-    console.log(`Data migratie van versie ${version} naar ${CURRENT_VERSION}`);
     data.migrated = true;
     saveToStorage(STORAGE_KEYS.VERSION, CURRENT_VERSION);
   }
@@ -128,9 +124,7 @@ export const saveAllData = (data) => {
     if (operation()) successes++;
   });
 
-  if (successes === operations.length) {
-    console.log('✅ Alle data succesvol opgeslagen');
-  } else {
+  if (successes !== operations.length) {
     console.warn(`⚠️ ${successes}/${operations.length} operaties succesvol`);
   }
 
@@ -194,7 +188,6 @@ export const clearAllData = () => {
     localStorage.removeItem(key);
   });
   
-  console.log('🗑️ Alle opgeslagen data verwijderd');
 };
 
 /**

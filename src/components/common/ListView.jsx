@@ -10,22 +10,12 @@ const ListView = ({
   onDelete = () => {},
   onToggleFavorite = () => {},
   isItemFavorite = () => false,
-  keyboardNavigation = {}
+  keyboardNavigation = {},
+  dragAttributes,
+  dragListeners,
+  isDragging = false,
+  hideDragHandle = false
 }) => {
-  const getTypeIcon = (itemType) => {
-    const normalizedType = normalizeType(itemType);
-    
-    switch (normalizedType) {
-      case 'workflow':
-        return <Workflow className="w-4 h-4 text-gray-400" />;
-      case 'template':
-        return <FileText className="w-4 h-4 text-gray-400" />;
-      case 'snippet':
-        return <Tag className="w-4 h-4 text-gray-400" />;
-      default:
-        return <FileText className="w-4 h-4 text-gray-400" />;
-    }
-  };
 
   const getTypeColor = (itemType) => {
     switch (itemType) {
@@ -134,7 +124,7 @@ const ListView = ({
             className={(() => {
               // When keyboard focused, don't include the default border color to avoid conflicts
               const baseBorderClass = isKeyboardFocused ? '' : 'border-gray-700';
-              const baseClasses = `relative bg-gray-800 rounded-lg border ${baseBorderClass} p-4 cursor-pointer hover:shadow-lg transition-all duration-200`;
+              const baseClasses = `relative bg-gray-800 rounded-lg border ${baseBorderClass} p-4 cursor-pointer hover:shadow-lg transition-all duration-200 focus:outline-none`;
               const hoverBorder = getHoverBorderColor(actualItemType);
               const focusBorder = isKeyboardFocused ? getKeyboardFocusColor(actualItemType) : '';
               
@@ -150,10 +140,18 @@ const ListView = ({
             
             <div className="flex items-center gap-4">
 
-              {/* Type Icon - where favorite button used to be */}
-              <div className="flex-shrink-0">
-                {getTypeIcon(item.type || type)}
-              </div>
+              {/* Drag Handle - where favorite button used to be */}
+              {!hideDragHandle && (
+                <div className="flex-shrink-0">
+                  <div 
+                    className="drag-handle group cursor-grab active:cursor-grabbing -m-3 p-4 opacity-60 hover:opacity-100 rounded transition-all duration-200"
+                    {...dragAttributes}
+                    {...dragListeners}
+                  >
+                    <GripVertical className="w-5 h-5 text-gray-500 group-hover:text-gray-200 group-hover:scale-105 transition-transform" />
+                  </div>
+                </div>
+              )}
 
               {/* Content */}
               <div className="flex-1 min-w-0">
@@ -179,12 +177,12 @@ const ListView = ({
                     onToggleFavorite(item);
                   }}
                   className={`
-                    p-2.5 rounded-md flex items-center justify-center
-                    focus:outline-none focus:ring-2 focus:ring-opacity-50
+                    p-2.5 rounded-md flex items-center justify-center border
+                    focus:outline-none
                     transition-all duration-200 hover:shadow-md
                     ${isItemFavorite(item) 
-                      ? 'text-yellow-400 bg-yellow-900/20 hover:bg-yellow-900/40 focus:ring-yellow-400' 
-                      : 'text-gray-400 bg-gray-700 hover:text-yellow-400 hover:bg-yellow-900/20 focus:ring-yellow-400'
+                      ? 'text-yellow-400 bg-yellow-900/20 border-yellow-600/50 hover:bg-yellow-900/40 hover:border-yellow-500' 
+                      : 'text-gray-400 bg-gray-700 border-gray-600 hover:text-yellow-400 hover:bg-yellow-900/20 hover:border-yellow-600/50'
                     }
                   `}
                   aria-label={`${isItemFavorite(item) ? 'Remove from' : 'Add to'} favorites`}

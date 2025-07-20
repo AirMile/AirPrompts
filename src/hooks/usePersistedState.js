@@ -12,7 +12,7 @@ export const usePersistedState = (dataType, initialValue, options = {}) => {
   const {
     debounceMs = 500, // Debounce tijd in milliseconden
     onSaveError = (error) => console.error(`Save error voor ${dataType}:`, error),
-    onSaveSuccess = () => console.log(`✅ ${dataType} opgeslagen`)
+    onSaveSuccess = () => {}
   } = options;
 
   const [state, setState] = useState(initialValue);
@@ -68,7 +68,6 @@ export const usePersistedState = (dataType, initialValue, options = {}) => {
         if (state !== previousStateRef.current) {
           try {
             saveData(dataType, state);
-            console.log(`🔄 Force save van ${dataType} bij component unmount`);
           } catch (error) {
             console.error(`Error bij force save van ${dataType}:`, error);
           }
@@ -90,7 +89,7 @@ export const usePersistedAppState = (initialData, options = {}) => {
   const {
     debounceMs = 500,
     onSaveError = (type, error) => console.error(`Save error voor ${type}:`, error),
-    onSaveSuccess = (type) => console.log(`✅ ${type} opgeslagen`)
+    onSaveSuccess = (type) => {}
   } = options;
 
   // Individual persisted states
