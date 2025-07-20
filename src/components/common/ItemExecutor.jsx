@@ -143,6 +143,21 @@ const ItemExecutor = ({ item, type, snippets = [], onComplete, onCancel, onEdit 
   // Track the highlighted option index for keyboard navigation
   const [highlightedOptionIndex, setHighlightedOptionIndex] = useState(0);
 
+  // Add escape key handler
+  useEffect(() => {
+    const handleEscapeKey = (e) => {
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        onCancel();
+      }
+    };
+
+    document.addEventListener('keydown', handleEscapeKey);
+    return () => {
+      document.removeEventListener('keydown', handleEscapeKey);
+    };
+  }, [onCancel]);
+
   
   // Get all available options (templates and snippets combined) for current step
   const getAllStepOptions = useCallback(() => {

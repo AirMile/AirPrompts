@@ -432,297 +432,133 @@ const Homepage = ({
   ]);
   */
   
-  // Smart focus preservation when sections collapse/expand
-  const [previousItemsState, setPreviousItemsState] = useState({
-    items: allItems,
-    focusedItemId: null,
-    focusedIndex: -1,
-    originalItemId: null, // Track the original item we started with
-    originalIndex: -1,    // Track the original index before any changes
-    originalSection: null // Track the original section for correct ID collision handling
+  // Simplified focus tracking
+  const [focusState, setFocusState] = useState({
+    itemId: null,
+    section: null,
+    index: -1,
+    expandedSections: new Set()
   });
-
-  // Track when we're programmatically restoring focus to avoid false manual navigation detection
   const isProgrammaticFocusRef = useRef(false);
+  const previousItemsLengthRef = useRef(allItems.length);
 
+  // Single effect to handle focus preservation when sections change
   useEffect(() => {
-    // Only process if we're actively navigating
     if (!keyboardNavigation.isActive) {
-      setPreviousItemsState({
-        items: allItems,
-        focusedItemId: null,
-        focusedIndex: -1,
-        originalItemId: null,
-        originalIndex: -1,
-        originalSection: null
-      });
+      setFocusState({ itemId: null, section: null, index: -1 });
       return;
     }
 
-    const currentFocusedIndex = keyboardNavigation.focusedIndex;
-    const currentFocusedItem = allItems[currentFocusedIndex];
-    const previousItems = previousItemsState.items;
-    
-    // Special check for restoring to original position when items are added back
-    const isItemsAdded = allItems.length > previousItems.length;
-    
-    // Use section-aware lookup for original item
-    let originalItemNewIndex = -1;
-    if (previousItemsState.originalItemId) {
-      originalItemNewIndex = findItemIndexInSection(
-        previousItemsState.originalItemId, 
-        previousItemsState.originalSection
-      );
-      
-      if (originalItemNewIndex === -1) {
-        originalItemNewIndex = allItems.findIndex(item => item.id === previousItemsState.originalItemId);
-      }
-    }
-    
-    const hasOriginalItem = originalItemNewIndex >= 0;
-    const isNotAtOriginalPosition = currentFocusedIndex !== previousItemsState.originalIndex;
-    
-    if (isItemsAdded && hasOriginalItem && isNotAtOriginalPosition) {
-      isProgrammaticFocusRef.current = true;
-      keyboardNavigation.focusItem(originalItemNewIndex);
-      setTimeout(() => { isProgrammaticFocusRef.current = false; }, 0);
-      return;
-    } else if (isItemsAdded && !hasOriginalItem && isNotAtOriginalPosition) {
-      // Original item not found when items are restored, try to restore to original index position
-      const targetIndex = Math.min(previousItemsState.originalIndex, allItems.length - 1);
-      isProgrammaticFocusRef.current = true;
-      keyboardNavigation.focusItem(targetIndex);
-      setTimeout(() => { isProgrammaticFocusRef.current = false; }, 0);
-      return;
-    }
-    
-    // Check if items array changed (sections collapsed/expanded)
-    if (previousItems.length !== allItems.length && previousItems.length > 0) {
-      // First, check if the current focused item still exists at a reasonable position
-      if (currentFocusedItem && currentFocusedItem.id === previousItemsState.focusedItemId) {
-        const currentSection = sectionIndexMap.get(currentFocusedIndex)?.section;
+    const currentIndex = keyboardNavigation.focusedIndex;
+    const currentItem = allItems[currentIndex];
+    const currentSection = sectionIndexMap.get(currentIndex)?.section;
+    const previousLength = previousItemsLengthRef.current;
+
+    // Items array changed (section collapsed/expanded)
+    if (previousLength !== allItems.length && previousLength > 0) {
+      // Check if a section was expanded (items added)
+      if (allItems.length > previousLength) {
+        // Track which sections are currently visible
+        const visibleSections = new Set();
+        for (const [, entry] of sectionIndexMap) {
+          visibleSections.add(entry.section);
+        }
         
-        // Determine previous section
-        let previousSection = null;
-        const previousItem = previousItems[previousItemsState.focusedIndex];
-        if (previousItem) {
-          const itemType = previousItem.type || 'template';
-          if (favorites.some(fav => fav.id === previousItem.id)) {
-            previousSection = 'favorites';
-          } else {
-            previousSection = itemType === 'workflow' ? 'workflows' : 
-                           itemType === 'template' ? 'templates' : 
-                           'snippets';
+        // Determine which section was just expanded
+        let newlyExpandedSection = null;
+        
+        // Check each possible section
+        if (!focusState.expandedSections?.has('favorites') && visibleSections.has('favorites') && favoritesVisibility.isVisible) {
+          newlyExpandedSection = 'favorites';
+        } else if (!focusState.expandedSections?.has('workflows') && visibleSections.has('workflows') && workflowsVisibility.isVisible) {
+          newlyExpandedSection = 'workflows';
+        } else if (!focusState.expandedSections?.has('templates') && visibleSections.has('templates') && templatesVisibility.isVisible) {
+          newlyExpandedSection = 'templates';
+        } else if (!focusState.expandedSections?.has('snippets') && visibleSections.has('snippets') && snippetsVisibility.isVisible) {
+          newlyExpandedSection = 'snippets';
+        }
+        
+        // If we found a newly expanded section, focus on its first item
+        if (newlyExpandedSection) {
+          // Find the first item of the newly expanded section
+          for (const [index, entry] of sectionIndexMap) {
+            if (entry.section === newlyExpandedSection && entry.localIndex === 0) {
+              isProgrammaticFocusRef.current = true;
+              keyboardNavigation.focusItem(index);
+              setTimeout(() => { isProgrammaticFocusRef.current = false; }, 0);
+              
+              const newItem = allItems[index];
+              if (newItem) {
+                setFocusState({
+                  itemId: newItem.id,
+                  section: newlyExpandedSection,
+                  index: index,
+                  expandedSections: visibleSections
+                });
+              }
+              previousItemsLengthRef.current = allItems.length;
+              return;
+            }
           }
         }
-        
-        // If same item in same section, no adjustment needed regardless of index change
-        if (currentSection === previousSection) {
-          // Update tracking to reflect new index but keep everything else
-          setPreviousItemsState(prev => ({
-            ...prev,
-            focusedIndex: currentFocusedIndex
-          }));
-          return;
-        }
       }
       
-      // Check if current focus was maintained through the section change
-      const focusWasMaintained = currentFocusedItem && 
-        currentFocusedItem.id === previousItemsState.focusedItemId;
-      
-      // If focus was maintained and we're collapsing (reducing items), 
-      // only reset original tracking if user hasn't manually navigated away from original position
-      if (focusWasMaintained && allItems.length < previousItems.length) {
-        const userNavigatedFromOriginal = previousItemsState.originalItemId !== currentFocusedItem.id;
-        
-        if (!userNavigatedFromOriginal) {
-          setPreviousItemsState(prev => ({
-            ...prev,
-            originalItemId: currentFocusedItem.id,
-            originalIndex: currentFocusedIndex,
-            originalSection: sectionIndexMap.get(currentFocusedIndex)?.section
-          }));
-        } else {
-        }
-      }
+      // Check if focused item still exists in its section (for collapse case)
+      const itemStillExists = focusState.itemId && 
+        findItemIndexInSection(focusState.itemId, focusState.section) >= 0;
 
-      // Special case: if the currently focused item is exactly the same as before,
-      // it means items were removed AFTER the current position - no focus change needed
-      if (currentFocusedItem && currentFocusedItem.id === previousItemsState.focusedItemId && 
-          currentFocusedIndex === previousItemsState.focusedIndex) {
-        return;
-      }
-
-      // Check if the section containing the focused item was affected
-      // Determine the section of the previously focused item
-      let previousFocusedSection = null;
-      const previousFocusedItem = previousItems[previousItemsState.focusedIndex];
-      if (previousFocusedItem) {
-        const itemType = previousFocusedItem.type || 'template';
-        if (favorites.some(fav => fav.id === previousFocusedItem.id)) {
-          previousFocusedSection = 'favorites';
-        } else {
-          previousFocusedSection = itemType === 'workflow' ? 'workflows' : 
-                                 itemType === 'template' ? 'templates' : 
-                                 'snippets';
-        }
-      }
-      
-      // Check if this section still exists and has the focused item
-      const focusedItemInSectionExists = findItemIndexInSection(
-        previousItemsState.focusedItemId,
-        previousFocusedSection
-      ) >= 0;
-      
-      if (!focusedItemInSectionExists && previousItemsState.focusedItemId) {
-        // The focused item's section was collapsed - find best alternative
-        const bestIndex = findBestFocusAlternative(allItems, previousItemsState.focusedIndex, previousItems, previousFocusedSection);
+      if (!itemStillExists && focusState.itemId) {
+        // Section collapsed - find alternative
+        const bestIndex = findBestFocusAlternative(
+          allItems,
+          focusState.index,
+          [],
+          focusState.section
+        );
+        
         isProgrammaticFocusRef.current = true;
         keyboardNavigation.focusItem(bestIndex);
         setTimeout(() => { isProgrammaticFocusRef.current = false; }, 0);
         
-        // Update focus tracking AND update original tracking when section collapses
-        const newFocusedItem = allItems[bestIndex];
-        if (newFocusedItem) {
-          const newSection = sectionIndexMap.get(bestIndex)?.section;
-          setPreviousItemsState(prev => ({
-            ...prev,
-            focusedItemId: newFocusedItem.id,
-            focusedIndex: bestIndex,
-            // Update original tracking when section collapses
-            // This is a forced jump, not user navigation
-            originalItemId: newFocusedItem.id,
-            originalIndex: bestIndex,
-            originalSection: newSection
-          }));
+        // Update to new position
+        const newItem = allItems[bestIndex];
+        if (newItem) {
+          setFocusState({
+            itemId: newItem.id,
+            section: sectionIndexMap.get(bestIndex)?.section,
+            index: bestIndex
+          });
         }
+        previousItemsLengthRef.current = allItems.length;
+        return;
       }
-      
-      // Don't update state yet - let the focus change settle first
-      return;
     }
 
-    // Update state for next comparison (only when no items changed)
-    setPreviousItemsState(prev => {
-      // Detect manual navigation: array length same + any focus change that's not from section changes or programmatic restoration
-      const isManualNavigation = prev.items.length === allItems.length && 
-                                 prev.focusedIndex !== currentFocusedIndex &&
-                                 !isProgrammaticFocusRef.current;
+    // Update tracking for normal navigation
+    if (!isProgrammaticFocusRef.current && currentItem) {
+      const visibleSections = new Set();
+      for (const [, entry] of sectionIndexMap) {
+        visibleSections.add(entry.section);
+      }
       
-      // Check if we've moved to a completely different section
-      const currentSection = sectionIndexMap.get(currentFocusedIndex)?.section;
-      const movedToNewSection = prev.originalSection && currentSection && 
-        prev.originalSection !== currentSection && isManualNavigation;
-      
-      const shouldUpdateOriginal = !prev.originalItemId || isManualNavigation || movedToNewSection;
-      
-      return {
-        items: allItems,
-        focusedItemId: currentFocusedItem?.id || null,
-        focusedIndex: currentFocusedIndex,
-        originalItemId: shouldUpdateOriginal ? currentFocusedItem?.id : prev.originalItemId,
-        originalIndex: shouldUpdateOriginal ? currentFocusedIndex : prev.originalIndex,
-        originalSection: shouldUpdateOriginal ? 
-          sectionIndexMap.get(currentFocusedIndex)?.section : prev.originalSection
-      };
-    });
-  }, [
-    allItems.length,
-    keyboardNavigation.isActive,
-    sectionIndexMap,
-    keyboardNavigation.focusItem
-  ]);
-  
-  // Separate effect to update state after focus changes settle
-  useEffect(() => {
-    if (keyboardNavigation.isActive) {
-      const currentFocusedItem = allItems[keyboardNavigation.focusedIndex];
-      setPreviousItemsState(prev => {
-        // Track the most recent stable focus as the "original" for restoration purposes
-        // Reset original tracking when we manually navigate (not due to section changes or programmatic restoration)
-        const isManualNavigation = prev.items.length === allItems.length && 
-                                   prev.focusedIndex !== keyboardNavigation.focusedIndex &&
-                                   !isProgrammaticFocusRef.current;
-        
-        // Check if we've moved to a completely different section
-        const currentSection = sectionIndexMap.get(keyboardNavigation.focusedIndex)?.section;
-        const movedToNewSection = prev.originalSection && currentSection && 
-          prev.originalSection !== currentSection && isManualNavigation;
-        
-        const shouldUpdateOriginal = !prev.originalItemId || isManualNavigation || movedToNewSection;
-        
-        return {
-          ...prev,
-          focusedItemId: currentFocusedItem?.id || null,
-          focusedIndex: keyboardNavigation.focusedIndex,
-          // Update original when manually navigating or first time
-          originalItemId: shouldUpdateOriginal ? currentFocusedItem?.id : prev.originalItemId,
-          originalIndex: shouldUpdateOriginal ? keyboardNavigation.focusedIndex : prev.originalIndex,
-          originalSection: shouldUpdateOriginal ? 
-            sectionIndexMap.get(keyboardNavigation.focusedIndex)?.section : prev.originalSection
-        };
+      setFocusState({
+        itemId: currentItem.id,
+        section: currentSection,
+        index: currentIndex,
+        expandedSections: visibleSections
       });
     }
-  }, [keyboardNavigation.focusedIndex, allItems.length, sectionIndexMap]);
-
-  // Direct monitoring of allItems length changes for restore detection
-  const prevItemsLength = useRef(allItems.length);
-  useEffect(() => {
-    const currentLength = allItems.length;
-    const previousLength = prevItemsLength.current;
     
-    
-    // Only check for restore if we're actively navigating and items increased
-    if (keyboardNavigation.isActive && currentLength > previousLength && previousLength > 0) {
-      // Check if current focused item is still the same as when sections collapsed
-      const currentFocusedItem = allItems[keyboardNavigation.focusedIndex];
-      const currentItemSection = sectionIndexMap.get(keyboardNavigation.focusedIndex)?.section;
-      
-      // Check if user has manually navigated away from the original item
-      const userNavigatedAway = previousItemsState.originalItemId !== previousItemsState.focusedItemId;
-      
-      // Focus is truly maintained if BOTH ID and section match the original AND user hasn't navigated away
-      const wasFocusMaintained = currentFocusedItem && 
-        currentFocusedItem.id === previousItemsState.focusedItemId &&
-        currentItemSection === previousItemsState.originalSection;
-      
-      // Conservative restore: only restore if current position is actually problematic AND user hasn't manually navigated
-      if (!wasFocusMaintained && !userNavigatedAway) {
-        // Check if current item is still valid and accessible
-        const currentItem = allItems[keyboardNavigation.focusedIndex];
-        const currentItemValid = currentItem && keyboardNavigation.focusedIndex < allItems.length;
-        
-        // Check if we need to restore to correct section when the same item exists in multiple places
-        const isInCorrectSection = currentItemSection === previousItemsState.originalSection;
-        const shouldRestore = !currentItemValid || !isInCorrectSection;
-        
-        if (shouldRestore) {
-          // Try to find the original item in the correct section first
-          const originalIndex = findItemIndexInSection(
-            previousItemsState.originalItemId,
-            previousItemsState.originalSection
-          );
-          
-          if (originalIndex >= 0) {
-            isProgrammaticFocusRef.current = true;
-            keyboardNavigation.focusItem(originalIndex);
-            setTimeout(() => { isProgrammaticFocusRef.current = false; }, 0);
-          } else {
-            // Original item/section not found, use safe fallback
-            let safeIndex = Math.min(previousItemsState.originalIndex, allItems.length - 1);
-            if (safeIndex < 0) safeIndex = 0;
-            isProgrammaticFocusRef.current = true;
-            keyboardNavigation.focusItem(safeIndex);
-            setTimeout(() => { isProgrammaticFocusRef.current = false; }, 0);
-          }
-        }
-      }
-    }
-    
-    // Update the ref for next comparison
-    prevItemsLength.current = currentLength;
-  }, [allItems.length, keyboardNavigation.isActive, keyboardNavigation.focusedIndex, previousItemsState.originalItemId, previousItemsState.originalIndex, sectionIndexMap]);
+    previousItemsLengthRef.current = allItems.length;
+  }, [
+    keyboardNavigation.focusedIndex,
+    keyboardNavigation.isActive,
+    allItems,
+    sectionIndexMap,
+    focusState.itemId,
+    focusState.section,
+    focusState.index
+  ]);
 
   // Helper function to find item index in specific section (to handle ID collisions)
   const findItemIndexInSection = (itemId, targetSection) => {
