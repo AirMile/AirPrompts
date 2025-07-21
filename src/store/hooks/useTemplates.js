@@ -1,6 +1,6 @@
 // src/store/hooks/useTemplates.js
 import { useCallback, useState, useEffect } from 'react';
-import { useAppState, useAppDispatch } from '../appStore';
+import { useAppState, useAppDispatch } from '../appStore.jsx';
 import { StorageService } from '../../services/storage/StorageService';
 
 // Database-ready hook with loading states and error handling

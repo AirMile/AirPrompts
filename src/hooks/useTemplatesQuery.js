@@ -14,7 +14,10 @@ export const templateKeys = {
 export function useTemplates(filters = {}) {
   return useQuery({
     queryKey: templateKeys.list(filters),
-    queryFn: () => StorageService.getTemplates(filters),
+    queryFn: async () => {
+      const StorageModule = await import('../services/storage/StorageService');
+      return StorageModule.StorageService.getTemplates(filters);
+    },
     // Keep previous data while fetching new
     keepPreviousData: true,
     // Placeholder data voor instant UI

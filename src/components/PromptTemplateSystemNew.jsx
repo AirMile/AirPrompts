@@ -137,7 +137,7 @@ const PromptTemplateSystemInner = () => {
       <Suspense fallback={<LoadingSpinner />}>
         <ItemExecutor 
           item={executingItem.item}
-          itemType={executingItem.itemType}
+          type={executingItem.itemType}
           templates={templates}
           workflows={workflows}
           onClose={() => setExecutingItem(null)}

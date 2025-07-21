@@ -14,7 +14,10 @@ export const workflowKeys = {
 export function useWorkflows(filters = {}) {
   return useQuery({
     queryKey: workflowKeys.list(filters),
-    queryFn: () => StorageService.getWorkflows(filters),
+    queryFn: async () => {
+      const StorageModule = await import('../services/storage/StorageService');
+      return StorageModule.StorageService.getWorkflows(filters);
+    },
     keepPreviousData: true,
     placeholderData: []
   });

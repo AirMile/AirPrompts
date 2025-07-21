@@ -14,7 +14,10 @@ export const snippetKeys = {
 export function useSnippets(filters = {}) {
   return useQuery({
     queryKey: snippetKeys.list(filters),
-    queryFn: () => StorageService.getSnippets(filters),
+    queryFn: async () => {
+      const StorageModule = await import('../services/storage/StorageService');
+      return StorageModule.StorageService.getSnippets(filters);
+    },
     keepPreviousData: true,
     placeholderData: []
   });

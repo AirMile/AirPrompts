@@ -1,7 +1,7 @@
 import React, { useEffect } from 'react';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
-import { AppProvider } from '../../store/appStore';
+import { AppProvider } from '../../store/appStore.jsx';
 import { queryClient } from '../../store/queryClient';
 
 // Component to prefetch data
@@ -10,15 +10,18 @@ function DataPrefetcher({ children }) {
     // Prefetch data on mount
     const prefetchData = async () => {
       await Promise.all([
-        queryClient.prefetchQuery(['templates', 'list', {}], () => 
-          import('../../services/storage/StorageService').then(m => m.StorageService.getTemplates())
-        ),
-        queryClient.prefetchQuery(['workflows', 'list', {}], () => 
-          import('../../services/storage/StorageService').then(m => m.StorageService.getWorkflows())
-        ),
-        queryClient.prefetchQuery(['snippets', 'list', {}], () => 
-          import('../../services/storage/StorageService').then(m => m.StorageService.getSnippets())
-        )
+        queryClient.prefetchQuery({
+          queryKey: ['templates', 'list', {}],
+          queryFn: () => import('../../services/storage/StorageService').then(m => m.StorageService.getTemplates())
+        }),
+        queryClient.prefetchQuery({
+          queryKey: ['workflows', 'list', {}],
+          queryFn: () => import('../../services/storage/StorageService').then(m => m.StorageService.getWorkflows())
+        }),
+        queryClient.prefetchQuery({
+          queryKey: ['snippets', 'list', {}],
+          queryFn: () => import('../../services/storage/StorageService').then(m => m.StorageService.getSnippets())
+        })
       ]);
     };
     
@@ -36,7 +39,7 @@ export function AppProviders({ children, initialData }) {
           {children}
         </DataPrefetcher>
       </AppProvider>
-      {process.env.NODE_ENV === 'development' && (
+      {import.meta.env.DEV && (
         <ReactQueryDevtools initialIsOpen={false} />
       )}
     </QueryClientProvider>
