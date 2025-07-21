@@ -28,7 +28,7 @@ export function useWorkflows() {
     if (workflows.length === 0) {
       fetchWorkflows();
     }
-  }, [fetchWorkflows, workflows.length]);
+  }, []); // Remove dependencies to prevent infinite loop
   
   const updateWorkflow = useCallback(async (workflow) => {
     setLoading(true);

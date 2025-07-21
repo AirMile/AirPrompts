@@ -28,7 +28,7 @@ export function useSnippets() {
     if (snippets.length === 0) {
       fetchSnippets();
     }
-  }, [fetchSnippets, snippets.length]);
+  }, []); // Remove dependencies to prevent infinite loop
   
   const updateSnippet = useCallback(async (snippet) => {
     setLoading(true);

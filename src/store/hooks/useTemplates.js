@@ -34,7 +34,7 @@ export function useTemplates() {
     if (templates.length === 0) {
       fetchTemplates();
     }
-  }, [fetchTemplates, templates.length]);
+  }, []); // Remove dependencies to prevent infinite loop
   
   const updateTemplate = useCallback(async (template) => {
     setLoading(true);
