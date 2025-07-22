@@ -1,16 +1,24 @@
 import React, { useState } from 'react';
 import themeStore from '../../store/themeStore';
-import { Check } from 'lucide-react';
+import { Check, Sun, Moon } from 'lucide-react';
+
+// Fixed theme selector with proper error handling - v2
 
 const ThemeSelector = ({ compact = false }) => {
   const { 
-    currentColorScheme, 
     isDarkMode, 
+    lightModeScheme,
+    darkModeScheme,
     colorSchemes, 
-    setTheme 
+    setTheme,
+    setLightModeScheme,
+    setDarkModeScheme
   } = themeStore();
   
   const [isOpen, setIsOpen] = useState(false);
+  
+  // Computed current scheme for compact view
+  const currentColorScheme = isDarkMode ? darkModeScheme : lightModeScheme;
 
   // Color previews for each theme
   const colorPreviews = {
@@ -29,6 +37,14 @@ const ThemeSelector = ({ compact = false }) => {
     green: {
       light: ['#F0FDF4', '#BBF7D0', '#22C55E', '#166534'],
       dark: ['#171717', '#262626', '#22C55E', '#4ADE80']
+    },
+    classic: {
+      light: ['#F9FAFB', '#F3F4F6', '#3B82F6', '#1E40AF'],
+      dark: ['#111827', '#1F2937', '#3B82F6', '#60A5FA']
+    },
+    grey: {
+      light: ['#FAFAFA', '#F5F5F5', '#6B7280', '#374151'],
+      dark: ['#1F2937', '#374151', '#9CA3AF', '#E5E7EB']
     }
   };
 
@@ -71,13 +87,13 @@ const ThemeSelector = ({ compact = false }) => {
                     <div className="flex-1 text-left">
                       <div className="font-medium">{scheme.name}</div>
                       <div className="flex gap-1 mt-1">
-                        {colorPreviews[key][isDarkMode ? 'dark' : 'light'].map((color, i) => (
+                        {colorPreviews[key] && colorPreviews[key][isDarkMode ? 'dark' : 'light'] ? colorPreviews[key][isDarkMode ? 'dark' : 'light'].map((color, i) => (
                           <div
                             key={i}
                             className="w-4 h-4 rounded"
                             style={{ backgroundColor: color }}
                           />
-                        ))}
+                        )) : null}
                       </div>
                     </div>
                     {currentColorScheme === key && (
@@ -93,100 +109,143 @@ const ThemeSelector = ({ compact = false }) => {
     );
   }
 
-  // Full grid version for settings page
+  // Full grid version for settings page with separate light/dark selection
   return (
     <div className="space-y-6">
       <div>
         <h3 className="text-lg font-semibold text-secondary-900 dark:text-secondary-100 mb-4">
-          Choose Your Theme
+          Kies Je Thema's
         </h3>
         <p className="text-sm text-secondary-600 dark:text-secondary-400 mb-6">
-          Select a color scheme. Use the sun/moon toggle in the search bar to switch between light and dark modes.
+          Selecteer verschillende kleurenschema's voor lichte en donkere modus. Je kunt bijvoorbeeld paars voor donkere modus en blauw voor lichte modus kiezen. [Updated v2]
         </p>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        {Object.entries(colorSchemes).map(([key, scheme]) => {
-          const isSelected = currentColorScheme === key;
-          const colors = colorPreviews[key];
-          
-          return (
-            <button
-              key={key}
-              onClick={() => setTheme(key, isDarkMode)}
-              className={`
-                relative p-6 rounded-xl border-2 transition-all text-left
-                ${isSelected 
-                  ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/10 shadow-lg scale-105' 
-                  : 'border-secondary-200 dark:border-secondary-700 hover:border-secondary-300 dark:hover:border-secondary-600 bg-white dark:bg-secondary-800'
-                }
-              `}
-            >
-              {/* Theme Header */}
-              <div className="flex items-start justify-between mb-4">
-                <div className="flex items-center gap-3">
-                  <span className="text-3xl">{scheme.icon}</span>
-                  <div>
-                    <h4 className={`font-semibold ${isSelected ? 'text-primary-700 dark:text-primary-400' : 'text-secondary-900 dark:text-secondary-100'}`}>
+      {/* Light Mode Selection */}
+      <div className="space-y-4">
+        <div className="flex items-center gap-2 mb-4">
+          <Sun className="w-5 h-5 text-amber-500" />
+          <h4 className="font-medium text-secondary-900 dark:text-secondary-100">
+            Lichte Modus Thema
+          </h4>
+        </div>
+        
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+          {Object.entries(colorSchemes).map(([key, scheme]) => {
+            const isSelected = lightModeScheme === key;
+            const colors = colorPreviews[key];
+            
+            // Skip if colors are not defined
+            if (!colors) return null;
+            
+            return (
+              <button
+                key={`light-${key}`}
+                onClick={() => {
+                  setLightModeScheme(key);
+                }}
+                className={`
+                  relative p-4 rounded-xl border-2 transition-all text-left
+                  ${isSelected 
+                    ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/20 shadow-lg scale-105' 
+                    : 'border-secondary-200 dark:border-secondary-700 hover:border-secondary-300 dark:hover:border-secondary-600 bg-white dark:bg-secondary-800'
+                  }
+                `}
+              >
+                <div className="flex items-center gap-2 mb-3">
+                  <span className="text-xl">{scheme.icon}</span>
+                  <div className="flex-1 min-w-0">
+                    <div className={`font-medium text-sm truncate ${isSelected ? 'text-primary-700 dark:text-primary-400' : 'text-secondary-900 dark:text-secondary-100'}`}>
                       {scheme.name}
-                    </h4>
-                    <div className="text-xs text-secondary-500 dark:text-secondary-400 mt-0.5">
-                      {isDarkMode ? 'Dark' : 'Light'} Mode
                     </div>
                   </div>
+                  {isSelected && (
+                    <div className="bg-primary-500 text-white rounded-full p-0.5">
+                      <Check className="w-3 h-3" />
+                    </div>
+                  )}
                 </div>
-                {isSelected && (
-                  <div className="bg-primary-500 text-white rounded-full p-1">
-                    <Check className="w-4 h-4" />
-                  </div>
-                )}
-              </div>
 
-              {/* Color Preview */}
-              <div className="space-y-2">
-                {/* Light mode preview */}
-                <div className="flex items-center gap-2">
-                  <span className="text-xs text-secondary-500 dark:text-secondary-400 w-12">Light:</span>
-                  <div className="flex gap-1 flex-1">
-                    {colors.light.map((color, i) => (
-                      <div
-                        key={i}
-                        className="h-6 flex-1 rounded"
-                        style={{ backgroundColor: color }}
-                      />
-                    ))}
-                  </div>
+                <div className="flex gap-1">
+                  {colors && colors.light ? colors.light.map((color, i) => (
+                    <div
+                      key={i}
+                      className="h-4 flex-1 rounded"
+                      style={{ backgroundColor: color }}
+                    />
+                  )) : null}
                 </div>
-                
-                {/* Dark mode preview */}
-                <div className="flex items-center gap-2">
-                  <span className="text-xs text-secondary-500 dark:text-secondary-400 w-12">Dark:</span>
-                  <div className="flex gap-1 flex-1">
-                    {colors.dark.map((color, i) => (
-                      <div
-                        key={i}
-                        className="h-6 flex-1 rounded"
-                        style={{ backgroundColor: color }}
-                      />
-                    ))}
-                  </div>
-                </div>
-              </div>
+              </button>
+            );
+          })}
+        </div>
+      </div>
 
-              {/* Current indicator */}
-              {isSelected && (
-                <div className="absolute inset-0 rounded-xl ring-2 ring-primary-500 ring-offset-2 ring-offset-white dark:ring-offset-secondary-900 pointer-events-none" />
-              )}
-            </button>
-          );
-        })}
+      {/* Dark Mode Selection */}
+      <div className="space-y-4">
+        <div className="flex items-center gap-2 mb-4">
+          <Moon className="w-5 h-5 text-blue-500" />
+          <h4 className="font-medium text-secondary-900 dark:text-secondary-100">
+            Donkere Modus Thema
+          </h4>
+        </div>
+        
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+          {Object.entries(colorSchemes).map(([key, scheme]) => {
+            const isSelected = darkModeScheme === key;
+            const colors = colorPreviews[key];
+            
+            // Skip if colors are not defined
+            if (!colors) return null;
+            
+            return (
+              <button
+                key={`dark-${key}`}
+                onClick={() => {
+                  setDarkModeScheme(key);
+                }}
+                className={`
+                  relative p-4 rounded-xl border-2 transition-all text-left
+                  ${isSelected 
+                    ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/10 shadow-lg scale-105' 
+                    : 'border-secondary-200 dark:border-secondary-700 hover:border-secondary-300 dark:hover:border-secondary-600 bg-white dark:bg-secondary-800'
+                  }
+                `}
+              >
+                <div className="flex items-center gap-2 mb-3">
+                  <span className="text-xl">{scheme.icon}</span>
+                  <div className="flex-1 min-w-0">
+                    <div className={`font-medium text-sm truncate ${isSelected ? 'text-primary-700 dark:text-primary-400' : 'text-secondary-900 dark:text-secondary-100'}`}>
+                      {scheme.name}
+                    </div>
+                  </div>
+                  {isSelected && (
+                    <div className="bg-primary-500 text-white rounded-full p-0.5">
+                      <Check className="w-3 h-3" />
+                    </div>
+                  )}
+                </div>
+
+                <div className="flex gap-1">
+                  {colors && colors.dark ? colors.dark.map((color, i) => (
+                    <div
+                      key={i}
+                      className="h-4 flex-1 rounded"
+                      style={{ backgroundColor: color }}
+                    />
+                  )) : null}
+                </div>
+              </button>
+            );
+          })}
+        </div>
       </div>
 
       {/* Info */}
       <div className="mt-8 p-4 bg-secondary-100 dark:bg-secondary-800/50 rounded-lg">
         <p className="text-sm text-secondary-600 dark:text-secondary-400">
-          <strong>Tip:</strong> Each theme has been carefully crafted with optimal contrast ratios for both light and dark modes. 
-          The dark/light toggle in the search bar will switch between variants of your selected theme.
+          <strong>Tip:</strong> Nu kun je verschillende thema's kiezen voor lichte en donkere modus. 
+          Gebruik de zon/maan toggle in de zoekbalk om te wisselen tussen de modi en je verschillende thema's te zien.
         </p>
       </div>
     </div>

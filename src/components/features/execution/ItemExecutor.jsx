@@ -2,8 +2,10 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Copy, ArrowLeft, ArrowRight, Check, Info, Tag, Plus, Edit, FileText, Layers, Workflow } from 'lucide-react';
 import { copyToClipboard } from '../../../utils/clipboard.js';
 import { extractAllVariables } from '../../../types/template.types.js';
+import { useItemColors } from '../../../hooks/useItemColors.js';
 
 const ItemExecutor = ({ item, type, templates = [], workflows = [], snippets = [], onComplete, onCancel, onEdit }) => {
+  const { getColorClasses } = useItemColors();
 
   // Check if classic dark theme is active
   const isClassicDark = () => {
@@ -1198,17 +1200,17 @@ const ItemExecutor = ({ item, type, templates = [], workflows = [], snippets = [
   }
 
   return (
-    <div className="max-w-4xl mx-auto p-4 bg-transparent dark:bg-transparent">
-      <div className="bg-gradient-to-br from-secondary-800 to-secondary-900 dark:from-secondary-800 dark:to-secondary-900 rounded-2xl shadow-2xl border border-secondary-700 dark:border-secondary-700 p-8" onKeyDown={handleGlobalKeyDown} tabIndex={-1}>
+    <div className="max-w-4xl mx-auto p-4 bg-transparent">
+      <div className="bg-gradient-to-br from-white to-secondary-50 dark:from-secondary-800 dark:to-secondary-900 rounded-2xl shadow-2xl border border-secondary-300 dark:border-secondary-700 p-8" onKeyDown={handleGlobalKeyDown} tabIndex={-1}>
         <div className="flex items-start justify-between mb-4">
           <div className="flex-1">
             <div className="flex items-center gap-4 mb-3">
               <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${
                 stepType === 'snippet' 
-                  ? 'bg-gradient-to-br from-warning-500 to-warning-600' 
+                  ? getColorClasses('snippet', 'gradient')
                   : stepType === 'workflow'
-                  ? 'bg-gradient-to-br from-orange-500 to-orange-600'
-                  : 'bg-gradient-to-br from-primary-500 to-primary-600'
+                  ? getColorClasses('workflow', 'gradient')
+                  : getColorClasses('template', 'gradient')
               }`}>
                 {stepType === 'snippet' ? (
                   <Layers className="w-6 h-6 text-white" />
@@ -1219,10 +1221,10 @@ const ItemExecutor = ({ item, type, templates = [], workflows = [], snippets = [
                 )}
               </div>
               <div>
-                <h2 className="text-3xl font-bold text-white dark:text-white mb-1">{item.name}</h2>
+                <h2 className="text-3xl font-bold text-secondary-900 dark:text-white mb-1">{item.name}</h2>
                 {item.category && (
                   <div className="flex items-center gap-2">
-                    <span className="px-2 py-1 bg-secondary-600/50 dark:bg-secondary-600/50 text-secondary-300 dark:text-secondary-300 rounded text-xs">
+                    <span className="px-2 py-1 bg-secondary-200 dark:bg-secondary-600/50 text-secondary-700 dark:text-secondary-300 rounded text-xs">
                       {item.category}
                     </span>
                   </div>
@@ -1232,9 +1234,9 @@ const ItemExecutor = ({ item, type, templates = [], workflows = [], snippets = [
             
             
             {isWorkflow && (
-              <div className="bg-secondary-800/50 dark:bg-secondary-800/50 rounded-lg p-4 border border-secondary-600/50 dark:border-secondary-600/50">
+              <div className="bg-secondary-100 dark:bg-secondary-800/50 rounded-lg p-4 border border-secondary-300 dark:border-secondary-600/50">
                 <div className="flex items-center justify-between mb-3">
-                  <h3 className="text-lg font-semibold text-white dark:text-white flex items-center gap-2">
+                  <h3 className="text-lg font-semibold text-secondary-900 dark:text-white flex items-center gap-2">
                     <div className="w-2 h-2 bg-primary-400 dark:bg-primary-400 rounded-full animate-pulse"></div>
                     Step {currentStep + 1} of {steps.length}
                   </h3>
@@ -1245,7 +1247,7 @@ const ItemExecutor = ({ item, type, templates = [], workflows = [], snippets = [
                   )}
                 </div>
                 
-                <p className="text-secondary-300 dark:text-secondary-300 mb-3 font-medium">{currentStepData.name}</p>
+                <p className="text-secondary-700 dark:text-secondary-300 mb-3 font-medium">{currentStepData.name}</p>
                 
                 {/* Enhanced Progress indicator */}
                 <div className="flex items-center gap-2">
@@ -1274,7 +1276,7 @@ const ItemExecutor = ({ item, type, templates = [], workflows = [], snippets = [
           <div className="flex gap-3 items-start">
             <button
               onClick={onCancel}
-              className="px-8 py-4 text-secondary-300 dark:text-secondary-300 border border-secondary-500 dark:border-secondary-500 rounded-2xl hover:bg-secondary-700 dark:hover:bg-secondary-700 hover:border-secondary-400 dark:hover:border-secondary-400 hover:text-white dark:hover:text-white transition-all duration-300 font-semibold hover:shadow-lg transform hover:scale-105 bg-secondary-800/50 dark:bg-secondary-800/50 backdrop-blur-sm"
+              className="px-8 py-4 text-secondary-600 dark:text-secondary-300 border border-secondary-400 dark:border-secondary-500 rounded-2xl hover:bg-secondary-200 dark:hover:bg-secondary-700 hover:border-secondary-500 dark:hover:border-secondary-400 hover:text-secondary-800 dark:hover:text-white transition-all duration-300 font-semibold hover:shadow-lg transform hover:scale-105 bg-secondary-50 dark:bg-secondary-800/50 backdrop-blur-sm"
               tabIndex={stepType === 'snippet' ? 10 : allVariables.length + 2 || 2}
             >
               Cancel
@@ -1282,7 +1284,7 @@ const ItemExecutor = ({ item, type, templates = [], workflows = [], snippets = [
             {stepType === 'snippet' && onEdit && (
               <button
                 onClick={() => onEdit(item)}
-                className="px-8 py-4 bg-secondary-700 dark:bg-secondary-700 text-secondary-100 dark:text-secondary-100 rounded-2xl hover:bg-secondary-600 dark:hover:bg-secondary-600 transition-all duration-300 flex items-center gap-3 font-semibold hover:shadow-lg transform hover:scale-105 border border-secondary-600/50 dark:border-secondary-600/50 hover:border-secondary-500 dark:hover:border-secondary-500"
+                className="px-8 py-4 bg-secondary-200 dark:bg-secondary-700 text-secondary-800 dark:text-secondary-100 rounded-2xl hover:bg-secondary-300 dark:hover:bg-secondary-600 transition-all duration-300 flex items-center gap-3 font-semibold hover:shadow-lg transform hover:scale-105 border border-secondary-300 dark:border-secondary-600/50 hover:border-secondary-400 dark:hover:border-secondary-500"
                 tabIndex={11}
               >
                 <Edit className="w-5 h-5" />
@@ -1311,8 +1313,12 @@ const ItemExecutor = ({ item, type, templates = [], workflows = [], snippets = [
               disabled={!canProceed && !needsSelection}
               className={`px-8 py-4 text-white rounded-2xl font-bold disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-3 transition-all duration-300 shadow-xl hover:shadow-2xl transform hover:scale-110 hover:-translate-y-1 relative overflow-hidden group ${
                 stepType === 'snippet' 
-                  ? 'bg-warning-600 hover:bg-warning-700 hover:shadow-warning-500/30' 
-                  : 'bg-primary-600 hover:bg-primary-700 hover:shadow-primary-500/30'
+                  ? getColorClasses('snippet', 'button')
+                  : stepType === 'workflow'
+                  ? getColorClasses('workflow', 'button')
+                  : stepType === 'info'
+                  ? getColorClasses('info', 'button')
+                  : getColorClasses('template', 'button')
               }`}
               tabIndex={stepType === 'snippet' ? 1 : allVariables.length + 1 || 1}
               data-action-button={stepType === 'info' || stepType === 'insert' || stepType === 'snippet' ? 'true' : undefined}
@@ -1390,10 +1396,10 @@ const ItemExecutor = ({ item, type, templates = [], workflows = [], snippets = [
           {stepType === 'template' && (
             <>
               {stepType !== 'snippet' && (
-                <h3 className="text-lg font-semibold text-secondary-100 dark:text-secondary-100 mb-3">{needsSelection ? 'Choose Option First' : 'Fill in Variables'}</h3>
+                <h3 className="text-lg font-semibold text-secondary-900 dark:text-secondary-100 mb-3">{needsSelection ? 'Choose Option First' : 'Fill in Variables'}</h3>
               )}
               {needsSelection ? (
-                <p className="text-secondary-500 dark:text-secondary-500 italic">Select an option above to see variables</p>
+                <p className="text-secondary-600 dark:text-secondary-500 italic">Select an option above to see variables</p>
               ) : currentTemplate ? (
                 <>
                   {/* Variables in order of appearance */}
@@ -1405,7 +1411,7 @@ const ItemExecutor = ({ item, type, templates = [], workflows = [], snippets = [
                   const variable = varData.variable;
                   return (
                     <div key={`regular-${index}-${variable}`} className="mb-4">
-                      <label className="block text-sm font-medium text-secondary-300 dark:text-secondary-300 mb-2">
+                      <label className="block text-sm font-medium text-secondary-700 dark:text-secondary-300 mb-2">
                         {variable.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
                       </label>
                       {variable === 'previous_output' ? (
@@ -1413,7 +1419,7 @@ const ItemExecutor = ({ item, type, templates = [], workflows = [], snippets = [
                           value={variableValues[variable] || ''}
                           onChange={(e) => handleVariableChange(variable, e.target.value)}
                           onKeyDown={(e) => handleKeyDown(e, isLast, index)}
-                          className="w-full h-24 p-3 border border-secondary-600 dark:border-secondary-600 bg-secondary-800 dark:bg-secondary-800 text-secondary-100 dark:text-secondary-100 rounded-lg focus:ring-2 focus:ring-primary-400 dark:focus:ring-primary-400 focus:border-transparent"
+                          className="w-full h-24 p-3 border border-secondary-300 dark:border-secondary-600 bg-white dark:bg-secondary-800 text-secondary-900 dark:text-secondary-100 rounded-lg focus:ring-2 focus:ring-primary-400 dark:focus:ring-primary-400 focus:border-transparent"
                           placeholder="Output from previous step..."
                           readOnly={variable === 'previous_output' && stepOutputs.length > 0}
                           tabIndex={index + 1}
@@ -1425,7 +1431,7 @@ const ItemExecutor = ({ item, type, templates = [], workflows = [], snippets = [
                           value={variableValues[variable] || ''}
                           onChange={(e) => handleVariableChange(variable, e.target.value)}
                           onKeyDown={(e) => handleKeyDown(e, isLast, index)}
-                          className="w-full p-3 border border-secondary-600 dark:border-secondary-600 bg-secondary-800 dark:bg-secondary-800 text-secondary-100 dark:text-secondary-100 rounded-lg focus:ring-2 focus:ring-primary-400 dark:focus:ring-primary-400 focus:border-transparent"
+                          className="w-full p-3 border border-secondary-300 dark:border-secondary-600 bg-white dark:bg-secondary-800 text-secondary-900 dark:text-secondary-100 rounded-lg focus:ring-2 focus:ring-primary-400 dark:focus:ring-primary-400 focus:border-transparent"
                           placeholder={`Enter ${variable.replace(/_/g, ' ')}...`}
                           tabIndex={index + 1}
                           data-first-input={isFirst}
@@ -1442,7 +1448,7 @@ const ItemExecutor = ({ item, type, templates = [], workflows = [], snippets = [
                   
                   return (
                     <div key={`snippet-${index}-${snippetVar.placeholder}`} className="mb-4 relative">
-                      <label className="block text-sm font-medium text-secondary-300 dark:text-secondary-300 mb-2">
+                      <label className="block text-sm font-medium text-secondary-700 dark:text-secondary-300 mb-2">
                         {snippetVar.tag.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())} (Snippet)
                         {filteredSnippets.length === 1 && (
                           <span className="ml-2 text-sm text-success-400 dark:text-success-400">(Auto-filled)</span>
@@ -1459,8 +1465,8 @@ const ItemExecutor = ({ item, type, templates = [], workflows = [], snippets = [
                         onBlur={handleDropdownBlur}
                         className={`w-full p-3 border rounded-lg transition-all duration-200 ${
                           filteredSnippets.length <= 1 
-                            ? 'border-secondary-700 dark:border-secondary-700 bg-secondary-900 dark:bg-secondary-900 text-secondary-400 dark:text-secondary-400 cursor-not-allowed' 
-                            : 'border-secondary-600 dark:border-secondary-600 bg-secondary-800 dark:bg-secondary-800 text-secondary-100 dark:text-secondary-100 focus:ring-2 focus:ring-warning-400 dark:focus:ring-warning-400 focus:border-transparent cursor-pointer'
+                            ? 'border-secondary-300 dark:border-secondary-700 bg-secondary-100 dark:bg-secondary-900 text-secondary-500 dark:text-secondary-400 cursor-not-allowed' 
+                            : 'border-secondary-300 dark:border-secondary-600 bg-white dark:bg-secondary-800 text-secondary-900 dark:text-secondary-100 focus:ring-2 focus:ring-warning-400 dark:focus:ring-warning-400 focus:border-transparent cursor-pointer'
                         }`}
                         tabIndex={index + 1}
                         data-first-input={isFirst}
@@ -1513,10 +1519,10 @@ const ItemExecutor = ({ item, type, templates = [], workflows = [], snippets = [
                 onKeyDown={handleGlobalKeyDown}
                 className="focus:outline-none focus:ring-2 focus:ring-primary-400 focus:ring-opacity-50 rounded-lg p-1"
               >
-                <h3 className="text-lg font-semibold text-secondary-100 dark:text-secondary-100 mb-3 flex items-center gap-2">
+                <h3 className="text-lg font-semibold text-secondary-900 dark:text-secondary-100 mb-3 flex items-center gap-2">
                   <Layers className="w-5 h-5 text-success-400 dark:text-success-400" />
                   Choose Option ({allStepOptions.length} available)
-                  <span className="text-xs text-secondary-500 dark:text-secondary-500 ml-auto">
+                  <span className="text-xs text-secondary-600 dark:text-secondary-500 ml-auto">
                     ↑↓ navigate • Enter/Tab select
                   </span>
                 </h3>
@@ -1536,13 +1542,13 @@ const ItemExecutor = ({ item, type, templates = [], workflows = [], snippets = [
                         className={`p-3 border rounded-lg cursor-pointer transition-all duration-200 ${
                           isSelected
                             ? isTemplate 
-                              ? 'border-primary-500 dark:border-primary-500 bg-primary-900/30 dark:bg-primary-900/30 shadow-lg'
+                              ? `border-${getColorClasses('template', 'border').split(' ')[0].replace('border-', '')} ${getColorClasses('template', 'background')} shadow-lg`
                               : isWorkflow
-                              ? 'border-orange-500 dark:border-orange-500 bg-orange-900/30 dark:bg-orange-900/30 shadow-lg'
-                              : 'border-warning-500 dark:border-warning-500 bg-warning-900/30 dark:bg-warning-900/30 shadow-lg'
+                              ? `border-${getColorClasses('workflow', 'border').split(' ')[0].replace('border-', '')} ${getColorClasses('workflow', 'background')} shadow-lg`
+                              : `border-${getColorClasses('snippet', 'border').split(' ')[0].replace('border-', '')} ${getColorClasses('snippet', 'background')} shadow-lg`
                             : isHighlighted
-                            ? 'border-secondary-400 dark:border-secondary-400 bg-secondary-700 dark:bg-secondary-700 ring-2 ring-secondary-400 dark:ring-secondary-400 transform scale-[1.02]'
-                            : 'border-secondary-600 dark:border-secondary-600 bg-secondary-800 dark:bg-secondary-800 hover:bg-secondary-700 dark:hover:bg-secondary-700 hover:border-secondary-500 dark:hover:border-secondary-500'
+                            ? 'border-secondary-400 dark:border-secondary-400 bg-secondary-200 dark:bg-secondary-700 ring-2 ring-secondary-400 dark:ring-secondary-400 transform scale-[1.02]'
+                            : 'border-secondary-300 dark:border-secondary-600 bg-white dark:bg-secondary-800 hover:bg-secondary-100 dark:hover:bg-secondary-700 hover:border-secondary-400 dark:hover:border-secondary-500'
                         }`}
                         onClick={() => {
                           setSelectedOptions({
@@ -1556,30 +1562,30 @@ const ItemExecutor = ({ item, type, templates = [], workflows = [], snippets = [
                           <div className="flex items-center gap-3">
                             <div className="flex items-center gap-2">
                               {isTemplate ? (
-                                <FileText className="w-5 h-5 text-primary-400 dark:text-primary-400" />
+                                <FileText className={`w-5 h-5 ${getColorClasses('template', 'icon')}`} />
                               ) : isWorkflow ? (
-                                <Workflow className="w-5 h-5 text-orange-400 dark:text-orange-400" />
+                                <Workflow className={`w-5 h-5 ${getColorClasses('workflow', 'icon')}`} />
                               ) : (
-                                <Layers className="w-5 h-5 text-warning-400 dark:text-warning-400" />
+                                <Layers className={`w-5 h-5 ${getColorClasses('snippet', 'icon')}`} />
                               )}
                               <span className={`text-xs px-2 py-1 rounded font-medium ${
-                                isTemplate ? 'bg-primary-100 dark:bg-primary-100 text-primary-800 dark:text-primary-800' : isWorkflow ? 'bg-orange-100 dark:bg-orange-100 text-orange-800 dark:text-orange-800' : 'bg-warning-100 dark:bg-warning-100 text-warning-800 dark:text-warning-800'
+                                isTemplate ? getColorClasses('template', 'tag') : isWorkflow ? getColorClasses('workflow', 'tag') : getColorClasses('snippet', 'tag')
                               }`}>
                                 {isTemplate ? 'Template' : isWorkflow ? 'Workflow' : 'Snippet'}
                               </span>
                             </div>
                             <div>
-                              <h4 className="font-semibold text-secondary-100 dark:text-secondary-100 text-base">{option.item.name}</h4>
-                              <p className="text-sm text-secondary-400 dark:text-secondary-400 mt-1 line-clamp-2">{option.item.description}</p>
+                              <h4 className="font-semibold text-secondary-900 dark:text-secondary-100 text-base">{option.item.name}</h4>
+                              <p className="text-sm text-secondary-600 dark:text-secondary-400 mt-1 line-clamp-2">{option.item.description}</p>
                             </div>
                           </div>
-                          <div className="text-xs text-secondary-500 dark:text-secondary-500 italic">
+                          <div className="text-xs text-secondary-600 dark:text-secondary-500 italic">
                             {isHighlighted && '← Select'}
                           </div>
                         </div>
                         
                         {/* Compact preview - only show first 2 lines */}
-                        <div className="mt-2 text-xs text-secondary-500 dark:text-secondary-500 bg-secondary-900/50 dark:bg-secondary-900/50 p-2 rounded border-l-2 border-secondary-600 dark:border-secondary-600">
+                        <div className="mt-2 text-xs text-secondary-600 dark:text-secondary-500 bg-secondary-100 dark:bg-secondary-900/50 p-2 rounded border-l-2 border-secondary-300 dark:border-secondary-600">
                           {option.item.content ? (
                             option.item.content.split('\n').slice(0, 2).join('\n') + 
                             (option.item.content.split('\n').length > 2 ? '\n...' : '')
@@ -1592,7 +1598,7 @@ const ItemExecutor = ({ item, type, templates = [], workflows = [], snippets = [
                         {!isTemplate && option.item.tags && option.item.tags.length > 0 && (
                           <div className="flex flex-wrap gap-1 mt-2">
                             {option.item.tags.slice(0, 3).map(tag => (
-                              <span key={tag} className="px-2 py-1 bg-warning-100 dark:bg-warning-100 text-warning-800 dark:text-warning-800 text-xs rounded">
+                              <span key={tag} className={`px-2 py-1 text-xs rounded ${getColorClasses('snippet', 'tag')}`}>
                                 {tag}
                               </span>
                             ))}
@@ -1623,13 +1629,13 @@ const ItemExecutor = ({ item, type, templates = [], workflows = [], snippets = [
                     if (!snippet) return null;
                     
                     return (
-                      <div key={snippetId} className="p-3 border border-warning-500 dark:border-warning-500 bg-warning-900/30 dark:bg-warning-900/30 rounded-lg">
+                      <div key={snippetId} className={`p-3 border rounded-lg ${getColorClasses('snippet', 'border')} ${getColorClasses('snippet', 'background')}`}>
                         <h4 className="font-medium text-secondary-100 dark:text-secondary-100 mb-1">{snippet.name}</h4>
                         <p className="text-sm text-secondary-300 dark:text-secondary-300 mb-2">{snippet.description}</p>
                         {snippet.tags && (
                           <div className="flex flex-wrap gap-1">
                             {snippet.tags.map(tag => (
-                              <span key={tag} className="px-2 py-1 bg-warning-100 dark:bg-warning-100 text-warning-800 dark:text-warning-800 text-xs rounded">
+                              <span key={tag} className={`px-2 py-1 text-xs rounded ${getColorClasses('snippet', 'tag')}`}>
                                 {tag}
                               </span>
                             ))}
@@ -1643,17 +1649,17 @@ const ItemExecutor = ({ item, type, templates = [], workflows = [], snippets = [
             )}
             
             {stepType === 'insert' && (
-              <div className="bg-warning-900 dark:bg-warning-900 rounded-lg p-4 border border-warning-700 dark:border-warning-700">
-                <h3 className="text-lg font-semibold text-warning-100 dark:text-warning-100 mb-3 flex items-center gap-2">
+              <div className="bg-secondary-800 dark:bg-secondary-800 rounded-lg p-4 border border-secondary-600 dark:border-secondary-600">
+                <h3 className="text-lg font-semibold text-secondary-100 dark:text-secondary-100 mb-3 flex items-center gap-2">
                   <Tag className="w-5 h-5" />
                   Insert Step
                 </h3>
-                <div className="text-warning-200 dark:text-warning-200 whitespace-pre-wrap">
+                <div className="text-secondary-200 dark:text-secondary-200 whitespace-pre-wrap">
                   {currentStepData.insertContent || 'No insert selected for this step.'}
                 </div>
                 {selectedSnippets.size > 0 && (
-                  <div className="mt-3 pt-3 border-t border-warning-700 dark:border-warning-700">
-                    <p className="text-sm text-warning-300 dark:text-warning-300 mb-2">
+                  <div className="mt-3 pt-3 border-t border-secondary-600 dark:border-secondary-600">
+                    <p className="text-sm text-secondary-300 dark:text-secondary-300 mb-2">
                       + {selectedSnippets.size} snippet{selectedSnippets.size > 1 ? 's' : ''} will be appended
                     </p>
                   </div>
@@ -1689,8 +1695,8 @@ const ItemExecutor = ({ item, type, templates = [], workflows = [], snippets = [
                         </p>
                         <div className="flex flex-wrap gap-2">
                           {currentTemplate.tags.map(tag => (
-                            <span key={tag} className="group px-4 py-2 bg-gradient-to-r from-warning-500/20 to-warning-600/20 dark:from-warning-500/20 dark:to-warning-600/20 border border-warning-400/40 dark:border-warning-400/40 text-warning-200 dark:text-warning-200 text-sm rounded-lg hover:from-warning-500/30 hover:to-warning-600/30 dark:hover:from-warning-500/30 dark:hover:to-warning-600/30 hover:border-warning-400/60 dark:hover:border-warning-400/60 transition-all duration-200 cursor-default flex items-center gap-2">
-                              <div className="w-2 h-2 bg-warning-400 dark:bg-warning-400 rounded-full group-hover:bg-warning-300 dark:group-hover:bg-warning-300 transition-colors duration-200"></div>
+                            <span key={tag} className={`group px-4 py-2 text-sm rounded-lg transition-all duration-200 cursor-default flex items-center gap-2 ${getColorClasses('snippet', 'tag')}`}>
+                              <div className={`w-2 h-2 ${getColorClasses('snippet', 'icon').replace('text-', 'bg-')} rounded-full transition-colors duration-200`}></div>
                               {tag}
                             </span>
                           ))}
@@ -1760,7 +1766,7 @@ const ItemExecutor = ({ item, type, templates = [], workflows = [], snippets = [
           {stepType === 'template' && !needsSelection && (
             <div className={`space-y-4 lg:col-span-6`}>
               <div>
-                <h3 className="text-lg font-semibold text-secondary-100 dark:text-secondary-100 mb-3">{isWorkflow ? 'Preview' : 'Preview'}</h3>
+                <h3 className="text-lg font-semibold text-secondary-900 dark:text-secondary-100 mb-3">{isWorkflow ? 'Preview' : 'Preview'}</h3>
                 <div className="bg-white dark:bg-secondary-800 rounded-lg p-4 border border-secondary-300 dark:border-secondary-700 min-h-48">
                   <div className="prose prose-sm max-w-none whitespace-pre-wrap text-secondary-900 dark:text-secondary-100">
                     {generateOutput()}
@@ -1776,7 +1782,7 @@ const ItemExecutor = ({ item, type, templates = [], workflows = [], snippets = [
             {/* Snippet Selection - Show for templates and workflows */}
             {filteredSnippets.length > 0 && (
               <div>
-                <h3 className="text-lg font-semibold text-secondary-100 dark:text-secondary-100 mb-3 flex items-center gap-2">
+                <h3 className="text-lg font-semibold text-secondary-900 dark:text-secondary-100 mb-3 flex items-center gap-2">
                   <Plus className="w-5 h-5 text-primary-400 dark:text-primary-400" />
                   Snippets
                 </h3>
@@ -1786,8 +1792,8 @@ const ItemExecutor = ({ item, type, templates = [], workflows = [], snippets = [
                         key={snippet.id}
                         className={`p-3 border rounded-lg cursor-pointer transition-colors ${
                           selectedSnippets.has(snippet.id)
-                            ? 'border-primary-500 dark:border-primary-500 bg-primary-900/30 dark:bg-primary-900/30'
-                            : 'border-secondary-600 dark:border-secondary-600 bg-secondary-800 dark:bg-secondary-800 hover:bg-secondary-700 dark:hover:bg-secondary-700'
+                            ? 'border-primary-500 dark:border-primary-500 bg-primary-100/30 dark:bg-primary-900/30'
+                            : 'border-secondary-300 dark:border-secondary-600 bg-white dark:bg-secondary-800 hover:bg-secondary-100 dark:hover:bg-secondary-700'
                         }`}
                         onClick={() => {
                           const newSelected = new Set(selectedSnippets);
@@ -1812,8 +1818,8 @@ const ItemExecutor = ({ item, type, templates = [], workflows = [], snippets = [
                             </div>
                           </div>
                           <div className="flex-1">
-                            <h4 className="font-medium text-secondary-100 dark:text-secondary-100 mb-1">{snippet.name}</h4>
-                            <p className="text-sm text-secondary-300 dark:text-secondary-300">{snippet.description}</p>
+                            <h4 className="font-medium text-secondary-900 dark:text-secondary-100 mb-1">{snippet.name}</h4>
+                            <p className="text-sm text-secondary-600 dark:text-secondary-300">{snippet.description}</p>
                           </div>
                         </div>
                       </div>
@@ -1825,7 +1831,7 @@ const ItemExecutor = ({ item, type, templates = [], workflows = [], snippets = [
             {/* Selected Snippets Preview - Show for all step types */}
             {selectedSnippets.size > 0 && (
               <div>
-                <h3 className="text-lg font-semibold text-secondary-100 dark:text-secondary-100 mb-3 flex items-center gap-2">
+                <h3 className="text-lg font-semibold text-secondary-900 dark:text-secondary-100 mb-3 flex items-center gap-2">
                   <Plus className="w-5 h-5 text-primary-400 dark:text-primary-400" />
                   Selected Snippets ({selectedSnippets.size})
                 </h3>

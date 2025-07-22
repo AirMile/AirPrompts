@@ -4,11 +4,17 @@ import { persist } from 'zustand/middleware';
 const themeStore = create(
   persist(
     (set, get) => ({
-      // Current color scheme (blue, orange, purple, green)
-      currentColorScheme: 'blue',
+      // Separate color schemes for light and dark modes
+      lightModeScheme: 'blue',
+      darkModeScheme: 'blue',
       
       // Dark mode state
       isDarkMode: false,
+      
+      // Current color scheme (computed getter function)
+      getCurrentColorScheme: () => {
+        return get().isDarkMode ? get().darkModeScheme : get().lightModeScheme;
+      },
       
       // Available color schemes with light/dark variants
       colorSchemes: {
@@ -41,6 +47,12 @@ const themeStore = create(
           icon: '🌙',
           light: 'theme-classic-light',
           dark: 'theme-classic-dark'
+        },
+        grey: {
+          name: 'Grey',
+          icon: '⚪',
+          light: 'theme-grey-light',
+          dark: 'theme-grey-dark'
         }
       },
       
@@ -60,8 +72,9 @@ const themeStore = create(
       
       // Get current theme class
       getCurrentThemeClass: () => {
-        const { currentColorScheme, isDarkMode, colorSchemes } = get();
-        const scheme = colorSchemes[currentColorScheme];
+        const { isDarkMode, lightModeScheme, darkModeScheme, colorSchemes } = get();
+        const currentScheme = isDarkMode ? darkModeScheme : lightModeScheme;
+        const scheme = colorSchemes[currentScheme];
         return isDarkMode ? scheme.dark : scheme.light;
       },
       
@@ -88,29 +101,75 @@ const themeStore = create(
             document.documentElement.classList.remove('dark');
           }
           
-          set({ currentColorScheme: schemeName });
+          // Update the appropriate scheme based on current mode
+          if (isDark) {
+            set({ darkModeScheme: schemeName });
+          } else {
+            set({ lightModeScheme: schemeName });
+          }
+        }
+      },
+      
+      // Set light mode scheme
+      setLightModeScheme: (schemeName) => {
+        const scheme = get().colorSchemes[schemeName];
+        if (scheme) {
+          set({ lightModeScheme: schemeName });
+          
+          // If currently in light mode, apply the theme immediately
+          if (!get().isDarkMode) {
+            get().applyCurrentTheme();
+          }
+        }
+      },
+      
+      // Set dark mode scheme
+      setDarkModeScheme: (schemeName) => {
+        const scheme = get().colorSchemes[schemeName];
+        if (scheme) {
+          set({ darkModeScheme: schemeName });
+          
+          // If currently in dark mode, apply the theme immediately
+          if (get().isDarkMode) {
+            get().applyCurrentTheme();
+          }
+        }
+      },
+      
+      // Apply current theme based on mode
+      applyCurrentTheme: () => {
+        const { isDarkMode, lightModeScheme, darkModeScheme, colorSchemes } = get();
+        const currentScheme = isDarkMode ? darkModeScheme : lightModeScheme;
+        const scheme = colorSchemes[currentScheme];
+        
+        if (scheme) {
+          // Remove all theme classes
+          Object.values(colorSchemes).forEach(s => {
+            document.documentElement.classList.remove(s.light, s.dark);
+          });
+          
+          // Remove legacy classes
+          document.documentElement.classList.remove('theme-purple', 'theme-orange');
+          
+          // Add appropriate theme class
+          document.documentElement.classList.add(isDarkMode ? scheme.dark : scheme.light);
+          
+          // Update Tailwind dark class
+          if (isDarkMode) {
+            document.documentElement.classList.add('dark');
+          } else {
+            document.documentElement.classList.remove('dark');
+          }
         }
       },
       
       toggleDarkMode: () => {
         const newDarkMode = !get().isDarkMode;
-        const { currentColorScheme, colorSchemes } = get();
-        const scheme = colorSchemes[currentColorScheme];
-        
-        // Remove both variants
-        document.documentElement.classList.remove(scheme.light, scheme.dark);
-        
-        // Add the appropriate variant
-        document.documentElement.classList.add(newDarkMode ? scheme.dark : scheme.light);
-        
-        // Also update Tailwind dark class
-        if (newDarkMode) {
-          document.documentElement.classList.add('dark');
-        } else {
-          document.documentElement.classList.remove('dark');
-        }
         
         set({ isDarkMode: newDarkMode });
+        
+        // Apply the correct theme for the new mode
+        get().applyCurrentTheme();
       },
       
       // Set theme directly (for UI that combines scheme + mode)
@@ -175,20 +234,8 @@ const themeStore = create(
       
       // Initialize theme on mount
       initializeTheme: () => {
-        const { currentColorScheme, isDarkMode, colorSchemes } = get();
-        const scheme = colorSchemes[currentColorScheme];
-        
-        if (scheme) {
-          // Apply the appropriate theme class
-          document.documentElement.classList.add(isDarkMode ? scheme.dark : scheme.light);
-          
-          // Also apply the dark class for Tailwind CSS
-          if (isDarkMode) {
-            document.documentElement.classList.add('dark');
-          } else {
-            document.documentElement.classList.remove('dark');
-          }
-        }
+        // Apply current theme
+        get().applyCurrentTheme();
         
         // Apply custom variables
         const customVars = get().customTheme.variables;

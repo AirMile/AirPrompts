@@ -34,7 +34,7 @@ app.use((req, res, next) => {
 // Security middleware
 app.use(helmet());
 app.use(cors({
-  origin: 'http://localhost:5173', // Vite dev server
+  origin: /^http:\/\/localhost:\d+$/, // Alle localhost poorten toegestaan
   credentials: true
 }));
 

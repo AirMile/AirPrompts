@@ -1,6 +1,7 @@
 import React from 'react';
 import { ChevronDownIcon, ChevronRightIcon } from '@heroicons/react/24/outline';
 import useSectionVisibility from '../../hooks/ui/useSectionVisibility';
+import { useItemColors } from '../../hooks/useItemColors.js';
 
 /**
  * CollapsibleSection component for organizing content with expand/collapse functionality
@@ -32,24 +33,25 @@ const CollapsibleSection = ({
   ...restProps // Pass through any additional props
 }) => {
   const { isVisible: internalVisible, toggle } = useSectionVisibility(sectionId, defaultVisible);
+  const { getColorClasses } = useItemColors();
   
   // Use external visibility if provided, otherwise use internal state
   const isVisible = externalVisible !== null ? externalVisible : internalVisible;
   
 
-  // Get color based on section title/type
+  // Get color based on section title/type using custom colors
   const getCountBadgeColor = (title) => {
     const titleLower = title.toLowerCase();
     if (titleLower.includes('favorite')) {
       return 'bg-yellow-600 dark:bg-yellow-500 text-yellow-100 dark:text-yellow-50';
     } else if (titleLower.includes('workflow')) {
-      return 'bg-success-600 dark:bg-success-500 text-success-100 dark:text-success-50';
+      return getColorClasses('workflow', 'tag');
     } else if (titleLower.includes('template')) {
-      return 'bg-primary-600 dark:bg-primary-500 text-primary-100 dark:text-primary-50';
+      return getColorClasses('template', 'tag');
     } else if (titleLower.includes('snippet')) {
-      return 'bg-purple-600 dark:bg-purple-500 text-purple-100 dark:text-purple-50';
+      return getColorClasses('snippet', 'tag');
     }
-    return 'bg-primary-600 dark:bg-primary-500 text-primary-100 dark:text-primary-50'; // default
+    return getColorClasses('template', 'tag'); // default to template color
   };
 
   const handleToggle = () => {

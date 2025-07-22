@@ -27,6 +27,7 @@ import { useWidgets } from '../../hooks/domain/useWidgets.js';
 import useSectionVisibility from '../../hooks/ui/useSectionVisibility.js';
 import { performAdvancedSearch } from '../../utils/searchUtils.js';
 import { useUserPreferences } from '../../hooks/domain/useUserPreferences.js';
+import { useItemColors } from '../../hooks/useItemColors.js';
 import { 
   getFolderFavorites, 
   getFolderItems,
@@ -91,6 +92,7 @@ const Homepage = ({
 }) => {
   // Use preferences system for view mode
   const { layout, updateLayout } = useUserPreferences();
+  const { getColorClasses } = useItemColors();
   const viewMode = layout.viewMode;
   
   const setViewMode = (mode) => {
@@ -1245,14 +1247,13 @@ const Homepage = ({
             actionButton={
               <button
                 onClick={() => onEditWorkflow({})}
-                className="
-                  p-3 bg-success-600 text-white rounded-lg font-semibold
+                className={`
+                  p-3 ${getColorClasses('workflow', 'button')} rounded-lg font-semibold
                   flex items-center justify-center
-                  hover:bg-success-700 hover:shadow-lg hover:scale-105
-                  focus:outline-none focus:ring-2 focus:ring-success-400 focus:ring-opacity-50
+                  hover:shadow-lg hover:scale-105
+                  focus:outline-none focus:ring-2 focus:ring-opacity-50
                   transition-all duration-200 ease-in-out
-                  border border-success-500 hover:border-success-400
-                "
+                `}
                 title="New Workflow"
               >
                 <Plus className="w-5 h-5" />
@@ -1314,14 +1315,13 @@ const Homepage = ({
             actionButton={
               <button
                 onClick={() => onEditTemplate({})}
-                className="
-                  p-3 bg-primary-600 text-white rounded-lg font-semibold
+                className={`
+                  p-3 ${getColorClasses('template', 'button')} rounded-lg font-semibold
                   flex items-center justify-center
-                  hover:bg-primary-700 hover:shadow-lg hover:scale-105
-                  focus:outline-none focus:ring-2 focus:ring-primary-400 focus:ring-opacity-50
+                  hover:shadow-lg hover:scale-105
+                  focus:outline-none focus:ring-2 focus:ring-opacity-50
                   transition-all duration-200 ease-in-out
-                  border border-primary-500 hover:border-primary-400
-                "
+                `}
                 title="New Template"
               >
                 <Plus className="w-5 h-5" />
@@ -1383,14 +1383,13 @@ const Homepage = ({
             actionButton={
               <button
                 onClick={() => onEditSnippet({})}
-                className="
-                  p-3 bg-purple-600 text-white rounded-lg font-semibold
+                className={`
+                  p-3 ${getColorClasses('snippet', 'button')} rounded-lg font-semibold
                   flex items-center justify-center
-                  hover:bg-purple-700 hover:shadow-lg hover:scale-105
-                  focus:outline-none focus:ring-2 focus:ring-purple-400 focus:ring-opacity-50
+                  hover:shadow-lg hover:scale-105
+                  focus:outline-none focus:ring-2 focus:ring-opacity-50
                   transition-all duration-200 ease-in-out
-                  border border-purple-500 hover:border-purple-400
-                "
+                `}
                 title="New Snippet"
               >
                 <Plus className="w-5 h-5" />

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { X, Palette, Settings as SettingsIcon } from 'lucide-react';
+import { X, Palette, Settings as SettingsIcon, Brush } from 'lucide-react';
 import ThemeSelector from '../ui/ThemeSelector.jsx';
+import ItemColorSettings from './ItemColorSettings.jsx';
 
 const SettingsModal = ({ isOpen, onClose }) => {
   const [activeTab, setActiveTab] = useState('appearance');
@@ -8,7 +9,8 @@ const SettingsModal = ({ isOpen, onClose }) => {
   if (!isOpen) return null;
 
   const tabs = [
-    { id: 'appearance', label: 'Appearance', icon: Palette }
+    { id: 'appearance', label: 'Appearance', icon: Palette },
+    { id: 'colors', label: 'Item Colors', icon: Brush }
   ];
 
   return (
@@ -78,6 +80,10 @@ const SettingsModal = ({ isOpen, onClose }) => {
                   
                   <ThemeSelector />
                 </div>
+              )}
+              
+              {activeTab === 'colors' && (
+                <ItemColorSettings />
               )}
             </div>
           </div>

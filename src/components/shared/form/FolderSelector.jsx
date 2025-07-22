@@ -78,8 +78,8 @@ const FolderSelector = ({
     return (
       <div key={folder.id}>
         <div
-          className={`flex items-center px-3 py-2 cursor-pointer hover:bg-gray-700 transition-colors ${
-            isSelected ? 'bg-gray-700 text-blue-400' : 'text-gray-300'
+          className={`flex items-center px-3 py-2 cursor-pointer hover:bg-secondary-200 dark:hover:bg-gray-700 transition-colors ${
+            isSelected ? 'bg-secondary-300 dark:bg-gray-700 text-primary-600 dark:text-blue-400' : 'text-secondary-700 dark:text-gray-300'
           }`}
           style={{ paddingLeft: `${12 + indent}px` }}
           onClick={() => {
@@ -91,7 +91,7 @@ const FolderSelector = ({
           <Folder className="h-4 w-4 mr-2 flex-shrink-0" />
           <span className="truncate">{folder.name}</span>
           {isSelected && (
-            <span className="ml-auto text-blue-400 text-sm">✓</span>
+            <span className="ml-auto text-primary-600 dark:text-blue-400 text-sm">✓</span>
           )}
         </div>
         {folder.children && folder.children.map(child => 
@@ -112,39 +112,39 @@ const FolderSelector = ({
     <div ref={dropdownRef} className={`relative ${className}`}>
       <button
         type="button"
-        className={`w-full p-3 border border-gray-600 bg-gray-800 text-gray-100 rounded-lg focus:ring-2 ${focusRingClasses[focusRingColor]} focus:border-transparent flex items-center justify-between text-left`}
+        className={`w-full p-3 border border-secondary-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-secondary-900 dark:text-gray-100 rounded-lg focus:ring-2 ${focusRingClasses[focusRingColor]} focus:border-transparent flex items-center justify-between text-left`}
         onClick={() => setIsOpen(!isOpen)}
       >
         <div className="flex items-center">
-          <Folder className="h-4 w-4 mr-2 text-gray-400" />
-          <span className={selectedFolderId ? 'text-gray-100' : 'text-gray-400'}>
+          <Folder className="h-4 w-4 mr-2 text-secondary-500 dark:text-gray-400" />
+          <span className={selectedFolderId ? 'text-secondary-900 dark:text-gray-100' : 'text-secondary-500 dark:text-gray-400'}>
             {getSelectedFolderName()}
           </span>
         </div>
         <ChevronDown 
-          className={`h-4 w-4 text-gray-400 transition-transform ${isOpen ? 'rotate-180' : ''}`}
+          className={`h-4 w-4 text-secondary-500 dark:text-gray-400 transition-transform ${isOpen ? 'rotate-180' : ''}`}
         />
       </button>
 
       {isOpen && (
-        <div className="absolute z-50 mt-1 w-full bg-gray-800 border border-gray-600 rounded-lg shadow-lg max-h-64 overflow-hidden">
-          <div className="p-3 border-b border-gray-600">
+        <div className="absolute z-50 mt-1 w-full bg-white dark:bg-gray-800 border border-secondary-300 dark:border-gray-600 rounded-lg shadow-lg max-h-64 overflow-hidden">
+          <div className="p-3 border-b border-secondary-300 dark:border-gray-600">
             <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-secondary-500 dark:text-gray-400" />
               <input
                 ref={searchInputRef}
                 type="text"
                 placeholder="Search folders..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-10 pr-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-gray-100 placeholder-gray-400 focus:ring-2 focus:ring-blue-400 focus:border-transparent text-sm"
+                className="w-full pl-10 pr-3 py-2 bg-secondary-100 dark:bg-gray-700 border border-secondary-300 dark:border-gray-600 rounded-md text-secondary-900 dark:text-gray-100 placeholder-secondary-500 dark:placeholder-gray-400 focus:ring-2 focus:ring-blue-400 focus:border-transparent text-sm"
               />
             </div>
           </div>
           
           <div className="max-h-48 overflow-y-auto">
             {filteredFolders.length === 0 ? (
-              <div className="p-3 text-gray-500 text-center text-sm">
+              <div className="p-3 text-secondary-600 dark:text-gray-500 text-center text-sm">
                 {searchTerm ? 'No folders found' : 'No folders available'}
               </div>
             ) : searchTerm ? (

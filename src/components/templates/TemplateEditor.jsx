@@ -2,8 +2,10 @@ import React, { useState } from 'react';
 import { Tag } from 'lucide-react';
 import { extractAllVariables } from '../../types/template.types.js';
 import FolderSelector from '../shared/form/FolderSelector.jsx';
+import { useItemColors } from '../../hooks/useItemColors.js';
 
 const TemplateEditor = ({ template, folders = [], onSave, onCancel }) => {
+  const { getColorClasses } = useItemColors();
   const [formData, setFormData] = useState({
     name: template?.name || '',
     description: template?.description || '',
@@ -149,8 +151,8 @@ const TemplateEditor = ({ template, folders = [], onSave, onCancel }) => {
                         <span 
                           className={`px-2 py-1 rounded text-sm font-medium ${
                             part.includes('insert:') 
-                              ? 'bg-warning-100 dark:bg-warning-100 text-warning-800 dark:text-warning-800' 
-                              : 'bg-primary-100 dark:bg-primary-100 text-primary-800 dark:text-primary-800'
+                              ? getColorClasses('snippet', 'tag')
+                              : getColorClasses('template', 'tag')
                           }`}
                         >
                           {part}
@@ -171,9 +173,9 @@ const TemplateEditor = ({ template, folders = [], onSave, onCancel }) => {
                 </h3>
                 <div className="space-y-2">
                   {variables.map((variable, index) => (
-                    <div key={index} className="flex items-center gap-2 p-2 bg-primary-900 dark:bg-primary-900 rounded-lg">
-                      <Tag className="w-4 h-4 text-primary-300 dark:text-primary-300" />
-                      <span className="text-sm font-medium text-primary-100 dark:text-primary-100">{variable}</span>
+                    <div key={index} className={`flex items-center gap-2 p-2 rounded-lg ${getColorClasses('template', 'background')}`}>
+                      <Tag className={`w-4 h-4 ${getColorClasses('template', 'icon')}`} />
+                      <span className="text-sm font-medium text-secondary-100 dark:text-secondary-100">{variable}</span>
                     </div>
                   ))}
                 </div>
@@ -187,9 +189,9 @@ const TemplateEditor = ({ template, folders = [], onSave, onCancel }) => {
                 </h3>
                 <div className="space-y-2">
                   {snippetVariables.map((snippetVar, index) => (
-                    <div key={index} className="flex items-center gap-2 p-2 bg-warning-900 dark:bg-warning-900 rounded-lg">
-                      <Tag className="w-4 h-4 text-warning-300 dark:text-warning-300" />
-                      <span className="text-sm font-medium text-warning-100 dark:text-warning-100">
+                    <div key={index} className={`flex items-center gap-2 p-2 rounded-lg ${getColorClasses('snippet', 'background')}`}>
+                      <Tag className={`w-4 h-4 ${getColorClasses('snippet', 'icon')}`} />
+                      <span className="text-sm font-medium text-secondary-100 dark:text-secondary-100">
                         {snippetVar.placeholder} → tag: "{snippetVar.tag}"
                       </span>
                     </div>

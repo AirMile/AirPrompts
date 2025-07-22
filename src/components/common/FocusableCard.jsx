@@ -1,5 +1,6 @@
 import React from 'react';
 import { Play, Edit, Trash2, Star, GripVertical, Workflow, FileText, Tag } from 'lucide-react';
+import { useItemColors } from '../../hooks/useItemColors.js';
 
 const FocusableCard = ({ 
   item,
@@ -13,6 +14,7 @@ const FocusableCard = ({
   isItemFavorite = () => false,
   keyboardNavigation = {}
 }) => {
+  const { getColorClasses } = useItemColors();
 
   // Check if classic dark theme is active
   const isClassicDark = () => {
@@ -20,16 +22,8 @@ const FocusableCard = ({
   };
 
   const getTypeColor = (itemType) => {
-    switch (itemType) {
-      case 'workflow':
-        return 'bg-success-600 hover:bg-success-700';
-      case 'template':
-        return 'bg-primary-600 hover:bg-primary-700';
-      case 'snippet':
-        return 'bg-purple-600 hover:bg-purple-700';
-      default:
-        return 'bg-primary-600 hover:bg-primary-700';
-    }
+    const normalizedType = normalizeType(itemType);
+    return getColorClasses(normalizedType, 'button');
   };
 
   const normalizeType = (itemType) => {
@@ -50,32 +44,14 @@ const FocusableCard = ({
 
   const getHoverBorderColor = (itemType) => {
     const normalizedType = normalizeType(itemType);
-    
-    switch (normalizedType) {
-      case 'workflow':
-        return 'hover:border-success-500 hover:border-2';
-      case 'template':
-        return 'hover:border-primary-400 hover:border-2';
-      case 'snippet':
-        return 'hover:border-purple-500 hover:border-2';
-      default:
-        return 'hover:border-primary-400 hover:border-2';
-    }
+    return `hover:border-2 ${getColorClasses(normalizedType, 'border').replace('border-', 'hover:border-')}`;
   };
 
   const getKeyboardFocusColor = (itemType) => {
     const normalizedType = normalizeType(itemType);
-    
-    switch (normalizedType) {
-      case 'workflow':
-        return 'border-success-400 border-2 ring-2 ring-success-400/50 bg-success-900/20';
-      case 'template':
-        return 'border-primary-400 border-2 ring-2 ring-primary-400/50 bg-primary-900/20';
-      case 'snippet':
-        return 'border-purple-400 border-2 ring-2 ring-purple-400/50 bg-purple-900/20';
-      default:
-        return 'border-primary-400 border-2 ring-2 ring-primary-400/50 bg-primary-900/20';
-    }
+    const borderColor = getColorClasses(normalizedType, 'border');
+    const bgColor = getColorClasses(normalizedType, 'background');
+    return `${borderColor} border-2 ring-2 ring-opacity-50 ${bgColor}`;
   };
 
   const getTypeIcon = (itemType) => {

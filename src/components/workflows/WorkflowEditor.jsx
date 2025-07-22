@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { ArrowRight, Workflow, Trash2, Plus, X, FileText, Info, Tag, Layers, Search, Filter } from 'lucide-react';
 import { createWorkflowStep } from '../../types/template.types.js';
 import FolderSelector from '../shared/form/FolderSelector.jsx';
+import { useItemColors } from '../../hooks/useItemColors.js';
 
 // Separate SearchAndFilter component to prevent re-renders
 const SearchAndFilter = ({ 
@@ -40,7 +41,7 @@ const SearchAndFilter = ({
               placeholder={`Search ${type}s...`}
               value={searchTerm}
               onChange={(e) => onSearchChange(e.target.value)}
-              className="w-full pl-10 pr-3 py-2 border border-secondary-600 bg-secondary-800 text-secondary-100 rounded text-sm focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all duration-200"
+              className="w-full pl-10 pr-3 py-2 border border-secondary-300 dark:border-secondary-600 bg-white dark:bg-secondary-800 text-secondary-900 dark:text-secondary-100 rounded text-sm focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all duration-200"
             />
           </div>
           <div className="relative">
@@ -48,7 +49,7 @@ const SearchAndFilter = ({
             <select
               value={filterFolder}
               onChange={(e) => onFilterChange(e.target.value)}
-              className="pl-10 pr-3 py-2 border border-secondary-600 bg-secondary-800 text-secondary-100 rounded text-sm focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all duration-200"
+              className="pl-10 pr-3 py-2 border border-secondary-300 dark:border-secondary-600 bg-white dark:bg-secondary-800 text-secondary-900 dark:text-secondary-100 rounded text-sm focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all duration-200"
             >
               <option value="">All folders</option>
               {uniqueFolders.map(folder => (
@@ -59,7 +60,7 @@ const SearchAndFilter = ({
         </div>
         
         {/* Results count */}
-        <div className="flex items-center justify-between text-xs text-secondary-400">
+        <div className="flex items-center justify-between text-xs text-secondary-600 dark:text-secondary-400">
           <span>{filteredItems.length} {type}(s) found</span>
           {(searchTerm || filterFolder) && (
             <button
@@ -78,7 +79,7 @@ const SearchAndFilter = ({
       {/* Items List */}
       <div className="grid grid-cols-1 gap-2 max-h-64 overflow-y-auto">
         {filteredItems.length === 0 ? (
-          <div className="text-center py-8 text-secondary-500">
+          <div className="text-center py-8 text-secondary-600 dark:text-secondary-500">
             <div className="text-lg mb-2">🔍</div>
             <p>No {type}s found</p>
             {searchTerm && <p className="text-sm">Try adjusting your search terms</p>}
@@ -88,7 +89,7 @@ const SearchAndFilter = ({
             <button
               key={item.id}
               onClick={() => onItemSelect(item)}
-              className="text-left p-2 border border-secondary-600 bg-secondary-700 text-secondary-100 rounded hover:bg-secondary-600 transition-all duration-200"
+              className="text-left p-2 border border-secondary-300 dark:border-secondary-600 bg-secondary-100 dark:bg-secondary-700 text-secondary-900 dark:text-secondary-100 rounded hover:bg-secondary-200 dark:hover:bg-secondary-600 transition-all duration-200"
             >
               {renderItem(item)}
             </button>
@@ -100,6 +101,8 @@ const SearchAndFilter = ({
 };
 
 const WorkflowEditor = ({ workflow, templates, snippets = [], workflows = [], folders = [], onSave, onCancel }) => {
+  const { getColorClasses } = useItemColors();
+  
   const [formData, setFormData] = useState(() => {
     // Process existing workflow steps to handle info steps with snippetIds/templateId
     const processedSteps = workflow?.steps?.map(step => {
@@ -454,15 +457,15 @@ const WorkflowEditor = ({ workflow, templates, snippets = [], workflows = [], fo
 
   return (
     <div className="max-w-6xl mx-auto p-6">
-      <div className="bg-secondary-900 rounded-xl shadow-lg p-6">
+      <div className="bg-white dark:bg-secondary-900 rounded-xl shadow-lg p-6">
         <div className="flex items-center justify-between mb-6">
-          <h2 className="text-2xl font-bold text-secondary-100">
+          <h2 className="text-2xl font-bold text-secondary-900 dark:text-secondary-100">
             {workflow ? 'Edit Workflow' : 'Create New Workflow'}
           </h2>
           <div className="flex gap-2">
             <button
               onClick={onCancel}
-              className="px-4 py-2 text-secondary-300 border border-secondary-600 rounded-lg hover:bg-secondary-700 transition-all duration-200"
+              className="px-4 py-2 text-secondary-600 dark:text-secondary-300 border border-secondary-400 dark:border-secondary-600 rounded-lg hover:bg-secondary-100 dark:hover:bg-secondary-700 transition-all duration-200"
             >
               Cancel
             </button>
@@ -479,7 +482,7 @@ const WorkflowEditor = ({ workflow, templates, snippets = [], workflows = [], fo
           {/* Workflow Details */}
           <div className="space-y-4">
             <div>
-              <label htmlFor="workflowName" className="block text-sm font-medium text-secondary-300 mb-2">
+              <label htmlFor="workflowName" className="block text-sm font-medium text-secondary-700 dark:text-secondary-300 mb-2">
                 Workflow Name
               </label>
               <input
@@ -488,13 +491,13 @@ const WorkflowEditor = ({ workflow, templates, snippets = [], workflows = [], fo
                 name="workflowName"
                 value={formData.name}
                 onChange={(e) => setFormData({...formData, name: e.target.value})}
-                className="w-full p-3 border border-secondary-600 bg-secondary-800 text-secondary-100 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all duration-200"
+                className="w-full p-3 border border-secondary-300 dark:border-secondary-600 bg-white dark:bg-secondary-800 text-secondary-900 dark:text-secondary-100 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all duration-200"
                 placeholder="Enter workflow name..."
               />
             </div>
 
             <div>
-              <label htmlFor="workflowDescription" className="block text-sm font-medium text-secondary-300 mb-2">
+              <label htmlFor="workflowDescription" className="block text-sm font-medium text-secondary-700 dark:text-secondary-300 mb-2">
                 Description
               </label>
               <textarea
@@ -502,13 +505,13 @@ const WorkflowEditor = ({ workflow, templates, snippets = [], workflows = [], fo
                 name="workflowDescription"
                 value={formData.description}
                 onChange={(e) => setFormData({...formData, description: e.target.value})}
-                className="w-full h-32 p-3 border border-secondary-600 bg-secondary-800 text-secondary-100 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all duration-200"
+                className="w-full h-32 p-3 border border-secondary-300 dark:border-secondary-600 bg-white dark:bg-secondary-800 text-secondary-900 dark:text-secondary-100 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all duration-200"
                 placeholder="Brief description..."
               />
             </div>
 
             <div>
-              <label htmlFor="workflowFolder" className="block text-sm font-medium text-secondary-300 mb-2">
+              <label htmlFor="workflowFolder" className="block text-sm font-medium text-secondary-700 dark:text-secondary-300 mb-2">
                 Folder
               </label>
               <FolderSelector
@@ -526,41 +529,41 @@ const WorkflowEditor = ({ workflow, templates, snippets = [], workflows = [], fo
           {/* Workflow Steps */}
           <div className="lg:col-span-2">
             <div className="mb-3">
-              <h3 className="text-lg font-semibold text-secondary-100">
+              <h3 className="text-lg font-semibold text-secondary-900 dark:text-secondary-100">
                 Workflow Steps ({formData.steps.length})
               </h3>
             </div>
             
             {formData.steps.length === 0 ? (
-              <div className="text-center py-12 border-2 border-dashed border-secondary-600 rounded-lg">
-                <Workflow className="w-12 h-12 text-secondary-400 mx-auto mb-4" />
-                <h4 className="text-lg font-medium text-secondary-300 mb-2">Create Your First Step</h4>
-                <p className="text-secondary-500 mb-4">Choose the type of step to add to your workflow:</p>
+              <div className="text-center py-12 border-2 border-dashed border-secondary-300 dark:border-secondary-600 rounded-lg">
+                <Workflow className="w-12 h-12 text-secondary-500 dark:text-secondary-400 mx-auto mb-4" />
+                <h4 className="text-lg font-medium text-secondary-700 dark:text-secondary-300 mb-2">Create Your First Step</h4>
+                <p className="text-secondary-600 dark:text-secondary-500 mb-4">Choose the type of step to add to your workflow:</p>
                 <div className="flex justify-center gap-3">
                   <button
                     onClick={() => addNewStep('template')}
-                    className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 flex items-center gap-2"
+                    className={`px-4 py-2 ${getColorClasses('template', 'button')} rounded-lg flex items-center gap-2`}
                   >
                     <FileText className="w-4 h-4" />
                     Template Step
                   </button>
                   <button
                     onClick={() => addNewStep('info')}
-                    className="px-4 py-2 bg-success-600 text-white rounded-lg hover:bg-success-700 flex items-center gap-2"
+                    className={`px-4 py-2 ${getColorClasses('info', 'button')} rounded-lg flex items-center gap-2`}
                   >
                     <Info className="w-4 h-4" />
                     Info Step
                   </button>
                   <button
                     onClick={() => addNewStep('insert')}
-                    className="px-4 py-2 bg-warning-600 text-white rounded-lg hover:bg-warning-700 flex items-center gap-2"
+                    className={`px-4 py-2 ${getColorClasses('snippet', 'button')} rounded-lg flex items-center gap-2`}
                   >
                     <Tag className="w-4 h-4" />
                     Snippet Step
                   </button>
                   <button
                     onClick={() => addNewStep('workflow')}
-                    className="px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 flex items-center gap-2"
+                    className={`px-4 py-2 ${getColorClasses('workflow', 'button')} rounded-lg flex items-center gap-2`}
                   >
                     <Workflow className="w-4 h-4" />
                     Workflow Step
@@ -570,7 +573,7 @@ const WorkflowEditor = ({ workflow, templates, snippets = [], workflows = [], fo
             ) : (
               <div className="space-y-4">
                 {formData.steps.map((step, index) => (
-                  <div key={step.id} className="bg-secondary-800 rounded-lg p-4 border border-secondary-700">
+                  <div key={step.id} className="bg-secondary-100 dark:bg-secondary-800 rounded-lg p-4 border border-secondary-300 dark:border-secondary-700">
                     <div className="flex items-center justify-between mb-3">
                       <div className="flex items-center gap-3">
                         <span className="w-8 h-8 bg-success-600 text-white rounded-full flex items-center justify-center text-sm font-bold">
@@ -578,10 +581,10 @@ const WorkflowEditor = ({ workflow, templates, snippets = [], workflows = [], fo
                         </span>
                         <div>
                           <div className="flex items-center gap-2">
-                            {step.type === 'template' && <FileText className="w-4 h-4 text-primary-400" />}
-                            {step.type === 'info' && <Info className="w-4 h-4 text-success-400" />}
-                            {step.type === 'insert' && <Tag className="w-4 h-4 text-warning-400" />}
-                            {step.type === 'workflow' && <Workflow className="w-4 h-4 text-orange-400" />}
+                            {step.type === 'template' && <FileText className={`w-4 h-4 ${getColorClasses('template', 'icon')}`} />}
+                            {step.type === 'info' && <Info className={`w-4 h-4 ${getColorClasses('info', 'icon')}`} />}
+                            {step.type === 'insert' && <Tag className={`w-4 h-4 ${getColorClasses('snippet', 'icon')}`} />}
+                            {step.type === 'workflow' && <Workflow className={`w-4 h-4 ${getColorClasses('workflow', 'icon')}`} />}
                             <input
                               type="text"
                               id={`stepName-${step.id}`}
@@ -595,11 +598,11 @@ const WorkflowEditor = ({ workflow, templates, snippets = [], workflows = [], fo
                                   )
                                 });
                               }}
-                              className="bg-transparent text-secondary-100 font-medium border-none outline-none focus:bg-secondary-700 px-2 py-1 rounded"
+                              className="bg-transparent text-secondary-900 dark:text-secondary-100 font-medium border-none outline-none focus:bg-secondary-200 dark:focus:bg-secondary-700 px-2 py-1 rounded"
                               placeholder="Step name..."
                             />
                           </div>
-                          <p className="text-sm text-secondary-300">
+                          <p className="text-sm text-secondary-600 dark:text-secondary-300">
                             {step.type === 'template' && `${step.templateOptions?.length || 0} template(s), ${step.snippetOptions?.length || 0} snippet(s)`}
                             {step.type === 'info' && 'Information step'}
                             {step.type === 'insert' && 'Snippet insert step'}
@@ -612,7 +615,7 @@ const WorkflowEditor = ({ workflow, templates, snippets = [], workflows = [], fo
                           type="button"
                           onClick={() => moveStep(step.id, 'up')}
                           disabled={index === 0}
-                          className="p-2 text-secondary-300 hover:text-white hover:bg-secondary-700 rounded disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-secondary-300 transition-colors"
+                          className="p-2 text-secondary-600 dark:text-secondary-300 hover:text-secondary-900 dark:hover:text-white hover:bg-secondary-200 dark:hover:bg-secondary-700 rounded disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-secondary-600 dark:disabled:hover:text-secondary-300 transition-colors"
                         >
                           ↑
                         </button>
@@ -620,7 +623,7 @@ const WorkflowEditor = ({ workflow, templates, snippets = [], workflows = [], fo
                           type="button"
                           onClick={() => moveStep(step.id, 'down')}
                           disabled={index === formData.steps.length - 1}
-                          className="p-2 text-secondary-300 hover:text-white hover:bg-secondary-700 rounded disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-secondary-300 transition-colors"
+                          className="p-2 text-secondary-600 dark:text-secondary-300 hover:text-secondary-900 dark:hover:text-white hover:bg-secondary-200 dark:hover:bg-secondary-700 rounded disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-secondary-600 dark:disabled:hover:text-secondary-300 transition-colors"
                         >
                           ↓
                         </button>
@@ -653,7 +656,7 @@ const WorkflowEditor = ({ workflow, templates, snippets = [], workflows = [], fo
                                 )
                               });
                             }}
-                            className="w-full h-24 p-3 border border-secondary-600 bg-secondary-800 text-secondary-100 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                            className="w-full h-24 p-3 border border-secondary-300 dark:border-secondary-600 bg-white dark:bg-secondary-800 text-secondary-900 dark:text-secondary-100 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
                             placeholder="Enter instructions or information for this step..."
                           />
                         </div>
@@ -707,11 +710,11 @@ const WorkflowEditor = ({ workflow, templates, snippets = [], workflows = [], fo
                       
                       {/* Insert Step - Show selected snippet */}
                       {step.type === 'insert' && step.insertId && (
-                        <div className="bg-secondary-900 rounded p-3 border border-secondary-700">
+                        <div className="bg-secondary-200 dark:bg-secondary-900 rounded p-3 border border-secondary-300 dark:border-secondary-700">
                           <div className="flex items-center justify-between mb-2">
                             <div className="flex items-center gap-2">
                               <Tag className="w-4 h-4 text-warning-400" />
-                              <h4 className="font-medium text-secondary-100">
+                              <h4 className="font-medium text-secondary-900 dark:text-secondary-100">
                                 {snippets.find(s => s.id == step.insertId)?.name || 'Selected Snippet'}
                               </h4>
                             </div>
@@ -733,7 +736,7 @@ const WorkflowEditor = ({ workflow, templates, snippets = [], workflows = [], fo
                               <X className="w-4 h-4" />
                             </button>
                           </div>
-                          <div className="text-sm text-secondary-200">
+                          <div className="text-sm text-secondary-700 dark:text-secondary-200">
                             {step.insertContent}
                           </div>
                         </div>
@@ -770,8 +773,8 @@ const WorkflowEditor = ({ workflow, templates, snippets = [], workflows = [], fo
                                 <div className="flex items-center justify-between mb-2">
                                   <div className="flex items-center gap-2">
                                     <FileText className="w-4 h-4 text-primary-400" />
-                                    <h4 className="font-medium text-secondary-100">{item.name}</h4>
-                                    <span className="text-xs text-secondary-500">#{order}</span>
+                                    <h4 className="font-medium text-secondary-900 dark:text-secondary-100">{item.name}</h4>
+                                    <span className="text-xs text-secondary-600 dark:text-secondary-500">#{order}</span>
                                   </div>
                                   <button
                                     onClick={() => removeTemplateFromStep(step.id, item.id)}
@@ -801,8 +804,8 @@ const WorkflowEditor = ({ workflow, templates, snippets = [], workflows = [], fo
                                 <div className="flex items-center justify-between mb-2">
                                   <div className="flex items-center gap-2">
                                     <Layers className="w-4 h-4 text-warning-400" />
-                                    <h4 className="font-medium text-secondary-100">{item.name}</h4>
-                                    <span className="text-xs text-secondary-500">#{order}</span>
+                                    <h4 className="font-medium text-secondary-900 dark:text-secondary-100">{item.name}</h4>
+                                    <span className="text-xs text-secondary-600 dark:text-secondary-500">#{order}</span>
                                   </div>
                                   <button
                                     onClick={() => removeSnippetFromStep(step.id, item.id)}
@@ -811,7 +814,7 @@ const WorkflowEditor = ({ workflow, templates, snippets = [], workflows = [], fo
                                     <X className="w-4 h-4" />
                                   </button>
                                 </div>
-                                <div className="text-sm text-secondary-200">
+                                <div className="text-sm text-secondary-700 dark:text-secondary-200">
                                   {item.content.length > 100 ? `${item.content.substring(0, 100)}...` : item.content}
                                 </div>
                                 <div className="flex flex-wrap gap-1 mt-2">
@@ -829,8 +832,8 @@ const WorkflowEditor = ({ workflow, templates, snippets = [], workflows = [], fo
                                 <div className="flex items-center justify-between mb-2">
                                   <div className="flex items-center gap-2">
                                     <Workflow className="w-4 h-4 text-orange-400" />
-                                    <h4 className="font-medium text-secondary-100">{item.name}</h4>
-                                    <span className="text-xs text-secondary-500">#{order}</span>
+                                    <h4 className="font-medium text-secondary-900 dark:text-secondary-100">{item.name}</h4>
+                                    <span className="text-xs text-secondary-600 dark:text-secondary-500">#{order}</span>
                                   </div>
                                   <button
                                     onClick={() => removeWorkflowFromStep(step.id, item.id)}
@@ -839,7 +842,7 @@ const WorkflowEditor = ({ workflow, templates, snippets = [], workflows = [], fo
                                     <X className="w-4 h-4" />
                                   </button>
                                 </div>
-                                <div className="text-sm text-secondary-200">
+                                <div className="text-sm text-secondary-700 dark:text-secondary-200">
                                   {item.steps?.length || 0} steps
                                   {item.description && ` - ${item.description}`}
                                 </div>
@@ -886,10 +889,10 @@ const WorkflowEditor = ({ workflow, templates, snippets = [], workflows = [], fo
                                 )
                               });
                             }}
-                            className="w-full h-20 p-3 border border-secondary-600 bg-secondary-800 text-secondary-100 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                            className="w-full h-20 p-3 border border-secondary-300 dark:border-secondary-600 bg-white dark:bg-secondary-800 text-secondary-900 dark:text-secondary-100 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
                             placeholder="Add helpful information or instructions for this step..."
                           />
-                          <p className="mt-1 text-xs text-secondary-400">
+                          <p className="mt-1 text-xs text-secondary-600 dark:text-secondary-400">
                             This information will be displayed to users when executing this step
                           </p>
                         </div>
@@ -898,8 +901,8 @@ const WorkflowEditor = ({ workflow, templates, snippets = [], workflows = [], fo
                       {/* Snippet Tags Field - Only show when step has templates or snippets */}
                       {((step.templateOptions && step.templateOptions.length > 0) || 
                         (step.snippetOptions && step.snippetOptions.length > 0)) ? (
-                        <div className="border border-secondary-600 rounded-lg p-3">
-                          <label className="block text-sm font-medium text-secondary-300 mb-2">
+                        <div className="border border-secondary-300 dark:border-secondary-600 rounded-lg p-3">
+                          <label className="block text-sm font-medium text-secondary-700 dark:text-secondary-300 mb-2">
                             <Tag className="w-4 h-4 inline mr-1" />
                             Snippet Tags for this Step
                           </label>
@@ -911,7 +914,7 @@ const WorkflowEditor = ({ workflow, templates, snippets = [], workflows = [], fo
                               value={getTagInput(step.id)}
                               onChange={(e) => setTagInput(step.id, e.target.value)}
                               onKeyDown={(e) => handleTagKeyPress(e, step.id)}
-                              className="flex-1 p-2 border border-secondary-600 bg-secondary-800 text-secondary-100 rounded focus:ring-2 focus:ring-primary-500 focus:border-primary-500 text-sm"
+                              className="flex-1 p-2 border border-secondary-300 dark:border-secondary-600 bg-white dark:bg-secondary-800 text-secondary-900 dark:text-secondary-100 rounded focus:ring-2 focus:ring-primary-500 focus:border-primary-500 text-sm"
                               placeholder="Add tags (press Enter or comma to add)..."
                             />
                             <button
@@ -942,7 +945,7 @@ const WorkflowEditor = ({ workflow, templates, snippets = [], workflows = [], fo
                             </div>
                           )}
                           
-                          <p className="mt-1 text-xs text-secondary-400">
+                          <p className="mt-1 text-xs text-secondary-600 dark:text-secondary-400">
                             Only snippets with these tags will be shown when executing this step
                           </p>
                         </div>
@@ -1017,7 +1020,7 @@ const WorkflowEditor = ({ workflow, templates, snippets = [], workflows = [], fo
                        (step.snippetOptions && step.snippetOptions.length > 0) ||
                        (step.workflowOptions && step.workflowOptions.length > 0) ? (
                         <div className="border-2 border-dashed border-secondary-600 rounded-lg p-3">
-                          <p className="text-sm text-secondary-400 mb-3">Add more options to step:</p>
+                          <p className="text-sm text-secondary-600 dark:text-secondary-400 mb-3">Add more options to step:</p>
                           
                           <div className="flex justify-center gap-2 mb-4">
                             <button
@@ -1028,7 +1031,7 @@ const WorkflowEditor = ({ workflow, templates, snippets = [], workflows = [], fo
                                   stepElement.style.display = stepElement.style.display === 'none' ? 'block' : 'none';
                                 }
                               }}
-                              className="px-3 py-2 bg-primary-600 text-white rounded hover:bg-primary-700 flex items-center gap-2"
+                              className={`px-3 py-2 ${getColorClasses('template', 'button')} rounded flex items-center gap-2`}
                             >
                               <FileText className="w-4 h-4" />
                               Add Template
@@ -1042,7 +1045,7 @@ const WorkflowEditor = ({ workflow, templates, snippets = [], workflows = [], fo
                                   stepElement.style.display = stepElement.style.display === 'none' ? 'block' : 'none';
                                 }
                               }}
-                              className="px-3 py-2 bg-warning-600 text-white rounded hover:bg-warning-700 flex items-center gap-2"
+                              className={`px-3 py-2 ${getColorClasses('snippet', 'button')} rounded flex items-center gap-2`}
                             >
                               <Layers className="w-4 h-4" />
                               Add Snippet
@@ -1056,7 +1059,7 @@ const WorkflowEditor = ({ workflow, templates, snippets = [], workflows = [], fo
                                   stepElement.style.display = stepElement.style.display === 'none' ? 'block' : 'none';
                                 }
                               }}
-                              className="px-3 py-2 bg-orange-600 text-white rounded hover:bg-orange-700 flex items-center gap-2"
+                              className={`px-3 py-2 ${getColorClasses('workflow', 'button')} rounded flex items-center gap-2`}
                             >
                               <Workflow className="w-4 h-4" />
                               Add Workflow
@@ -1183,34 +1186,34 @@ const WorkflowEditor = ({ workflow, templates, snippets = [], workflows = [], fo
                 ))}
                 
                 {/* Add Next Step Section */}
-                <div className="text-center py-8 border-2 border-dashed border-secondary-600 rounded-lg">
-                  <h4 className="text-md font-medium text-secondary-300 mb-2">Add Next Step</h4>
-                  <p className="text-secondary-500 mb-4">Choose the type of step to add to your workflow:</p>
+                <div className="text-center py-8 border-2 border-dashed border-secondary-300 dark:border-secondary-600 rounded-lg">
+                  <h4 className="text-md font-medium text-secondary-700 dark:text-secondary-300 mb-2">Add Next Step</h4>
+                  <p className="text-secondary-600 dark:text-secondary-500 mb-4">Choose the type of step to add to your workflow:</p>
                   <div className="flex justify-center gap-3">
                     <button
                       onClick={() => addNewStep('template')}
-                      className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 flex items-center gap-2"
+                      className={`px-4 py-2 ${getColorClasses('template', 'button')} rounded-lg flex items-center gap-2`}
                     >
                       <FileText className="w-4 h-4" />
                       Template Step
                     </button>
                     <button
                       onClick={() => addNewStep('info')}
-                      className="px-4 py-2 bg-success-600 text-white rounded-lg hover:bg-success-700 flex items-center gap-2"
+                      className={`px-4 py-2 ${getColorClasses('info', 'button')} rounded-lg flex items-center gap-2`}
                     >
                       <Info className="w-4 h-4" />
                       Info Step
                     </button>
                     <button
                       onClick={() => addNewStep('insert')}
-                      className="px-4 py-2 bg-warning-600 text-white rounded-lg hover:bg-warning-700 flex items-center gap-2"
+                      className={`px-4 py-2 ${getColorClasses('snippet', 'button')} rounded-lg flex items-center gap-2`}
                     >
                       <Tag className="w-4 h-4" />
                       Snippet Step
                     </button>
                     <button
                       onClick={() => addNewStep('workflow')}
-                      className="px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 flex items-center gap-2"
+                      className={`px-4 py-2 ${getColorClasses('workflow', 'button')} rounded-lg flex items-center gap-2`}
                     >
                       <Workflow className="w-4 h-4" />
                       Workflow Step
