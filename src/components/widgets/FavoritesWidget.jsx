@@ -1,7 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Star, Play, Edit, Trash2, Settings, RefreshCw } from 'lucide-react';
 import WidgetContainer from './WidgetContainer.jsx';
-import { useUserPreferences } from '../../hooks/useUserPreferences.js';
+import { useUserPreferences } from '../../hooks/domain/useUserPreferences.js';
+import useProgressiveLoading from '../../hooks/ui/useProgressiveLoading.js';
+import { useIntersectionObserver } from '../../hooks/ui/useIntersectionObserver.js';
 
 /**
  * FavoritesWidget - Displays favorite templates and workflows
@@ -40,8 +42,8 @@ const FavoritesWidget = ({
     filterType: 'all' // 'all', 'templates', 'workflows', 'snippets'
   };
 
-  // Get all favorite items
-  const getAllFavorites = () => {
+  // Get all favorite items - memoized voor performance
+  const getAllFavorites = useMemo(() => {
     const allFavorites = [];
     
     // Add favorite workflows
@@ -60,11 +62,11 @@ const FavoritesWidget = ({
     });
     
     return allFavorites;
-  };
+  }, [workflows, templates, snippets]);
 
-  // Filter and sort favorites
-  const getFilteredFavorites = () => {
-    let favorites = getAllFavorites();
+  // Filter and sort favorites - memoized voor performance
+  const getFilteredFavorites = useMemo(() => {
+    let favorites = getAllFavorites;
     
     // Apply type filter
     if (widgetConfig.filterType !== 'all') {
@@ -97,19 +99,33 @@ const FavoritesWidget = ({
     
     // Limit items
     return favorites.slice(0, widgetConfig.maxItems);
-  };
+  }, [getAllFavorites, widgetConfig.filterType, widgetConfig.sortBy, widgetConfig.maxItems]);
+
+  // Progressive loading voor favorites
+  const favoritesProgressive = useProgressiveLoading(getFilteredFavorites, {
+    batchSize: 20,
+    virtualizationThreshold: 30
+  });
+
+  // Intersection observer voor lazy loading
+  const { ref: intersectionRef, hasIntersected } = useIntersectionObserver({
+    threshold: 0.1
+  });
+
+  // Alleen data laden als widget zichtbaar is
+  const favorites = hasIntersected ? favoritesProgressive.items : [];
 
   // Get type-specific color
   const getTypeColor = (type) => {
     switch (type) {
       case 'workflow':
-        return 'text-green-400 bg-green-600';
+        return 'text-success-400 bg-success-600';
       case 'template':
-        return 'text-blue-400 bg-blue-600';
+        return 'text-primary-400 bg-primary-600';
       case 'snippet':
-        return 'text-purple-400 bg-purple-600';
+        return 'text-warning-400 bg-warning-600';
       default:
-        return 'text-gray-400 bg-gray-600';
+        return 'text-secondary-400 bg-secondary-600';
     }
   };
 
@@ -149,10 +165,9 @@ const FavoritesWidget = ({
     setShowConfig(true);
   };
 
-  const favorites = getFilteredFavorites();
-
   return (
     <WidgetContainer
+      ref={intersectionRef}
       widgetId={widgetId}
       title="Favorites"
       defaultPosition={{ x: 20, y: 20 }}
@@ -166,20 +181,20 @@ const FavoritesWidget = ({
     >
       {/* Configuration Panel */}
       {showConfig && (
-        <div className="absolute inset-0 bg-gray-900 bg-opacity-95 z-50 p-4 overflow-auto">
+        <div className="absolute inset-0 glass z-50 p-4 overflow-auto animate-fade-in">
           <div className="flex items-center justify-between mb-4">
-            <h4 className="text-lg font-medium text-gray-100">Widget Configuration</h4>
+            <h4 className="text-lg font-medium text-secondary-100">Widget Configuration</h4>
             <button
               onClick={() => setShowConfig(false)}
-              className="text-gray-400 hover:text-gray-200"
+              className="btn-ghost btn-sm focus-visible"
             >
-              <X className="w-5 h-5" />
+              <Settings className="w-5 h-5" />
             </button>
           </div>
           
           <div className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-200 mb-2">
+              <label className="form-label">
                 Max Items: {widgetConfig.maxItems}
               </label>
               <input
@@ -188,18 +203,18 @@ const FavoritesWidget = ({
                 max="20"
                 value={widgetConfig.maxItems}
                 onChange={(e) => handleConfigChange({ maxItems: parseInt(e.target.value) })}
-                className="w-full"
+                className="w-full accent-primary-500 focus-visible"
               />
             </div>
             
             <div>
-              <label className="block text-sm font-medium text-gray-200 mb-2">
+              <label className="form-label">
                 Sort By
               </label>
               <select
                 value={widgetConfig.sortBy}
                 onChange={(e) => handleConfigChange({ sortBy: e.target.value })}
-                className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-gray-100"
+                className="form-select focus-visible"
               >
                 <option value="name">Name</option>
                 <option value="recent">Recently Used</option>
@@ -208,13 +223,13 @@ const FavoritesWidget = ({
             </div>
             
             <div>
-              <label className="block text-sm font-medium text-gray-200 mb-2">
+              <label className="form-label">
                 Filter Type
               </label>
               <select
                 value={widgetConfig.filterType}
                 onChange={(e) => handleConfigChange({ filterType: e.target.value })}
-                className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-gray-100"
+                className="form-select focus-visible"
               >
                 <option value="all">All Types</option>
                 <option value="templates">Templates Only</option>
@@ -229,9 +244,9 @@ const FavoritesWidget = ({
                   type="checkbox"
                   checked={widgetConfig.showDescription}
                   onChange={(e) => handleConfigChange({ showDescription: e.target.checked })}
-                  className="rounded border-gray-600 bg-gray-700 text-blue-600"
+                  className="rounded border-secondary-600 bg-secondary-700 text-blue-600"
                 />
-                <span className="text-sm text-gray-300">Show Description</span>
+                <span className="text-sm text-secondary-300">Show Description</span>
               </label>
               
               <label className="flex items-center gap-2">
@@ -239,9 +254,9 @@ const FavoritesWidget = ({
                   type="checkbox"
                   checked={widgetConfig.showTags}
                   onChange={(e) => handleConfigChange({ showTags: e.target.checked })}
-                  className="rounded border-gray-600 bg-gray-700 text-blue-600"
+                  className="rounded border-secondary-600 bg-secondary-700 text-blue-600"
                 />
-                <span className="text-sm text-gray-300">Show Tags</span>
+                <span className="text-sm text-secondary-300">Show Tags</span>
               </label>
             </div>
           </div>
@@ -253,14 +268,14 @@ const FavoritesWidget = ({
         {/* Header */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <Star className="w-5 h-5 text-yellow-400 fill-current" />
-            <span className="text-sm font-medium text-gray-300">
-              <span className="text-yellow-400 font-bold">{favorites.length}</span> favorite{favorites.length !== 1 ? 's' : ''}
+            <Star className="w-5 h-5 text-warning-400 fill-current" />
+            <span className="text-sm font-medium text-secondary-300">
+              <span className="text-warning-400 font-bold">{favorites.length}</span> favorite{favorites.length !== 1 ? 's' : ''}
             </span>
           </div>
           <button
             onClick={() => setRefreshing(true)}
-            className={`p-1 text-gray-400 hover:text-gray-200 rounded transition-transform ${
+            className={`p-1 text-secondary-400 hover:text-secondary-200 rounded transition-transform ${
               refreshing ? 'animate-spin' : ''
             }`}
             title="Refresh favorites"
@@ -272,7 +287,7 @@ const FavoritesWidget = ({
         {/* Favorites List */}
         <div className="space-y-2">
           {favorites.length === 0 ? (
-            <div className="text-center py-8 text-gray-400">
+            <div className="text-center py-8 text-secondary-400">
               <Star className="w-8 h-8 mx-auto mb-2 opacity-50" />
               <p className="text-sm">No favorites found</p>
               <p className="text-xs mt-1">Star some items to see them here</p>
@@ -285,21 +300,21 @@ const FavoritesWidget = ({
               return (
                 <div
                   key={`${item.type}-${item.id}`}
-                  className="p-3 bg-gray-750 border border-gray-600 rounded-lg hover:border-gray-500 transition-colors"
+                  className="list-item list-item-interactive animate-slide-in"
                 >
                   <div className="flex items-start justify-between">
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-1">
-                        <span className={`px-2 py-1 text-xs rounded-full ${colorClass}`}>
+                        <span className={`badge ${colorClass.includes('green') ? 'badge-success' : colorClass.includes('blue') ? 'badge-primary' : 'badge-secondary'}`}>
                           {item.type}
                         </span>
-                        <h4 className="text-sm font-medium text-gray-100 truncate">
+                        <h4 className="text-sm font-medium text-secondary-100 truncate">
                           {item.name}
                         </h4>
                       </div>
                       
                       {widgetConfig.showDescription && item.description && (
-                        <p className="text-xs text-gray-400 mb-2 line-clamp-2">
+                        <p className="text-xs text-secondary-400 mb-2 line-clamp-2">
                           {item.description}
                         </p>
                       )}
@@ -309,13 +324,13 @@ const FavoritesWidget = ({
                           {item.tags.slice(0, 3).map((tag, index) => (
                             <span
                               key={index}
-                              className="px-2 py-1 bg-gray-700 text-gray-300 rounded text-xs"
+                              className="px-2 py-1 bg-secondary-700 text-secondary-300 rounded text-xs"
                             >
                               {tag}
                             </span>
                           ))}
                           {item.tags.length > 3 && (
-                            <span className="px-2 py-1 bg-gray-700 text-gray-300 rounded text-xs">
+                            <span className="px-2 py-1 bg-secondary-700 text-secondary-300 rounded text-xs">
                               +{item.tags.length - 3}
                             </span>
                           )}
@@ -328,9 +343,20 @@ const FavoritesWidget = ({
                         onClick={(e) => {
                           e.preventDefault();
                           e.stopPropagation();
+                          handleExecute(item);
+                        }}
+                        className="btn-primary btn-sm focus-visible animate-scale-in"
+                        title="Execute"
+                      >
+                        <Play className="w-3.5 h-3.5" />
+                      </button>
+                      <button
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
                           handlers.onEdit(item);
                         }}
-                        className="p-2 text-gray-300 bg-gray-700 border border-gray-600 rounded-md hover:bg-gray-600 hover:border-gray-500 flex items-center justify-center transition-all duration-200 hover:shadow-md"
+                        className="btn-secondary btn-sm focus-visible"
                         title="Edit"
                       >
                         <Edit className="w-3.5 h-3.5" />
@@ -341,7 +367,7 @@ const FavoritesWidget = ({
                           e.stopPropagation();
                           handlers.onDelete(item.id);
                         }}
-                        className="p-2 text-red-400 bg-red-900/20 border border-red-600/50 rounded-md hover:bg-red-900/40 hover:border-red-500 hover:text-red-300 flex items-center justify-center transition-all duration-200 hover:shadow-md"
+                        className="btn-danger btn-sm focus-visible"
                         title="Delete"
                       >
                         <Trash2 className="w-3.5 h-3.5" />

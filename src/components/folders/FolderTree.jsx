@@ -79,9 +79,10 @@ const FolderTree = ({
         <div
           className={`
             flex items-center px-2 cursor-pointer rounded-md text-sm group
-            hover:bg-gray-100 dark:hover:bg-gray-800
-            text-gray-700 dark:text-gray-300
+            hover:bg-secondary-100 dark:hover:bg-secondary-800
+            text-secondary-700 dark:text-secondary-300
             py-1
+            ${_isSelected ? 'bg-primary-100 dark:bg-primary-900/20 text-primary-800 dark:text-primary-200' : ''}
           `}
           style={{ paddingLeft: `${level * 12 + 8}px` }}
           onClick={() => onFolderSelect(folder.id)}
@@ -92,7 +93,7 @@ const FolderTree = ({
                 e.stopPropagation();
                 toggleFolder(folder.id);
               }}
-              className="mr-1 p-0.5 hover:bg-gray-200 dark:hover:bg-gray-700 rounded"
+              className="mr-1 p-0.5 hover:bg-secondary-200 dark:hover:bg-secondary-700 rounded"
             >
               <svg 
                 className={`w-3 h-3 transform transition-transform ${isExpanded ? 'rotate-90' : ''}`}
@@ -105,7 +106,7 @@ const FolderTree = ({
           )}
           {!folderHasChildren && <div className="w-4" />}
           
-          <svg className="w-4 h-4 mr-2 text-yellow-600 dark:text-yellow-500" fill="currentColor" viewBox="0 0 20 20">
+          <svg className={`w-4 h-4 mr-2 ${_isSelected ? 'text-primary-700 dark:text-primary-300' : 'text-primary-600 dark:text-primary-400'}`} fill="currentColor" viewBox="0 0 20 20">
             <path d="M2 6a2 2 0 012-2h5l2 2h5a2 2 0 012 2v6a2 2 0 01-2 2H4a2 2 0 01-2-2V6z" />
           </svg>
           
@@ -117,7 +118,7 @@ const FolderTree = ({
             title={isFavorite ? 'Remove from favorites' : 'Add to favorites'}
           >
             <svg 
-              className={`w-3 h-3 ${isFavorite ? 'text-yellow-500 fill-current' : 'text-gray-400'}`}
+              className={`w-3 h-3 ${isFavorite ? 'text-yellow-500 fill-current' : 'text-secondary-400 dark:text-secondary-500'}`}
               fill={isFavorite ? 'currentColor' : 'none'}
               stroke="currentColor" 
               viewBox="0 0 24 24"
@@ -144,14 +145,14 @@ const FolderTree = ({
       <div className="flex-1 overflow-y-auto">
         <div className="p-3">
           <div className="flex items-center justify-between mb-3">
-            <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300">
+            <h3 className="text-sm font-medium text-secondary-700 dark:text-secondary-300">
               Folders
             </h3>
           <div className="flex items-center gap-1">
             {onCreateFolder && (
               <button
                 onClick={() => onCreateFolder(selectedFolderId || 'root')}
-                className="p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-400"
+                className="p-1 rounded hover:bg-secondary-100 dark:hover:bg-secondary-800 text-secondary-600 dark:text-secondary-400"
                 title="Create new folder"
               >
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -166,13 +167,13 @@ const FolderTree = ({
         <div className="flex gap-1 mb-3">
             <button
               onClick={expandAll}
-              className="flex-1 px-2 py-1 text-xs border border-gray-300 dark:border-gray-600 rounded text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800"
+              className="flex-1 px-2 py-1 text-xs border border-secondary-300 dark:border-secondary-600 rounded text-secondary-600 dark:text-secondary-400 hover:bg-secondary-100 dark:hover:bg-secondary-800"
             >
               Expand All
             </button>
             <button
               onClick={collapseAll}
-              className="flex-1 px-2 py-1 text-xs border border-gray-300 dark:border-gray-600 rounded text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800"
+              className="flex-1 px-2 py-1 text-xs border border-secondary-300 dark:border-secondary-600 rounded text-secondary-600 dark:text-secondary-400 hover:bg-secondary-100 dark:hover:bg-secondary-800"
             >
               Collapse All
             </button>
@@ -181,32 +182,36 @@ const FolderTree = ({
         {/* Favorites Section */}
         {favoriteFolders.size > 0 && (
           <div className="mb-4">
-            <h4 className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-2 uppercase tracking-wide">
+            <h4 className="text-xs font-medium text-secondary-500 dark:text-secondary-400 mb-2 uppercase tracking-wide">
               Favorites
             </h4>
-            <div className="space-y-1 border-b border-gray-200 dark:border-gray-700 pb-3 mb-3">
+            <div className="space-y-1 border-b border-secondary-200 dark:border-secondary-700 pb-3 mb-3">
               {Array.from(favoriteFolders)
                 .map(id => folders.find(f => f.id === id))
                 .filter(Boolean)
-                .map(folder => (
+                .map(folder => {
+                  const isSelected = selectedFolderId === folder.id;
+                  return (
                   <div
                     key={`fav-${folder.id}`}
                     className={`
                       flex items-center cursor-pointer rounded-md text-sm group
-                      hover:bg-gray-100 dark:hover:bg-gray-800
-                      text-gray-700 dark:text-gray-300
+                      hover:bg-secondary-100 dark:hover:bg-secondary-800
+                      text-secondary-700 dark:text-secondary-300
                       py-1
+                      ${isSelected ? 'bg-primary-100 dark:bg-primary-900/20 text-primary-800 dark:text-primary-200' : ''}
                     `}
                     style={{ paddingLeft: '8px', paddingRight: '8px' }}
                     onClick={() => onFolderSelect(folder.id)}
                   >
                     <div className="w-4 mr-1" />
-                    <svg className="w-4 h-4 mr-2 text-yellow-600 dark:text-yellow-500" fill="currentColor" viewBox="0 0 20 20">
+                    <svg className={`w-4 h-4 mr-2 ${isSelected ? 'text-primary-700 dark:text-primary-300' : 'text-primary-600 dark:text-primary-400'}`} fill="currentColor" viewBox="0 0 20 20">
                       <path d="M2 6a2 2 0 012-2h5l2 2h5a2 2 0 012 2v6a2 2 0 01-2 2H4a2 2 0 01-2-2V6z" />
                     </svg>
                     <span className="truncate">{folder.name}</span>
                   </div>
-                ))}
+                  );
+                })}
             </div>
           </div>
         )}
@@ -218,23 +223,23 @@ const FolderTree = ({
     </div>
     
     {/* Account & Settings Section */}
-    <div className="border-t border-gray-700 p-3">
+    <div className="border-t-2 border-primary-200 dark:border-primary-800 p-3 bg-secondary-50 dark:bg-secondary-800">
       <div className="flex items-center justify-between">
         {/* Account Placeholder */}
         <div className="flex items-center gap-3 flex-1">
-          <div className="w-8 h-8 bg-gray-700 rounded-full flex items-center justify-center">
-            <User className="w-4 h-4 text-gray-400" />
+          <div className="w-8 h-8 bg-secondary-200 dark:bg-secondary-700 rounded-full flex items-center justify-center">
+            <User className="w-4 h-4 text-secondary-600 dark:text-secondary-400" />
           </div>
           <div className="flex-1 min-w-0">
-            <div className="text-sm font-medium text-gray-300 truncate">Account</div>
-            <div className="text-xs text-gray-500">Not signed in</div>
+            <div className="text-sm font-medium text-secondary-700 dark:text-secondary-300 truncate">Account</div>
+            <div className="text-xs text-secondary-500 dark:text-secondary-500">Not signed in</div>
           </div>
         </div>
         
         {/* Settings Button */}
         <button
           onClick={onSettingsClick}
-          className="p-2 rounded-lg hover:bg-gray-700 text-gray-400 hover:text-gray-300 transition-colors"
+          className="p-2 rounded-lg hover:bg-secondary-200 dark:hover:bg-secondary-700 text-secondary-600 dark:text-secondary-400 hover:text-secondary-700 dark:hover:text-secondary-300 transition-colors"
           title="Settings"
         >
           <Settings className="w-5 h-5" />

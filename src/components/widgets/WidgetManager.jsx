@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Plus, Eye, EyeOff, Settings, Grid, RotateCcw } from 'lucide-react';
-import { useUserPreferences } from '../../hooks/useUserPreferences.js';
+import { useUserPreferences } from '../../hooks/domain/useUserPreferences.js';
 
 /**
  * WidgetManager - Interface for managing dashboard widgets

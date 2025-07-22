@@ -36,7 +36,7 @@ const ViewModeToggle = ({
 
   return (
     <div 
-      className={`flex items-center bg-gray-800 rounded-lg p-1 ${className}`}
+      className={`flex items-center bg-secondary-800 dark:bg-secondary-700 rounded-lg p-1 ${className}`}
       role="group"
       aria-label="View mode toggle"
       aria-describedby="view-mode-help"
@@ -57,12 +57,12 @@ const ViewModeToggle = ({
             onKeyDown={(e) => handleKeyDown(e, mode.id)}
             className={`
               flex items-center justify-center px-3 py-2 rounded-md text-sm font-medium
-              transition-colors duration-200 min-w-[80px]
+              transition-colors duration-200 min-w-[80px] min-h-[44px] sm:min-h-[36px]
               ${isActive 
-                ? 'bg-blue-600 text-white shadow-sm' 
-                : 'text-gray-300 hover:text-white hover:bg-gray-700'
+                ? 'bg-primary-600 text-white shadow-sm dark:bg-primary-500' 
+                : 'text-secondary-300 hover:text-white hover:bg-secondary-700 dark:text-secondary-400 dark:hover:text-white dark:hover:bg-secondary-600'
               }
-              focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-opacity-50
+              focus:outline-none focus:ring-2 focus:ring-primary-400 focus:ring-opacity-50
             `}
             role="radio"
             aria-checked={isActive}

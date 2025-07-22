@@ -1,18 +1,19 @@
-# AirPrompts - Template System
+# 🚀 AirPrompts - AI Prompt Template Management System
 
-Een modulaire React applicatie voor het beheren en uitvoeren van prompt templates en multi-step workflows.
+Een moderne, offline-first prompt template management systeem gebouwd met React, Vite, en SQLite.
 
-## ✨ Features
+## ✨ Belangrijkste Features
 
-- **📝 Template Management**: Maak, bewerk en organiseer prompt templates
-- **🔄 Workflow System**: Multi-step workflows met template chains
+- **📝 Template Management**: Maak en beheer herbruikbare prompt templates met variables
+- **🔄 Workflow System**: Ketting templates samen met `{previous_output}` passing
+- **✂️ Snippet System**: Beheer korte herbruikbare tekstblokken
+- **📁 Folder Organization**: Organiseer templates, workflows en snippets in folders
+- **🔄 Offline-First**: Werkt offline met localStorage, synchroniseert automatisch online
+- **📊 Smart Sync**: Intelligente sync queue met retry logica en conflict resolution
+- **🔄 Migration Tools**: One-click migratie van localStorage naar database
 - **⚡ Snelle Uitvoering**: One-click kopiëren naar clipboard
 - **🔍 Zoeken & Filteren**: Vind snel de juiste templates per categorie
-- **⭐ Favorieten**: Markeer veelgebruikte templates
-- **🕒 Recent Items**: Snel toegang tot laatst gebruikte items
-- **📱 Responsive**: Werkt op desktop en mobile
-- **🎨 Dark Theme**: Moderne, oogvriendelijke interface
-- **🎯 Smart Variables**: Automatische detectie van `{variable}` placeholders
+- **⭐ Favorieten**: Markeer veelgebruikte items
 
 ## 🛠️ Tech Stack
 
@@ -22,8 +23,25 @@ Een modulaire React applicatie voor het beheren en uitvoeren van prompt template
 - **Lucide React** - Moderne icon library
 - **Modulaire Architectuur** - Gescheiden componenten voor onderhoudbaarheid
 
-## 🚀 Quick Start
+## 🚀 Snel Starten
 
+### Optie 1: Alles tegelijk starten
+```bash
+./start-all.sh
+```
+
+### Optie 2: Handmatig starten
+```bash
+# Terminal 1: Backend
+./start-backend.sh
+# of: node server/server.js
+
+# Terminal 2: Frontend  
+./start-frontend.sh
+# of: npm run dev
+```
+
+### Installatie (eerste keer)
 ```bash
 # Clone repository
 git clone https://github.com/AirMile/AirPrompts.git
@@ -33,12 +51,13 @@ cd AirPrompts
 
 # Install dependencies
 npm install
-
-# Start development server
-npm run dev
 ```
 
-Open [http://localhost:5173](http://localhost:5173) in je browser.
+## 📱 URLs
+
+- **🎨 Frontend App**: http://localhost:5173
+- **📊 Backend API**: http://localhost:3001/api
+- **🔍 API Status**: http://localhost:3001/api/templates
 
 ## 📁 Project Structuur
 

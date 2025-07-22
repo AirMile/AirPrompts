@@ -54,24 +54,41 @@ const DashboardSection = memo(function DashboardSection({
     if (type === 'favorites') return null;
     
     const editHandler = getEditHandler();
-    const colors = {
-      workflows: 'green',
-      templates: 'blue',
-      snippets: 'purple'
+    
+    // Define complete button classes for each type to work with Tailwind purging
+    const buttonClasses = {
+      workflows: `
+        p-3 bg-success-600 text-white rounded-lg font-semibold
+        flex items-center justify-center
+        hover:bg-success-700 hover:shadow-lg hover:scale-105
+        focus:outline-none focus:ring-2 focus:ring-success-400 focus:ring-opacity-50
+        transition-all duration-200 ease-in-out
+        border border-success-500 hover:border-success-400
+      `,
+      templates: `
+        p-3 bg-primary-600 text-white rounded-lg font-semibold
+        flex items-center justify-center
+        hover:bg-primary-700 hover:shadow-lg hover:scale-105
+        focus:outline-none focus:ring-2 focus:ring-primary-400 focus:ring-opacity-50
+        transition-all duration-200 ease-in-out
+        border border-primary-500 hover:border-primary-400
+      `,
+      snippets: `
+        p-3 bg-purple-600 text-white rounded-lg font-semibold
+        flex items-center justify-center
+        hover:bg-purple-700 hover:shadow-lg hover:scale-105
+        focus:outline-none focus:ring-2 focus:ring-purple-400 focus:ring-opacity-50
+        transition-all duration-200 ease-in-out
+        border border-purple-500 hover:border-purple-400
+      `
     };
-    const color = colors[type] || 'blue';
+    
+    const className = buttonClasses[type] || buttonClasses.templates;
     
     return (
       <button
         onClick={() => editHandler({})}
-        className={`
-          p-3 bg-${color}-600 text-white rounded-lg font-semibold
-          flex items-center justify-center
-          hover:bg-${color}-700 hover:shadow-lg hover:scale-105
-          focus:outline-none focus:ring-2 focus:ring-${color}-400 focus:ring-opacity-50
-          transition-all duration-200 ease-in-out
-          border border-${color}-500 hover:border-${color}-400
-        `}
+        className={className}
         title={`New ${getSectionTitle().slice(0, -1)}`}
       >
         <Plus className="w-5 h-5" />

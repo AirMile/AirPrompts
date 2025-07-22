@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Search, X, Clock, Filter, ChevronDown, ChevronUp } from 'lucide-react';
+import { Search, X, Clock, Filter, ChevronDown, ChevronUp, Sun, Moon } from 'lucide-react';
 import { searchHistory, generateSearchSuggestions, debounceSearch } from '../../utils/searchUtils.js';
+import themeStore from '../../store/themeStore.js';
 
 /**
  * Advanced Search Component
@@ -28,6 +29,9 @@ const AdvancedSearch = ({
   
   const searchInputRef = useRef(null);
   const suggestionsRef = useRef(null);
+  
+  // Theme store
+  const { isDarkMode, toggleDarkMode } = themeStore();
   
   // Load search history on component mount
   useEffect(() => {
@@ -164,7 +168,7 @@ const AdvancedSearch = ({
     <div className={`relative ${className}`}>
       {/* Main Search Bar */}
       <div className="relative">
-        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-secondary-400 dark:text-secondary-500 w-5 h-5" />
         <input
           ref={searchInputRef}
           type="text"
@@ -182,23 +186,37 @@ const AdvancedSearch = ({
             // Delay hiding suggestions to allow for clicks
             setTimeout(() => setShowSuggestions(false), 200);
           }}
-          className="w-full pl-10 pr-20 py-3 border border-gray-600 bg-gray-800 text-gray-100 rounded-lg focus:outline-none focus:border-blue-400 placeholder-gray-400"
+          className="w-full pl-10 pr-28 py-3 border-2 border-secondary-300 dark:border-secondary-600 bg-white dark:bg-secondary-800 text-secondary-900 dark:text-secondary-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 placeholder-secondary-400 dark:placeholder-secondary-500 transition-all duration-200"
         />
         
         {/* Clear Button */}
         {searchQuery && (
           <button
             onClick={clearSearch}
-            className="absolute right-12 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-300"
+            className="absolute right-20 top-1/2 transform -translate-y-1/2 text-secondary-400 hover:text-secondary-600 dark:hover:text-secondary-300"
           >
             <X className="w-4 h-4" />
           </button>
         )}
         
+        
+        {/* Dark Mode Toggle */}
+        <button
+          onClick={toggleDarkMode}
+          className="absolute right-12 top-1/2 transform -translate-y-1/2 text-secondary-400 hover:text-secondary-600 dark:hover:text-secondary-300 p-1 rounded-lg transition-colors"
+          title={isDarkMode ? "Switch to light mode" : "Switch to dark mode"}
+        >
+          {isDarkMode ? (
+            <Sun className="w-4 h-4" />
+          ) : (
+            <Moon className="w-4 h-4" />
+          )}
+        </button>
+        
         {/* Advanced Search Toggle */}
         <button
           onClick={() => setIsExpanded(!isExpanded)}
-          className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-300"
+          className="absolute right-3 top-1/2 transform -translate-y-1/2 text-secondary-400 hover:text-secondary-600 dark:hover:text-secondary-300"
         >
           <Filter className="w-4 h-4" />
         </button>
@@ -208,18 +226,18 @@ const AdvancedSearch = ({
       {showSuggestions && (suggestions.length > 0 || searchHistoryList.length > 0) && (
         <div 
           ref={suggestionsRef}
-          className="absolute z-50 w-full mt-1 bg-gray-800 border border-gray-600 rounded-lg shadow-xl max-h-80 overflow-y-auto"
+          className="absolute z-50 w-full mt-1 bg-white dark:bg-secondary-800 border border-secondary-200 dark:border-secondary-600 rounded-lg shadow-xl max-h-80 overflow-y-auto"
         >
           {/* Search Suggestions */}
           {suggestions.length > 0 && (
             <div className="p-2">
-              <div className="text-xs text-gray-400 mb-2 px-2">Suggestions</div>
+              <div className="text-xs text-secondary-500 dark:text-secondary-400 mb-2 px-2">Suggestions</div>
               {suggestions.map((suggestion, index) => (
                 <button
                   key={index}
                   onClick={() => handleSuggestionClick(suggestion)}
-                  className={`w-full text-left px-3 py-2 rounded hover:bg-gray-700 text-gray-100 ${
-                    selectedSuggestionIndex === index ? 'bg-gray-700' : ''
+                  className={`w-full text-left px-3 py-2 rounded hover:bg-secondary-100 dark:hover:bg-secondary-700 text-secondary-900 dark:text-secondary-100 ${
+                    selectedSuggestionIndex === index ? 'bg-secondary-100 dark:bg-secondary-700' : ''
                   }`}
                 >
                   <Search className="w-4 h-4 inline mr-2" />
@@ -231,12 +249,12 @@ const AdvancedSearch = ({
           
           {/* Search History */}
           {searchHistoryList.length > 0 && (
-            <div className="p-2 border-t border-gray-600">
+            <div className="p-2 border-t border-secondary-200 dark:border-secondary-600">
               <div className="flex items-center justify-between mb-2">
-                <div className="text-xs text-gray-400 px-2">Recent Searches</div>
+                <div className="text-xs text-secondary-500 dark:text-secondary-400 px-2">Recent Searches</div>
                 <button
                   onClick={clearSearchHistory}
-                  className="text-xs text-gray-400 hover:text-gray-300 px-2"
+                  className="text-xs text-secondary-500 dark:text-secondary-400 hover:text-secondary-600 dark:hover:text-secondary-300 px-2"
                 >
                   Clear
                 </button>
@@ -245,7 +263,7 @@ const AdvancedSearch = ({
                 <button
                   key={index}
                   onClick={() => handleHistoryClick(historyItem)}
-                  className="w-full text-left px-3 py-2 rounded hover:bg-gray-700 text-gray-100"
+                  className="w-full text-left px-3 py-2 rounded hover:bg-secondary-100 dark:hover:bg-secondary-700 text-secondary-900 dark:text-secondary-100"
                 >
                   <Clock className="w-4 h-4 inline mr-2" />
                   {historyItem}
@@ -258,12 +276,12 @@ const AdvancedSearch = ({
       
       {/* Advanced Filters */}
       {isExpanded && (
-        <div className="mt-4 p-4 bg-gray-800 border border-gray-600 rounded-lg">
+        <div className="mt-4 p-4 bg-white dark:bg-secondary-800 border border-secondary-200 dark:border-secondary-600 rounded-lg">
           <div className="flex items-center justify-between mb-3">
-            <h3 className="text-sm font-medium text-gray-100">Advanced Filters</h3>
+            <h3 className="text-sm font-medium text-secondary-900 dark:text-secondary-100">Advanced Filters</h3>
             <button
               onClick={() => setIsExpanded(false)}
-              className="text-gray-400 hover:text-gray-300"
+              className="text-secondary-400 hover:text-secondary-600 dark:hover:text-secondary-300"
             >
               <ChevronUp className="w-4 h-4" />
             </button>
@@ -272,11 +290,11 @@ const AdvancedSearch = ({
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             {/* Type Filter */}
             <div>
-              <label className="block text-xs text-gray-400 mb-1">Type</label>
+              <label className="block text-xs text-secondary-500 dark:text-secondary-400 mb-1">Type</label>
               <select
                 value={filters.type}
                 onChange={(e) => handleFilterChange('type', e.target.value)}
-                className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-gray-100 text-sm"
+                className="w-full px-3 py-2 bg-secondary-50 dark:bg-secondary-700 border border-secondary-300 dark:border-secondary-600 rounded text-secondary-900 dark:text-secondary-100 text-sm"
               >
                 <option value="all">All Types</option>
                 <option value="templates">Templates</option>
@@ -287,11 +305,11 @@ const AdvancedSearch = ({
             
             {/* Category Filter */}
             <div>
-              <label className="block text-xs text-gray-400 mb-1">Category</label>
+              <label className="block text-xs text-secondary-500 dark:text-secondary-400 mb-1">Category</label>
               <select
                 value={filters.category}
                 onChange={(e) => handleFilterChange('category', e.target.value)}
-                className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-gray-100 text-sm"
+                className="w-full px-3 py-2 bg-secondary-50 dark:bg-secondary-700 border border-secondary-300 dark:border-secondary-600 rounded text-secondary-900 dark:text-secondary-100 text-sm"
               >
                 <option value="all">All Categories</option>
                 {uniqueCategories.map(category => (
@@ -302,12 +320,12 @@ const AdvancedSearch = ({
             
             {/* Favorites Only */}
             <div>
-              <label className="flex items-center space-x-2 text-sm text-gray-100">
+              <label className="flex items-center space-x-2 text-sm text-secondary-900 dark:text-secondary-100">
                 <input
                   type="checkbox"
                   checked={filters.favoriteOnly}
                   onChange={(e) => handleFilterChange('favoriteOnly', e.target.checked)}
-                  className="rounded border-gray-600 bg-gray-700"
+                  className="rounded border-secondary-400 dark:border-secondary-600 bg-secondary-50 dark:bg-secondary-700 text-primary-600 focus:ring-primary-500"
                 />
                 <span>Favorites Only</span>
               </label>
@@ -315,12 +333,12 @@ const AdvancedSearch = ({
             
             {/* Has Content */}
             <div>
-              <label className="flex items-center space-x-2 text-sm text-gray-100">
+              <label className="flex items-center space-x-2 text-sm text-secondary-900 dark:text-secondary-100">
                 <input
                   type="checkbox"
                   checked={filters.hasContent}
                   onChange={(e) => handleFilterChange('hasContent', e.target.checked)}
-                  className="rounded border-gray-600 bg-gray-700"
+                  className="rounded border-secondary-400 dark:border-secondary-600 bg-secondary-50 dark:bg-secondary-700 text-primary-600 focus:ring-primary-500"
                 />
                 <span>Has Content</span>
               </label>
@@ -328,7 +346,7 @@ const AdvancedSearch = ({
           </div>
           
           {/* Quick Actions */}
-          <div className="mt-4 pt-3 border-t border-gray-600">
+          <div className="mt-4 pt-3 border-t border-secondary-200 dark:border-secondary-600">
             <div className="flex items-center justify-between">
               <button
                 onClick={() => {
@@ -347,12 +365,12 @@ const AdvancedSearch = ({
                     }});
                   }
                 }}
-                className="text-sm text-gray-400 hover:text-gray-300"
+                className="text-sm text-secondary-500 dark:text-secondary-400 hover:text-secondary-600 dark:hover:text-secondary-300"
               >
                 Clear Filters
               </button>
               
-              <div className="text-xs text-gray-400">
+              <div className="text-xs text-secondary-500 dark:text-secondary-400">
                 {Object.values(filters).some(f => f !== 'all' && f !== false) && (
                   <span>Filters applied</span>
                 )}

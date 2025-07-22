@@ -1,0 +1,6 @@
+{
+  "name": "useAPI Hook Test",
+  "content": "Testing the useAPI hook with {variable} extraction.",
+  "category": "test",
+  "description": "Template created to test the useAPI React hook functionality"
+}

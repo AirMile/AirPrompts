@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Clock, Play, Edit, Trash2, X, RefreshCw } from 'lucide-react';
 import WidgetContainer from './WidgetContainer.jsx';
-import { useUserPreferences } from '../../hooks/useUserPreferences.js';
+import { useUserPreferences } from '../../hooks/domain/useUserPreferences.js';
 
 /**
  * RecentWidget - Displays recently used templates, workflows, and snippets
@@ -149,13 +149,13 @@ const RecentWidget = ({
   const getTypeColor = (type) => {
     switch (type) {
       case 'workflow':
-        return 'text-green-400 bg-green-600';
+        return 'text-success-400 bg-success-600';
       case 'template':
-        return 'text-blue-400 bg-blue-600';
+        return 'text-primary-400 bg-primary-600';
       case 'snippet':
-        return 'text-purple-400 bg-purple-600';
+        return 'text-warning-400 bg-warning-600';
       default:
-        return 'text-gray-400 bg-gray-600';
+        return 'text-secondary-400 bg-secondary-600';
     }
   };
 
@@ -212,12 +212,12 @@ const RecentWidget = ({
     >
       {/* Configuration Panel */}
       {showConfig && (
-        <div className="absolute inset-0 bg-gray-900 bg-opacity-95 z-50 p-4 overflow-auto">
+        <div className="absolute inset-0 bg-secondary-900 bg-opacity-95 z-50 p-4 overflow-auto">
           <div className="flex items-center justify-between mb-4">
-            <h4 className="text-lg font-medium text-gray-100">Widget Configuration</h4>
+            <h4 className="text-lg font-medium text-secondary-100">Widget Configuration</h4>
             <button
               onClick={() => setShowConfig(false)}
-              className="text-gray-400 hover:text-gray-200"
+              className="text-secondary-400 hover:text-secondary-200"
             >
               <X className="w-5 h-5" />
             </button>
@@ -225,7 +225,7 @@ const RecentWidget = ({
           
           <div className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-200 mb-2">
+              <label className="block text-sm font-medium text-secondary-200 mb-2">
                 Max Items: {widgetConfig.maxItems}
               </label>
               <input
@@ -239,13 +239,13 @@ const RecentWidget = ({
             </div>
             
             <div>
-              <label className="block text-sm font-medium text-gray-200 mb-2">
+              <label className="block text-sm font-medium text-secondary-200 mb-2">
                 Time Range
               </label>
               <select
                 value={widgetConfig.timeRange}
                 onChange={(e) => handleConfigChange({ timeRange: e.target.value })}
-                className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-gray-100"
+                className="w-full px-3 py-2 bg-secondary-700 border border-secondary-600 rounded-lg text-secondary-100"
               >
                 <option value="day">Last 24 Hours</option>
                 <option value="week">Last Week</option>
@@ -255,13 +255,13 @@ const RecentWidget = ({
             </div>
             
             <div>
-              <label className="block text-sm font-medium text-gray-200 mb-2">
+              <label className="block text-sm font-medium text-secondary-200 mb-2">
                 Sort By
               </label>
               <select
                 value={widgetConfig.sortBy}
                 onChange={(e) => handleConfigChange({ sortBy: e.target.value })}
-                className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-gray-100"
+                className="w-full px-3 py-2 bg-secondary-700 border border-secondary-600 rounded-lg text-secondary-100"
               >
                 <option value="recent">Most Recent</option>
                 <option value="name">Name</option>
@@ -270,13 +270,13 @@ const RecentWidget = ({
             </div>
             
             <div>
-              <label className="block text-sm font-medium text-gray-200 mb-2">
+              <label className="block text-sm font-medium text-secondary-200 mb-2">
                 Filter Type
               </label>
               <select
                 value={widgetConfig.filterType}
                 onChange={(e) => handleConfigChange({ filterType: e.target.value })}
-                className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-gray-100"
+                className="w-full px-3 py-2 bg-secondary-700 border border-secondary-600 rounded-lg text-secondary-100"
               >
                 <option value="all">All Types</option>
                 <option value="templates">Templates Only</option>
@@ -291,9 +291,9 @@ const RecentWidget = ({
                   type="checkbox"
                   checked={widgetConfig.showDescription}
                   onChange={(e) => handleConfigChange({ showDescription: e.target.checked })}
-                  className="rounded border-gray-600 bg-gray-700 text-blue-600"
+                  className="rounded border-secondary-600 bg-secondary-700 text-blue-600"
                 />
-                <span className="text-sm text-gray-300">Show Description</span>
+                <span className="text-sm text-secondary-300">Show Description</span>
               </label>
               
               <label className="flex items-center gap-2">
@@ -301,9 +301,9 @@ const RecentWidget = ({
                   type="checkbox"
                   checked={widgetConfig.showLastUsed}
                   onChange={(e) => handleConfigChange({ showLastUsed: e.target.checked })}
-                  className="rounded border-gray-600 bg-gray-700 text-blue-600"
+                  className="rounded border-secondary-600 bg-secondary-700 text-blue-600"
                 />
-                <span className="text-sm text-gray-300">Show Last Used Time</span>
+                <span className="text-sm text-secondary-300">Show Last Used Time</span>
               </label>
             </div>
           </div>
@@ -315,14 +315,14 @@ const RecentWidget = ({
         {/* Header */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <Clock className="w-5 h-5 text-blue-400" />
-            <span className="text-sm font-medium text-gray-300">
-              <span className="text-blue-400 font-bold">{recentItems.length}</span> recent item{recentItems.length !== 1 ? 's' : ''}
+            <Clock className="w-5 h-5 text-primary-400" />
+            <span className="text-sm font-medium text-secondary-300">
+              <span className="text-primary-400 font-bold">{recentItems.length}</span> recent item{recentItems.length !== 1 ? 's' : ''}
             </span>
           </div>
           <button
             onClick={() => setRefreshing(true)}
-            className={`p-1 text-gray-400 hover:text-gray-200 rounded transition-transform ${
+            className={`p-1 text-secondary-400 hover:text-secondary-200 rounded transition-transform ${
               refreshing ? 'animate-spin' : ''
             }`}
             title="Refresh recent items"
@@ -334,7 +334,7 @@ const RecentWidget = ({
         {/* Recent Items List */}
         <div className="space-y-2">
           {recentItems.length === 0 ? (
-            <div className="text-center py-8 text-gray-400">
+            <div className="text-center py-8 text-secondary-400">
               <Clock className="w-8 h-8 mx-auto mb-2 opacity-50" />
               <p className="text-sm">No recent items found</p>
               <p className="text-xs mt-1">
@@ -349,7 +349,7 @@ const RecentWidget = ({
               return (
                 <div
                   key={`${item.type}-${item.id}`}
-                  className="p-3 bg-gray-750 border border-gray-600 rounded-lg hover:border-gray-500 transition-colors"
+                  className="p-3 bg-secondary-750 border border-secondary-600 rounded-lg hover:border-secondary-500 transition-colors"
                 >
                   <div className="flex items-start justify-between">
                     <div className="flex-1 min-w-0">
@@ -357,22 +357,22 @@ const RecentWidget = ({
                         <span className={`px-2 py-1 text-xs rounded-full ${colorClass}`}>
                           {item.type}
                         </span>
-                        <h4 className="text-sm font-medium text-gray-100 truncate">
+                        <h4 className="text-sm font-medium text-secondary-100 truncate">
                           {item.name}
                         </h4>
                       </div>
                       
                       {widgetConfig.showLastUsed && (
                         <div className="flex items-center gap-1 mb-2">
-                          <Clock className="w-3 h-3 text-gray-500" />
-                          <span className="text-xs text-gray-500">
+                          <Clock className="w-3 h-3 text-secondary-500" />
+                          <span className="text-xs text-secondary-500">
                             {formatTimeAgo(item.lastUsed)}
                           </span>
                         </div>
                       )}
                       
                       {widgetConfig.showDescription && item.description && (
-                        <p className="text-xs text-gray-400 mb-2 line-clamp-2">
+                        <p className="text-xs text-secondary-400 mb-2 line-clamp-2">
                           {item.description}
                         </p>
                       )}
@@ -385,7 +385,7 @@ const RecentWidget = ({
                           e.stopPropagation();
                           handlers.onEdit(item);
                         }}
-                        className="p-2 text-gray-300 bg-gray-700 border border-gray-600 rounded-md hover:bg-gray-600 hover:border-gray-500 flex items-center justify-center transition-all duration-200 hover:shadow-md"
+                        className="p-2 text-secondary-300 bg-secondary-700 border border-secondary-600 rounded-md hover:bg-secondary-600 hover:border-secondary-500 flex items-center justify-center transition-all duration-200 hover:shadow-md"
                         title="Edit"
                       >
                         <Edit className="w-3.5 h-3.5" />
@@ -396,7 +396,7 @@ const RecentWidget = ({
                           e.stopPropagation();
                           handlers.onDelete(item.id);
                         }}
-                        className="p-2 text-red-400 bg-red-900/20 border border-red-600/50 rounded-md hover:bg-red-900/40 hover:border-red-500 hover:text-red-300 flex items-center justify-center transition-all duration-200 hover:shadow-md"
+                        className="p-2 text-danger-400 bg-danger-900/20 border border-danger-600/50 rounded-md hover:bg-danger-900/40 hover:border-danger-500 hover:text-danger-300 flex items-center justify-center transition-all duration-200 hover:shadow-md"
                         title="Delete"
                       >
                         <Trash2 className="w-3.5 h-3.5" />

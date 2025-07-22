@@ -74,16 +74,16 @@ const UserPreferences = ({ isOpen, onClose }) => {
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-gray-800 rounded-lg shadow-xl w-full max-w-4xl max-h-[90vh] overflow-hidden">
+      <div className="bg-secondary-800 rounded-lg shadow-xl w-full max-w-4xl max-h-[90vh] overflow-hidden">
         {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-gray-700">
+        <div className="flex items-center justify-between p-6 border-b border-secondary-700">
           <div className="flex items-center gap-3">
-            <Settings className="w-6 h-6 text-blue-400" />
-            <h2 className="text-2xl font-bold text-gray-100">User Preferences</h2>
+            <Settings className="w-6 h-6 text-primary-400" />
+            <h2 className="text-2xl font-bold text-secondary-100">User Preferences</h2>
           </div>
           <button
             onClick={onClose}
-            className="text-gray-400 hover:text-gray-200 transition-colors"
+            className="text-secondary-400 hover:text-secondary-200 transition-colors"
           >
             <X className="w-6 h-6" />
           </button>
@@ -91,8 +91,8 @@ const UserPreferences = ({ isOpen, onClose }) => {
 
         {/* Error Display */}
         {error && (
-          <div className="bg-red-900/20 border border-red-600/30 rounded-lg p-4 m-6 mb-0">
-            <div className="flex items-center gap-2 text-red-300">
+          <div className="bg-danger-900/20 border border-danger-600/30 rounded-lg p-4 m-6 mb-0">
+            <div className="flex items-center gap-2 text-danger-300">
               <AlertCircle className="w-5 h-5" />
               <span>{error}</span>
             </div>
@@ -116,7 +116,7 @@ const UserPreferences = ({ isOpen, onClose }) => {
 
         <div className="flex h-[calc(90vh-120px)]">
           {/* Sidebar */}
-          <div className="w-64 bg-gray-900 border-r border-gray-700 p-4">
+          <div className="w-64 bg-secondary-900 border-r border-secondary-700 p-4">
             <nav className="space-y-2">
               {[
                 { id: 'layout', label: 'Layout & Display' },
@@ -132,8 +132,8 @@ const UserPreferences = ({ isOpen, onClose }) => {
                   onClick={() => setActiveTab(tab.id)}
                   className={`w-full text-left px-3 py-2 rounded-lg transition-colors ${
                     activeTab === tab.id
-                      ? 'bg-blue-600 text-white'
-                      : 'text-gray-300 hover:bg-gray-800'
+                      ? 'bg-primary-600 text-white'
+                      : 'text-secondary-300 hover:bg-secondary-800'
                   }`}
                 >
                   {tab.label}
@@ -145,21 +145,21 @@ const UserPreferences = ({ isOpen, onClose }) => {
             <div className="mt-8 space-y-2">
               <button
                 onClick={handleExport}
-                className="w-full flex items-center gap-2 px-3 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+                className="w-full flex items-center gap-2 px-3 py-2 bg-success-600 text-white rounded-lg hover:bg-success-700 transition-colors"
               >
                 <Download className="w-4 h-4" />
                 Export
               </button>
               <button
                 onClick={() => setShowImportDialog(true)}
-                className="w-full flex items-center gap-2 px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                className="w-full flex items-center gap-2 px-3 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors"
               >
                 <Upload className="w-4 h-4" />
                 Import
               </button>
               <button
                 onClick={handleReset}
-                className="w-full flex items-center gap-2 px-3 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+                className="w-full flex items-center gap-2 px-3 py-2 bg-danger-600 text-white rounded-lg hover:bg-danger-700 transition-colors"
               >
                 <RotateCcw className="w-4 h-4" />
                 Reset
@@ -171,7 +171,7 @@ const UserPreferences = ({ isOpen, onClose }) => {
           <div className="flex-1 p-6 overflow-y-auto">
             {loading && (
               <div className="text-center py-8">
-                <div className="text-gray-400">Loading preferences...</div>
+                <div className="text-secondary-400">Loading preferences...</div>
               </div>
             )}
 
@@ -180,18 +180,18 @@ const UserPreferences = ({ isOpen, onClose }) => {
                 {/* Layout Tab */}
                 {activeTab === 'layout' && (
                   <div className="space-y-6">
-                    <h3 className="text-lg font-semibold text-gray-100">Layout & Display</h3>
+                    <h3 className="text-lg font-semibold text-secondary-100">Layout & Display</h3>
                     
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                       {/* View Mode */}
                       <div>
-                        <label className="block text-sm font-medium text-gray-200 mb-2">
+                        <label className="block text-sm font-medium text-secondary-200 mb-2">
                           View Mode
                         </label>
                         <select
                           value={layout.viewMode}
                           onChange={(e) => updateLayout({ viewMode: e.target.value })}
-                          className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-gray-100 focus:ring-2 focus:ring-blue-400 focus:border-transparent"
+                          className="w-full px-3 py-2 bg-secondary-700 border border-secondary-600 rounded-lg text-secondary-100 focus:ring-2 focus:ring-primary-400 focus:border-transparent"
                         >
                           <option value="grid">Grid View</option>
                           <option value="list">List View</option>
@@ -200,13 +200,13 @@ const UserPreferences = ({ isOpen, onClose }) => {
 
                       {/* Card Size */}
                       <div>
-                        <label className="block text-sm font-medium text-gray-200 mb-2">
+                        <label className="block text-sm font-medium text-secondary-200 mb-2">
                           Card Size
                         </label>
                         <select
                           value={layout.cardSize}
                           onChange={(e) => updateLayout({ cardSize: e.target.value })}
-                          className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-gray-100 focus:ring-2 focus:ring-blue-400 focus:border-transparent"
+                          className="w-full px-3 py-2 bg-secondary-700 border border-secondary-600 rounded-lg text-secondary-100 focus:ring-2 focus:ring-primary-400 focus:border-transparent"
                         >
                           <option value="small">Small</option>
                           <option value="medium">Medium</option>
@@ -216,7 +216,7 @@ const UserPreferences = ({ isOpen, onClose }) => {
 
                       {/* Columns Per Row */}
                       <div>
-                        <label className="block text-sm font-medium text-gray-200 mb-2">
+                        <label className="block text-sm font-medium text-secondary-200 mb-2">
                           Columns Per Row: {layout.columnsPerRow}
                         </label>
                         <input
@@ -227,7 +227,7 @@ const UserPreferences = ({ isOpen, onClose }) => {
                           onChange={(e) => updateLayout({ columnsPerRow: parseInt(e.target.value) })}
                           className="w-full"
                         />
-                        <div className="flex justify-between text-xs text-gray-400 mt-1">
+                        <div className="flex justify-between text-xs text-secondary-400 mt-1">
                           <span>2</span>
                           <span>8</span>
                         </div>
@@ -235,13 +235,13 @@ const UserPreferences = ({ isOpen, onClose }) => {
 
                       {/* Density */}
                       <div>
-                        <label className="block text-sm font-medium text-gray-200 mb-2">
+                        <label className="block text-sm font-medium text-secondary-200 mb-2">
                           Density
                         </label>
                         <select
                           value={layout.density}
                           onChange={(e) => updateLayout({ density: e.target.value })}
-                          className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-gray-100 focus:ring-2 focus:ring-blue-400 focus:border-transparent"
+                          className="w-full px-3 py-2 bg-secondary-700 border border-secondary-600 rounded-lg text-secondary-100 focus:ring-2 focus:ring-primary-400 focus:border-transparent"
                         >
                           <option value="compact">Compact</option>
                           <option value="comfortable">Comfortable</option>
@@ -254,14 +254,14 @@ const UserPreferences = ({ isOpen, onClose }) => {
                 {/* Sections Tab */}
                 {activeTab === 'sections' && (
                   <div className="space-y-6">
-                    <h3 className="text-lg font-semibold text-gray-100">Section Visibility</h3>
+                    <h3 className="text-lg font-semibold text-secondary-100">Section Visibility</h3>
                     
                     <div className="space-y-4">
                       {Object.entries(sections).map(([key, section]) => (
-                        <div key={key} className="flex items-center justify-between p-4 bg-gray-700 rounded-lg">
+                        <div key={key} className="flex items-center justify-between p-4 bg-secondary-700 rounded-lg">
                           <div>
-                            <h4 className="font-medium text-gray-100 capitalize">{key}</h4>
-                            <p className="text-sm text-gray-400">
+                            <h4 className="font-medium text-secondary-100 capitalize">{key}</h4>
+                            <p className="text-sm text-secondary-400">
                               {section.visible ? 'Visible' : 'Hidden'} • {section.collapsed ? 'Collapsed' : 'Expanded'}
                             </p>
                           </div>
@@ -274,9 +274,9 @@ const UserPreferences = ({ isOpen, onClose }) => {
                                   ...sections,
                                   [key]: { ...section, visible: e.target.checked }
                                 })}
-                                className="rounded border-gray-600 bg-gray-700 text-blue-600 focus:ring-blue-400"
+                                className="rounded border-secondary-600 bg-secondary-700 text-primary-600 focus:ring-primary-400"
                               />
-                              <span className="text-sm text-gray-300">Visible</span>
+                              <span className="text-sm text-secondary-300">Visible</span>
                             </label>
                             <label className="flex items-center gap-2">
                               <input
@@ -286,9 +286,9 @@ const UserPreferences = ({ isOpen, onClose }) => {
                                   ...sections,
                                   [key]: { ...section, collapsed: e.target.checked }
                                 })}
-                                className="rounded border-gray-600 bg-gray-700 text-blue-600 focus:ring-blue-400"
+                                className="rounded border-secondary-600 bg-secondary-700 text-primary-600 focus:ring-primary-400"
                               />
-                              <span className="text-sm text-gray-300">Collapsed</span>
+                              <span className="text-sm text-secondary-300">Collapsed</span>
                             </label>
                           </div>
                         </div>
@@ -300,7 +300,7 @@ const UserPreferences = ({ isOpen, onClose }) => {
                 {/* Dashboard Tab */}
                 {activeTab === 'dashboard' && (
                   <div className="space-y-6">
-                    <h3 className="text-lg font-semibold text-gray-100">Dashboard Widgets</h3>
+                    <h3 className="text-lg font-semibold text-secondary-100">Dashboard Widgets</h3>
                     
                     <div className="space-y-4">
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -310,9 +310,9 @@ const UserPreferences = ({ isOpen, onClose }) => {
                               type="checkbox"
                               checked={dashboard.showFavorites}
                               onChange={(e) => updateDashboard({ showFavorites: e.target.checked })}
-                              className="rounded border-gray-600 bg-gray-700 text-blue-600 focus:ring-blue-400"
+                              className="rounded border-secondary-600 bg-secondary-700 text-primary-600 focus:ring-primary-400"
                             />
-                            <span className="text-gray-300">Show Favorites Widget</span>
+                            <span className="text-secondary-300">Show Favorites Widget</span>
                           </label>
                           
                           <label className="flex items-center gap-2">
@@ -320,15 +320,15 @@ const UserPreferences = ({ isOpen, onClose }) => {
                               type="checkbox"
                               checked={dashboard.showRecent}
                               onChange={(e) => updateDashboard({ showRecent: e.target.checked })}
-                              className="rounded border-gray-600 bg-gray-700 text-blue-600 focus:ring-blue-400"
+                              className="rounded border-secondary-600 bg-secondary-700 text-primary-600 focus:ring-primary-400"
                             />
-                            <span className="text-gray-300">Show Recent Items Widget</span>
+                            <span className="text-secondary-300">Show Recent Items Widget</span>
                           </label>
                         </div>
 
                         <div className="space-y-4">
                           <div>
-                            <label className="block text-sm font-medium text-gray-200 mb-2">
+                            <label className="block text-sm font-medium text-secondary-200 mb-2">
                               Recent Items Count: {dashboard.recentCount}
                             </label>
                             <input
@@ -342,7 +342,7 @@ const UserPreferences = ({ isOpen, onClose }) => {
                           </div>
 
                           <div>
-                            <label className="block text-sm font-medium text-gray-200 mb-2">
+                            <label className="block text-sm font-medium text-secondary-200 mb-2">
                               Favorites Count: {dashboard.favoriteCount}
                             </label>
                             <input
@@ -363,18 +363,18 @@ const UserPreferences = ({ isOpen, onClose }) => {
                 {/* Filtering Tab */}
                 {activeTab === 'filtering' && (
                   <div className="space-y-6">
-                    <h3 className="text-lg font-semibold text-gray-100">Filtering & Pagination</h3>
+                    <h3 className="text-lg font-semibold text-secondary-100">Filtering & Pagination</h3>
                     
                     <div className="space-y-4">
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div>
-                          <label className="block text-sm font-medium text-gray-200 mb-2">
+                          <label className="block text-sm font-medium text-secondary-200 mb-2">
                             Default Page Size
                           </label>
                           <select
                             value={filtering.defaultPageSize}
                             onChange={(e) => updateFiltering({ defaultPageSize: parseInt(e.target.value) })}
-                            className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-gray-100 focus:ring-2 focus:ring-blue-400 focus:border-transparent"
+                            className="w-full px-3 py-2 bg-secondary-700 border border-secondary-600 rounded-lg text-secondary-100 focus:ring-2 focus:ring-primary-400 focus:border-transparent"
                           >
                             <option value="12">12 items</option>
                             <option value="24">24 items</option>
@@ -389,9 +389,9 @@ const UserPreferences = ({ isOpen, onClose }) => {
                               type="checkbox"
                               checked={filtering.useInfiniteScroll}
                               onChange={(e) => updateFiltering({ useInfiniteScroll: e.target.checked })}
-                              className="rounded border-gray-600 bg-gray-700 text-blue-600 focus:ring-blue-400"
+                              className="rounded border-secondary-600 bg-secondary-700 text-primary-600 focus:ring-primary-400"
                             />
-                            <span className="text-gray-300">Use Infinite Scroll</span>
+                            <span className="text-secondary-300">Use Infinite Scroll</span>
                           </label>
                           
                           <label className="flex items-center gap-2">
@@ -399,9 +399,9 @@ const UserPreferences = ({ isOpen, onClose }) => {
                               type="checkbox"
                               checked={filtering.rememberFilters}
                               onChange={(e) => updateFiltering({ rememberFilters: e.target.checked })}
-                              className="rounded border-gray-600 bg-gray-700 text-blue-600 focus:ring-blue-400"
+                              className="rounded border-secondary-600 bg-secondary-700 text-primary-600 focus:ring-primary-400"
                             />
-                            <span className="text-gray-300">Remember Filter Settings</span>
+                            <span className="text-secondary-300">Remember Filter Settings</span>
                           </label>
                         </div>
                       </div>
@@ -412,12 +412,12 @@ const UserPreferences = ({ isOpen, onClose }) => {
                 {/* Search Tab */}
                 {activeTab === 'search' && (
                   <div className="space-y-6">
-                    <h3 className="text-lg font-semibold text-gray-100">Search & History</h3>
+                    <h3 className="text-lg font-semibold text-secondary-100">Search & History</h3>
                     
                     <div className="space-y-4">
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div>
-                          <label className="block text-sm font-medium text-gray-200 mb-2">
+                          <label className="block text-sm font-medium text-secondary-200 mb-2">
                             Search History Size: {search.maxHistory}
                           </label>
                           <input
@@ -428,32 +428,32 @@ const UserPreferences = ({ isOpen, onClose }) => {
                             onChange={(e) => updateSearch({ maxHistory: parseInt(e.target.value) })}
                             className="w-full"
                           />
-                          <div className="flex justify-between text-sm text-gray-400 mt-1">
+                          <div className="flex justify-between text-sm text-secondary-400 mt-1">
                             <span>5</span>
                             <span>50</span>
                           </div>
                         </div>
 
                         <div>
-                          <label className="block text-sm font-medium text-gray-200 mb-2">
+                          <label className="block text-sm font-medium text-secondary-200 mb-2">
                             Current Search History ({search.history.length} items)
                           </label>
-                          <div className="bg-gray-700 rounded-lg p-3 max-h-32 overflow-y-auto">
+                          <div className="bg-secondary-700 rounded-lg p-3 max-h-32 overflow-y-auto">
                             {search.history.length > 0 ? (
                               <div className="space-y-1">
                                 {search.history.map((term, index) => (
-                                  <div key={index} className="text-sm text-gray-300 px-2 py-1 bg-gray-600 rounded">
+                                  <div key={index} className="text-sm text-secondary-300 px-2 py-1 bg-secondary-600 rounded">
                                     {term}
                                   </div>
                                 ))}
                               </div>
                             ) : (
-                              <p className="text-sm text-gray-400 text-center py-2">No search history yet</p>
+                              <p className="text-sm text-secondary-400 text-center py-2">No search history yet</p>
                             )}
                           </div>
                           <button
                             onClick={() => updateSearch({ history: [] })}
-                            className="mt-2 px-3 py-1 text-sm bg-red-600 text-white rounded hover:bg-red-700"
+                            className="mt-2 px-3 py-1 text-sm bg-danger-600 text-white rounded hover:bg-danger-700"
                           >
                             Clear History
                           </button>
@@ -466,18 +466,18 @@ const UserPreferences = ({ isOpen, onClose }) => {
                 {/* Pagination Tab */}
                 {activeTab === 'pagination' && (
                   <div className="space-y-6">
-                    <h3 className="text-lg font-semibold text-gray-100">Pagination Settings</h3>
+                    <h3 className="text-lg font-semibold text-secondary-100">Pagination Settings</h3>
                     
                     <div className="space-y-4">
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div>
-                          <label className="block text-sm font-medium text-gray-200 mb-2">
+                          <label className="block text-sm font-medium text-secondary-200 mb-2">
                             Default Page Size
                           </label>
                           <select
                             value={pagination.defaultPageSize}
                             onChange={(e) => updatePagination({ defaultPageSize: parseInt(e.target.value) })}
-                            className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-gray-100 focus:ring-2 focus:ring-blue-400 focus:border-transparent"
+                            className="w-full px-3 py-2 bg-secondary-700 border border-secondary-600 rounded-lg text-secondary-100 focus:ring-2 focus:ring-primary-400 focus:border-transparent"
                           >
                             {pagination.pageSizeOptions.map(size => (
                               <option key={size} value={size}>{size} items</option>
@@ -486,13 +486,13 @@ const UserPreferences = ({ isOpen, onClose }) => {
                         </div>
 
                         <div>
-                          <label className="block text-sm font-medium text-gray-200 mb-2">
+                          <label className="block text-sm font-medium text-secondary-200 mb-2">
                             Available Page Size Options
                           </label>
-                          <div className="bg-gray-700 rounded-lg p-3">
+                          <div className="bg-secondary-700 rounded-lg p-3">
                             <div className="flex flex-wrap gap-2">
                               {pagination.pageSizeOptions.map(size => (
-                                <span key={size} className="px-2 py-1 bg-gray-600 text-gray-300 rounded text-sm">
+                                <span key={size} className="px-2 py-1 bg-secondary-600 text-secondary-300 rounded text-sm">
                                   {size}
                                 </span>
                               ))}
@@ -501,22 +501,22 @@ const UserPreferences = ({ isOpen, onClose }) => {
                         </div>
                       </div>
 
-                      <div className="border-t border-gray-700 pt-4">
-                        <h4 className="text-md font-medium text-gray-200 mb-3">Section-Specific Settings</h4>
+                      <div className="border-t border-secondary-700 pt-4">
+                        <h4 className="text-md font-medium text-secondary-200 mb-3">Section-Specific Settings</h4>
                         <div className="space-y-3">
                           {Object.entries(pagination).filter(([key]) => 
                             ['templates', 'workflows', 'snippets'].includes(key)
                           ).map(([sectionType, settings]) => (
                             <div key={sectionType} className="flex items-center justify-between">
-                              <span className="text-gray-300 capitalize">{sectionType}</span>
+                              <span className="text-secondary-300 capitalize">{sectionType}</span>
                               <div className="flex items-center gap-2">
-                                <span className="text-sm text-gray-400">Page Size:</span>
+                                <span className="text-sm text-secondary-400">Page Size:</span>
                                 <select
                                   value={settings.pageSize}
                                   onChange={(e) => updatePagination({
                                     [sectionType]: { ...settings, pageSize: parseInt(e.target.value) }
                                   })}
-                                  className="px-2 py-1 bg-gray-700 border border-gray-600 rounded text-gray-100 text-sm"
+                                  className="px-2 py-1 bg-secondary-700 border border-secondary-600 rounded text-secondary-100 text-sm"
                                 >
                                   {pagination.pageSizeOptions.map(size => (
                                     <option key={size} value={size}>{size}</option>
@@ -534,7 +534,7 @@ const UserPreferences = ({ isOpen, onClose }) => {
                 {/* Accessibility Tab */}
                 {activeTab === 'accessibility' && (
                   <div className="space-y-6">
-                    <h3 className="text-lg font-semibold text-gray-100">Accessibility</h3>
+                    <h3 className="text-lg font-semibold text-secondary-100">Accessibility</h3>
                     
                     <div className="space-y-4">
                       <label className="flex items-center gap-2">
@@ -542,9 +542,9 @@ const UserPreferences = ({ isOpen, onClose }) => {
                           type="checkbox"
                           checked={accessibility.highContrast}
                           onChange={(e) => updateAccessibility({ highContrast: e.target.checked })}
-                          className="rounded border-gray-600 bg-gray-700 text-blue-600 focus:ring-blue-400"
+                          className="rounded border-secondary-600 bg-secondary-700 text-primary-600 focus:ring-primary-400"
                         />
-                        <span className="text-gray-300">High Contrast Mode</span>
+                        <span className="text-secondary-300">High Contrast Mode</span>
                       </label>
                       
                       <label className="flex items-center gap-2">
@@ -552,9 +552,9 @@ const UserPreferences = ({ isOpen, onClose }) => {
                           type="checkbox"
                           checked={accessibility.reducedMotion}
                           onChange={(e) => updateAccessibility({ reducedMotion: e.target.checked })}
-                          className="rounded border-gray-600 bg-gray-700 text-blue-600 focus:ring-blue-400"
+                          className="rounded border-secondary-600 bg-secondary-700 text-primary-600 focus:ring-primary-400"
                         />
-                        <span className="text-gray-300">Reduced Motion</span>
+                        <span className="text-secondary-300">Reduced Motion</span>
                       </label>
                       
                       <label className="flex items-center gap-2">
@@ -562,9 +562,9 @@ const UserPreferences = ({ isOpen, onClose }) => {
                           type="checkbox"
                           checked={accessibility.keyboardNavigation}
                           onChange={(e) => updateAccessibility({ keyboardNavigation: e.target.checked })}
-                          className="rounded border-gray-600 bg-gray-700 text-blue-600 focus:ring-blue-400"
+                          className="rounded border-secondary-600 bg-secondary-700 text-primary-600 focus:ring-primary-400"
                         />
-                        <span className="text-gray-300">Keyboard Navigation</span>
+                        <span className="text-secondary-300">Keyboard Navigation</span>
                       </label>
                     </div>
                   </div>
@@ -577,24 +577,24 @@ const UserPreferences = ({ isOpen, onClose }) => {
         {/* Import Dialog */}
         {showImportDialog && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-10">
-            <div className="bg-gray-800 rounded-lg p-6 w-full max-w-md">
-              <h3 className="text-lg font-semibold text-gray-100 mb-4">Import Settings</h3>
+            <div className="bg-secondary-800 rounded-lg p-6 w-full max-w-md">
+              <h3 className="text-lg font-semibold text-secondary-100 mb-4">Import Settings</h3>
               <textarea
                 value={importText}
                 onChange={(e) => setImportText(e.target.value)}
                 placeholder="Paste your exported settings here..."
-                className="w-full h-32 px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-gray-100 focus:ring-2 focus:ring-blue-400 focus:border-transparent"
+                className="w-full h-32 px-3 py-2 bg-secondary-700 border border-secondary-600 rounded-lg text-secondary-100 focus:ring-2 focus:ring-primary-400 focus:border-transparent"
               />
               <div className="flex justify-end gap-2 mt-4">
                 <button
                   onClick={() => setShowImportDialog(false)}
-                  className="px-4 py-2 text-gray-300 hover:text-gray-100"
+                  className="px-4 py-2 text-secondary-300 hover:text-secondary-100"
                 >
                   Cancel
                 </button>
                 <button
                   onClick={handleImport}
-                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                  className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700"
                 >
                   Import
                 </button>
@@ -606,23 +606,23 @@ const UserPreferences = ({ isOpen, onClose }) => {
         {/* Export Dialog */}
         {showExportDialog && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-10">
-            <div className="bg-gray-800 rounded-lg p-6 w-full max-w-md">
-              <h3 className="text-lg font-semibold text-gray-100 mb-4">Export Settings</h3>
+            <div className="bg-secondary-800 rounded-lg p-6 w-full max-w-md">
+              <h3 className="text-lg font-semibold text-secondary-100 mb-4">Export Settings</h3>
               <textarea
                 value={exportedSettings}
                 readOnly
-                className="w-full h-32 px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-gray-100 focus:ring-2 focus:ring-blue-400 focus:border-transparent"
+                className="w-full h-32 px-3 py-2 bg-secondary-700 border border-secondary-600 rounded-lg text-secondary-100 focus:ring-2 focus:ring-primary-400 focus:border-transparent"
               />
               <div className="flex justify-end gap-2 mt-4">
                 <button
                   onClick={() => setShowExportDialog(false)}
-                  className="px-4 py-2 text-gray-300 hover:text-gray-100"
+                  className="px-4 py-2 text-secondary-300 hover:text-secondary-100"
                 >
                   Close
                 </button>
                 <button
                   onClick={copyToClipboard}
-                  className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
+                  className="px-4 py-2 bg-success-600 text-white rounded-lg hover:bg-success-700"
                 >
                   Copy to Clipboard
                 </button>

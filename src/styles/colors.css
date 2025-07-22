@@ -22,6 +22,7 @@
   --color-secondary-600: 75 85 99;
   --color-secondary-700: 55 65 81;
   --color-secondary-800: 31 41 55;
+  --color-secondary-850: 24 32 44;
   --color-secondary-900: 17 24 39;
 
   /* Success Colors (Green) */
@@ -66,7 +67,233 @@
   }
 }
 
-/* Alternative theme classes for dynamic switching */
+/* Modern Blue Theme - Light Variant (Default) */
+.theme-blue-light {
+  /* Primary Colors stay as default blue */
+  /* Secondary Colors for light mode */
+  --color-secondary-50: 249 250 251;
+  --color-secondary-100: 243 244 246;
+  --color-secondary-200: 229 231 235;
+  --color-secondary-300: 209 213 219;
+  --color-secondary-400: 156 163 175;
+  --color-secondary-500: 107 114 128;
+  --color-secondary-600: 75 85 99;
+  --color-secondary-700: 55 65 81;
+  --color-secondary-800: 31 41 55;
+  --color-secondary-900: 17 24 39;
+}
+
+/* Modern Blue Theme - Dark Variant */
+.theme-blue-dark {
+  /* Primary Colors stay as default blue */
+  /* Proper secondary colors for dark mode */
+  --color-secondary-50: 249 250 251;
+  --color-secondary-100: 243 244 246;
+  --color-secondary-200: 229 231 235;
+  --color-secondary-300: 209 213 219;
+  --color-secondary-400: 156 163 175;
+  --color-secondary-500: 107 114 128;
+  --color-secondary-600: 75 85 99;
+  --color-secondary-700: 55 65 81;
+  --color-secondary-800: 31 41 55;
+  --color-secondary-900: 17 24 39;
+}
+
+/* Developer Orange Theme - Light Variant */
+.theme-orange-light {
+  /* Primary Colors (Orange/Gold) */
+  --color-primary-50: 255 248 240;
+  --color-primary-100: 255 237 213;
+  --color-primary-200: 254 215 170;
+  --color-primary-300: 253 186 116;
+  --color-primary-400: 251 146 60;
+  --color-primary-500: 249 115 22;
+  --color-primary-600: 234 88 12;
+  --color-primary-700: 194 65 12;
+  --color-primary-800: 154 52 18;
+  --color-primary-900: 124 45 18;
+  
+  /* Light gray backgrounds */
+  --color-secondary-50: 250 250 250;
+  --color-secondary-100: 245 245 245;
+  --color-secondary-200: 229 229 229;
+  --color-secondary-300: 212 212 212;
+  --color-secondary-400: 163 163 163;
+  --color-secondary-500: 115 115 115;
+  --color-secondary-600: 82 82 82;
+  --color-secondary-700: 64 64 64;
+  --color-secondary-800: 38 38 38;
+  --color-secondary-900: 23 23 23;
+}
+
+/* Developer Orange Theme - Dark Variant */
+.theme-orange-dark {
+  /* Primary Colors (Orange/Gold Accents) */
+  --color-primary-50: 255 248 240;
+  --color-primary-100: 255 237 213;
+  --color-primary-200: 255 214 158;
+  --color-primary-300: 255 189 89;
+  --color-primary-400: 255 165 66;
+  --color-primary-500: 255 140 66;
+  --color-primary-600: 255 215 0;
+  --color-primary-700: 204 112 0;
+  --color-primary-800: 153 84 0;
+  --color-primary-900: 102 56 0;
+
+  /* Dark grays - inverted for proper dark mode */
+  --color-secondary-50: 255 255 255;
+  --color-secondary-100: 200 200 200;
+  --color-secondary-200: 160 160 160;
+  --color-secondary-300: 140 140 140;
+  --color-secondary-400: 107 107 107;
+  --color-secondary-500: 75 75 75;
+  --color-secondary-600: 58 58 58;
+  --color-secondary-700: 45 45 45;
+  --color-secondary-800: 35 35 35;
+  --color-secondary-900: 26 26 26;
+}
+
+/* Purple Hacker Theme - Light Variant */
+.theme-purple-light {
+  /* Primary Colors (Purple) */
+  --color-primary-50: 250 245 255;
+  --color-primary-100: 243 232 255;
+  --color-primary-200: 233 213 255;
+  --color-primary-300: 216 180 254;
+  --color-primary-400: 196 181 253;
+  --color-primary-500: 168 85 247;
+  --color-primary-600: 147 51 234;
+  --color-primary-700: 126 34 206;
+  --color-primary-800: 107 33 168;
+  --color-primary-900: 88 28 135;
+  
+  /* Light backgrounds */
+  --color-secondary-50: 251 251 252;
+  --color-secondary-100: 247 247 248;
+  --color-secondary-200: 234 234 237;
+  --color-secondary-300: 212 212 216;
+  --color-secondary-400: 161 161 170;
+  --color-secondary-500: 113 113 122;
+  --color-secondary-600: 82 82 91;
+  --color-secondary-700: 55 55 59;
+  --color-secondary-800: 39 39 42;
+  --color-secondary-900: 24 24 27;
+}
+
+/* Purple Hacker Theme - Dark Variant */
+.theme-purple-dark {
+  /* Primary Colors (Purple/Magenta) */
+  --color-primary-50: 250 245 255;
+  --color-primary-100: 243 232 255;
+  --color-primary-200: 233 213 255;
+  --color-primary-300: 216 180 254;
+  --color-primary-400: 196 181 253;
+  --color-primary-500: 147 51 234;
+  --color-primary-600: 126 34 206;
+  --color-primary-700: 107 33 168;
+  --color-primary-800: 88 28 135;
+  --color-primary-900: 69 10 86;
+
+  /* Very dark backgrounds - corrected for proper dark mode */
+  --color-secondary-50: 255 255 255;
+  --color-secondary-100: 244 244 245;
+  --color-secondary-200: 212 212 216;
+  --color-secondary-300: 161 161 170;
+  --color-secondary-400: 113 113 122;
+  --color-secondary-500: 82 82 91;
+  --color-secondary-600: 55 55 59;
+  --color-secondary-700: 39 39 42;
+  --color-secondary-800: 24 24 27;
+  --color-secondary-900: 13 13 18;
+}
+
+/* Forest Green Theme - Light Variant */
+.theme-green-light {
+  /* Primary Colors (Green) */
+  --color-primary-50: 240 253 244;
+  --color-primary-100: 220 252 231;
+  --color-primary-200: 187 247 208;
+  --color-primary-300: 134 239 172;
+  --color-primary-400: 74 222 128;
+  --color-primary-500: 34 197 94;
+  --color-primary-600: 22 163 74;
+  --color-primary-700: 21 128 61;
+  --color-primary-800: 22 101 52;
+  --color-primary-900: 20 83 45;
+  
+  /* Light natural backgrounds */
+  --color-secondary-50: 252 252 252;
+  --color-secondary-100: 247 247 247;
+  --color-secondary-200: 235 235 235;
+  --color-secondary-300: 217 217 217;
+  --color-secondary-400: 163 163 163;
+  --color-secondary-500: 115 115 115;
+  --color-secondary-600: 87 87 87;
+  --color-secondary-700: 64 64 64;
+  --color-secondary-800: 38 38 38;
+  --color-secondary-900: 23 23 23;
+}
+
+/* Forest Green Theme - Dark Variant */
+.theme-green-dark {
+  /* Primary Colors (Forest Green) */
+  --color-primary-50: 240 253 244;
+  --color-primary-100: 220 252 231;
+  --color-primary-200: 187 247 208;
+  --color-primary-300: 134 239 172;
+  --color-primary-400: 74 222 128;
+  --color-primary-500: 34 197 94;
+  --color-primary-600: 22 163 74;
+  --color-primary-700: 21 128 61;
+  --color-primary-800: 22 101 52;
+  --color-primary-900: 20 83 45;
+
+  /* Warm dark backgrounds - corrected for proper dark mode */
+  --color-secondary-50: 255 255 255;
+  --color-secondary-100: 222 222 222;
+  --color-secondary-200: 189 189 189;
+  --color-secondary-300: 156 156 156;
+  --color-secondary-400: 123 123 123;
+  --color-secondary-500: 97 97 97;
+  --color-secondary-600: 71 71 71;
+  --color-secondary-700: 54 54 54;
+  --color-secondary-800: 38 38 38;
+  --color-secondary-900: 23 23 23;
+}
+
+/* Classic Theme - Light Variant (same as default blue) */
+.theme-classic-light {
+  /* Primary Colors stay as default blue */
+  /* Secondary Colors for light mode */
+  --color-secondary-50: 249 250 251;
+  --color-secondary-100: 243 244 246;
+  --color-secondary-200: 229 231 235;
+  --color-secondary-300: 209 213 219;
+  --color-secondary-400: 156 163 175;
+  --color-secondary-500: 107 114 128;
+  --color-secondary-600: 75 85 99;
+  --color-secondary-700: 55 65 81;
+  --color-secondary-800: 31 41 55;
+  --color-secondary-900: 17 24 39;
+}
+
+/* Classic Theme - Dark Variant (Original Dark Mode) */
+.theme-classic-dark {
+  /* Primary Colors stay as default blue */
+  /* Original dark mode colors - cards have dark backgrounds */
+  --color-secondary-50: 17 24 39;
+  --color-secondary-100: 31 41 55;
+  --color-secondary-200: 55 65 81;
+  --color-secondary-300: 75 85 99;
+  --color-secondary-400: 107 114 128;
+  --color-secondary-500: 156 163 175;
+  --color-secondary-600: 209 213 219;
+  --color-secondary-700: 229 231 235;
+  --color-secondary-800: 243 244 246;
+  --color-secondary-900: 249 250 251;
+}
+
+/* Legacy theme classes for backwards compatibility */
 .theme-purple {
   --color-primary-50: 250 245 255;
   --color-primary-100: 243 232 255;

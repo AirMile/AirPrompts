@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Clock, Play, Edit, Trash2, X, RefreshCw } from 'lucide-react';
 import WidgetContainer from './WidgetContainer.jsx';
-import { useUserPreferences } from '../../hooks/useUserPreferences.js';
+import { useUserPreferences } from '../../hooks/domain/useUserPreferences.js';
 
 /**
  * RecentWidget - Displays recently used templates, workflows, and snippets

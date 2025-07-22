@@ -4,6 +4,7 @@ export default {
     "./index.html",
     "./src/**/*.{js,ts,jsx,tsx}",
   ],
+  darkMode: 'class',
   theme: {
     extend: {
       colors: {
@@ -29,6 +30,7 @@ export default {
           600: 'rgb(var(--color-secondary-600) / <alpha-value>)',
           700: 'rgb(var(--color-secondary-700) / <alpha-value>)',
           800: 'rgb(var(--color-secondary-800) / <alpha-value>)',
+          850: 'rgb(var(--color-secondary-850, var(--color-secondary-800)) / <alpha-value>)',
           900: 'rgb(var(--color-secondary-900) / <alpha-value>)',
         },
         success: {
@@ -55,6 +57,63 @@ export default {
           800: 'rgb(var(--color-danger-800) / <alpha-value>)',
           900: 'rgb(var(--color-danger-900) / <alpha-value>)',
         },
+      },
+      animation: {
+        'fade-in': 'fadeIn 0.3s ease-in-out',
+        'fade-out': 'fadeOut 0.3s ease-in-out',
+        'slide-in': 'slideIn 0.3s ease-in-out',
+        'slide-out': 'slideOut 0.3s ease-in-out',
+        'scale-in': 'scaleIn 0.2s ease-in-out',
+        'bounce-subtle': 'bounceSubtle 0.6s ease-in-out',
+        'pulse-soft': 'pulseSoft 2s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+      },
+      keyframes: {
+        fadeIn: {
+          '0%': { opacity: '0' },
+          '100%': { opacity: '1' },
+        },
+        fadeOut: {
+          '0%': { opacity: '1' },
+          '100%': { opacity: '0' },
+        },
+        slideIn: {
+          '0%': { transform: 'translateY(-10px)', opacity: '0' },
+          '100%': { transform: 'translateY(0)', opacity: '1' },
+        },
+        slideOut: {
+          '0%': { transform: 'translateY(0)', opacity: '1' },
+          '100%': { transform: 'translateY(-10px)', opacity: '0' },
+        },
+        scaleIn: {
+          '0%': { transform: 'scale(0.95)', opacity: '0' },
+          '100%': { transform: 'scale(1)', opacity: '1' },
+        },
+        bounceSubtle: {
+          '0%, 100%': { transform: 'translateY(0)' },
+          '50%': { transform: 'translateY(-5px)' },
+        },
+        pulseSoft: {
+          '0%, 100%': { opacity: '1' },
+          '50%': { opacity: '0.5' },
+        },
+      },
+      spacing: {
+        '18': '4.5rem',
+        '88': '22rem',
+        '128': '32rem',
+      },
+      borderRadius: {
+        'xl': '1rem',
+        '2xl': '1.25rem',
+        '3xl': '1.5rem',
+      },
+      boxShadow: {
+        'soft': '0 2px 15px -3px rgba(0, 0, 0, 0.07), 0 10px 20px -2px rgba(0, 0, 0, 0.04)',
+        'soft-lg': '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)',
+        'inner-soft': 'inset 0 2px 4px 0 rgba(0, 0, 0, 0.06)',
+      },
+      backdropBlur: {
+        xs: '2px',
       },
     },
   },

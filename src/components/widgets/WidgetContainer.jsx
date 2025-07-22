@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { Settings, X, Maximize2, Minimize2, Move } from 'lucide-react';
-import { useUserPreferences } from '../../hooks/useUserPreferences.js';
+import { useUserPreferences } from '../../hooks/domain/useUserPreferences.js';
 
 /**
  * WidgetContainer - A draggable and resizable container for dashboard widgets

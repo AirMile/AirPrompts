@@ -1,6 +1,6 @@
 import React from 'react';
 import { ChevronDownIcon, ChevronRightIcon } from '@heroicons/react/24/outline';
-import useSectionVisibility from '../../hooks/useSectionVisibility';
+import useSectionVisibility from '../../hooks/ui/useSectionVisibility';
 
 /**
  * CollapsibleSection component for organizing content with expand/collapse functionality
@@ -28,7 +28,8 @@ const CollapsibleSection = ({
   headerProps = {},
   actionButton = null,
   onVisibilityChange = null,
-  externalVisible = null
+  externalVisible = null,
+  ...restProps // Pass through any additional props
 }) => {
   const { isVisible: internalVisible, toggle } = useSectionVisibility(sectionId, defaultVisible);
   
@@ -40,15 +41,15 @@ const CollapsibleSection = ({
   const getCountBadgeColor = (title) => {
     const titleLower = title.toLowerCase();
     if (titleLower.includes('favorite')) {
-      return 'bg-yellow-600 text-yellow-100';
+      return 'bg-yellow-600 dark:bg-yellow-500 text-yellow-100 dark:text-yellow-50';
     } else if (titleLower.includes('workflow')) {
-      return 'bg-green-600 text-green-100';
+      return 'bg-success-600 dark:bg-success-500 text-success-100 dark:text-success-50';
     } else if (titleLower.includes('template')) {
-      return 'bg-blue-600 text-blue-100';
+      return 'bg-primary-600 dark:bg-primary-500 text-primary-100 dark:text-primary-50';
     } else if (titleLower.includes('snippet')) {
-      return 'bg-purple-600 text-purple-100';
+      return 'bg-purple-600 dark:bg-purple-500 text-purple-100 dark:text-purple-50';
     }
-    return 'bg-blue-600 text-blue-100'; // default
+    return 'bg-primary-600 dark:bg-primary-500 text-primary-100 dark:text-primary-50'; // default
   };
 
   const handleToggle = () => {
@@ -70,9 +71,9 @@ const CollapsibleSection = ({
   };
 
   return (
-    <div className={`collapsible-section ${className}`}>
+    <div className={`collapsible-section section-boundary-restricted ${className}`} {...restProps}>
       {/* Section Header */}
-      <div className="w-full flex items-center justify-between bg-gray-800 hover:bg-gray-700 rounded-lg overflow-hidden transition-colors duration-200 group has-[.action-button:hover]:bg-gray-800">
+      <div className="w-full flex items-center justify-between bg-primary-50 dark:bg-primary-900/10 hover:bg-primary-100 dark:hover:bg-primary-900/20 rounded-lg overflow-hidden transition-colors duration-200 group has-[.action-button:hover]:bg-primary-50 dark:has-[.action-button:hover]:bg-primary-900/10">
         <button
           type="button"
           onClick={handleToggle}
@@ -85,9 +86,9 @@ const CollapsibleSection = ({
           <div className="flex items-center space-x-2">
             {/* Collapse/Expand Icon */}
             {isVisible ? (
-              <ChevronDownIcon className="w-5 h-5 text-gray-400" />
+              <ChevronDownIcon className="w-5 h-5 text-secondary-600 dark:text-secondary-400" />
             ) : (
-              <ChevronRightIcon className="w-5 h-5 text-gray-400" />
+              <ChevronRightIcon className="w-5 h-5 text-secondary-600 dark:text-secondary-400" />
             )}
             
             {/* Section Icon */}
@@ -98,7 +99,7 @@ const CollapsibleSection = ({
             )}
             
             {/* Section Title */}
-            <h3 className="text-lg font-medium text-gray-100">
+            <h3 className="text-lg font-medium text-secondary-900 dark:text-secondary-100">
               {title}
             </h3>
             

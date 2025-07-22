@@ -142,10 +142,10 @@ const TagFilter = ({
       {/* Filter Header */}
       <div className="flex items-center gap-2 mb-3">
         <div className="flex items-center gap-2">
-          <Filter className="w-4 h-4 text-gray-400" />
-          <span className="text-sm font-medium text-gray-300">Filter by Tags</span>
+          <Filter className="w-4 h-4 text-secondary-400 dark:text-secondary-500" />
+          <span className="text-sm font-medium text-secondary-700 dark:text-secondary-300">Filter by Tags</span>
           {isExpanded && (
-            <span className="text-xs text-gray-500 ml-2">
+            <span className="text-xs text-secondary-500 dark:text-secondary-500 ml-2">
               (Use ↑↓ to navigate, Enter to select, Esc to close)
             </span>
           )}
@@ -153,7 +153,7 @@ const TagFilter = ({
         
         {/* Filter Count */}
         {showFilterCount && selectedTags.length > 0 && (
-          <span className="text-xs text-gray-400 bg-gray-800 px-2 py-1 rounded-full">
+          <span className="text-xs text-secondary-400 dark:text-secondary-400 bg-secondary-200 dark:bg-secondary-800 px-2 py-1 rounded-full">
             {filterCount} items
           </span>
         )}
@@ -161,7 +161,7 @@ const TagFilter = ({
         {/* Expand/Collapse Button */}
         <button
           onClick={onToggleExpanded}
-          className="ml-auto p-1 text-gray-400 hover:text-gray-300 transition-colors"
+          className="ml-auto p-1 text-secondary-400 dark:text-secondary-500 hover:text-secondary-600 dark:hover:text-secondary-300 transition-colors"
           aria-label={isExpanded ? 'Collapse filters' : 'Expand filters'}
         >
           {isExpanded ? (
@@ -205,13 +205,13 @@ const TagFilter = ({
 
           {/* Filter Mode Toggle */}
           <div className="flex items-center gap-2">
-            <span className="text-sm text-gray-400">Filter mode:</span>
+            <span className="text-sm text-secondary-400 dark:text-secondary-400">Filter mode:</span>
             <button
               onClick={handleFilterModeToggle}
               className={`filter-mode-button px-3 py-1 rounded-full text-xs font-medium transition-colors ${
                 filterMode === 'AND' 
-                  ? 'bg-orange-600 text-white hover:bg-orange-700' 
-                  : 'bg-green-600 text-white hover:bg-green-700'
+                  ? 'bg-primary-600 text-white hover:bg-primary-700' 
+                  : 'bg-success-600 text-white hover:bg-success-700'
               }`}
               title={filterMode === 'AND' ? 'Items must have ALL selected tags' : 'Items must have ANY selected tags'}
               aria-label={`Filter mode: ${filterMode === 'AND' ? 'AND - items must have all selected tags' : 'OR - items must have any selected tags'}. Press Enter to toggle.`}
@@ -222,19 +222,19 @@ const TagFilter = ({
 
           {/* Tag Search */}
           <div className="relative">
-            <div className="flex items-center gap-2 bg-gray-800 border border-gray-600 rounded-lg p-2">
-              <Search className="w-4 h-4 text-gray-400" />
+            <div className="flex items-center gap-2 bg-secondary-100 dark:bg-secondary-800 border border-secondary-300 dark:border-secondary-600 rounded-lg p-2">
+              <Search className="w-4 h-4 text-secondary-400 dark:text-secondary-400" />
               <input
                 type="text"
                 placeholder="Search tags..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="flex-1 bg-transparent text-gray-100 text-sm outline-none"
+                className="flex-1 bg-transparent text-secondary-900 dark:text-secondary-100 text-sm outline-none"
               />
               {searchQuery && (
                 <button
                   onClick={() => setSearchQuery('')}
-                  className="text-gray-400 hover:text-gray-300 transition-colors"
+                  className="text-secondary-400 dark:text-secondary-400 hover:text-secondary-600 dark:hover:text-secondary-300 transition-colors"
                 >
                   <X className="w-4 h-4" />
                 </button>

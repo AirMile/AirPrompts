@@ -207,17 +207,21 @@ export const createSnippet = (data = {}) => {
   const now = new Date().toISOString();
   
   return {
-    id: data.id || Date.now(),
+    id: data.id || crypto.randomUUID(),
     name: data.name || '',
     description: data.description || '',
     content: data.content || '',
     tags: data.tags || [],
-    folderId: data.folderId || 'moods',
+    favorite: data.favorite || false, // API expects favorite field
+    folder_id: data.folder_id || null, // API uses folder_id not folderId
+    folderId: data.folderId || 'moods', // Keep for backwards compatibility
     enabled: data.enabled !== undefined ? data.enabled : true,
     folderFavorites: data.folderFavorites || {}, // { [folderId]: { isFavorite: boolean, favoriteOrder: number } }
     folderOrder: data.folderOrder || {}, // { [folderId]: number } - voor algemene item volgorde per folder
-    createdAt: data.createdAt || now,
-    updatedAt: data.updatedAt || now
+    created_at: data.created_at || now, // API uses snake_case
+    updated_at: data.updated_at || now, // API uses snake_case
+    createdAt: data.createdAt || now, // Keep for backwards compatibility
+    updatedAt: data.updatedAt || now // Keep for backwards compatibility
   };
 };
 

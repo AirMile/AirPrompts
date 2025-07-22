@@ -8,16 +8,16 @@
 
 /* Drop zone active state */
 .drop-zone-active {
-  border: 2px dashed #3b82f6;
-  background: rgba(59, 130, 246, 0.1);
+  border: 2px dashed rgb(var(--color-primary-500));
+  background: rgb(var(--color-primary-500) / var(--opacity-10));
   border-radius: 8px;
   transition: all 0.2s ease;
 }
 
 /* Drop zone hover state */
 .drop-zone-hover {
-  border-color: #60a5fa;
-  background: rgba(96, 165, 250, 0.15);
+  border-color: rgb(var(--color-primary-400));
+  background: rgb(var(--color-primary-400) / 0.15);
   transform: scale(1.02);
 }
 
@@ -39,10 +39,10 @@
 /* List item dragging state */
 .list-item-dragging {
   opacity: 0.8;
-  background: rgba(31, 41, 55, 0.95);
+  background: rgb(var(--color-secondary-800) / var(--opacity-95));
   border-radius: 8px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
-  border: 1px solid rgba(59, 130, 246, 0.3);
+  box-shadow: var(--shadow-lg);
+  border: 1px solid rgb(var(--color-primary-500) / var(--opacity-30));
 }
 
 /* Sortable container states */
@@ -51,7 +51,7 @@
 }
 
 .sortable-container.drag-over {
-  background: rgba(59, 130, 246, 0.05);
+  background: rgb(var(--color-primary-500) / var(--opacity-5));
   border-radius: 8px;
 }
 
@@ -73,7 +73,7 @@
 /* Section drop indicators */
 .section-drop-indicator {
   height: 3px;
-  background: linear-gradient(90deg, #3b82f6, #60a5fa);
+  background: linear-gradient(90deg, rgb(var(--color-primary-500)), rgb(var(--color-primary-400)));
   border-radius: 2px;
   margin: 8px 0;
   opacity: 0;
@@ -88,7 +88,43 @@
 
 /* Smooth reordering animations */
 .sortable-item {
-  transition: transform 0.2s ease;
+  transition: transform 200ms cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  transform-origin: center;
+}
+
+/* Enhanced sortable animations */
+.sortable-item:not(.dragging) {
+  transition: 
+    transform 200ms cubic-bezier(0.25, 0.46, 0.45, 0.94),
+    opacity 150ms ease,
+    box-shadow 150ms ease;
+}
+
+/* Prevent layout shift during drag */
+.sortable-container {
+  backface-visibility: hidden;
+  transform: translateZ(0);
+}
+
+/* Improved drag state */
+.sortable-item.dragging {
+  transition: none !important;
+  will-change: transform;
+  z-index: 1000;
+}
+
+/* Better drop animation */
+.sortable-item.dropping {
+  transition: transform 250ms cubic-bezier(0.34, 1.56, 0.64, 1) !important;
+}
+
+/* Override @dnd-kit default transitions for better feel */
+[data-dnd-kit-transform] {
+  transition: transform 200ms cubic-bezier(0.25, 0.46, 0.45, 0.94) !important;
+}
+
+[data-dnd-kit-transform].dragging {
+  transition: none !important;
 }
 
 /* Mobile touch improvements */
@@ -103,15 +139,77 @@
   }
 }
 
+/* Section boundary restrictions */
+.section-boundary-restricted {
+  position: relative;
+}
+
+.section-boundary-restricted[data-section-type] {
+  overflow: hidden;
+  border: 2px solid transparent;
+  border-radius: 8px;
+  transition: border-color 0.2s ease;
+}
+
+/* Visual feedback for drag outside boundaries */
+.drag-outside-boundary {
+  cursor: not-allowed !important;
+}
+
+.drag-outside-boundary .drag-overlay {
+  opacity: 0.3 !important;
+  filter: grayscale(100%) !important;
+}
+
+/* Section highlighting during drag */
+[data-section-type="workflows"].drag-active {
+  border-color: rgb(var(--color-success-500));
+  background: rgb(var(--color-success-500) / var(--opacity-5));
+}
+
+[data-section-type="templates"].drag-active {
+  border-color: rgb(var(--color-primary-500));
+  background: rgb(var(--color-primary-500) / var(--opacity-5));
+}
+
+[data-section-type="snippets"].drag-active {
+  border-color: rgb(147 51 234); /* purple-600 */
+  background: rgb(147 51 234 / var(--opacity-5));
+}
+
+[data-section-type="favorites"].drag-active {
+  border-color: rgb(var(--color-yellow-500));
+  background: rgb(var(--color-yellow-500) / var(--opacity-5));
+}
+
+/* Invalid drop zone styling */
+.invalid-drop-zone {
+  background: rgb(var(--color-red-500) / var(--opacity-10)) !important;
+  border-color: rgb(var(--color-red-500)) !important;
+  cursor: not-allowed !important;
+}
+
+.invalid-drop-zone::after {
+  content: '✕';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 2rem;
+  color: rgb(var(--color-red-500));
+  pointer-events: none;
+  z-index: 10;
+}
+
 /* High contrast mode support */
 @media (prefers-contrast: high) {
   .card-dragging {
-    border-color: #ffffff;
-    box-shadow: 0 8px 25px rgba(255, 255, 255, 0.3);
+    border-color: rgb(255 255 255);
+    box-shadow: 0 8px 25px rgb(255 255 255 / 0.3);
   }
   
   .drop-zone-active {
-    border-color: #ffffff;
-    background: rgba(255, 255, 255, 0.1);
+    border-color: rgb(255 255 255);
+    background: rgb(255 255 255 / var(--opacity-10));
   }
 }

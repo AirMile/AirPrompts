@@ -1,8 +1,33 @@
+import defaultTemplates from '../../data/defaultTemplates.json';
+import defaultWorkflows from '../../data/defaultWorkflows.json';
+import defaultSnippets from '../../data/defaultSnippets.json';
+
 // Storage abstraction layer - makkelijk te vervangen met API later
 class StorageServiceClass {
   constructor() {
     this.isAPIEnabled = false; // Toggle voor database migratie
     this.apiClient = null; // Future API client
+    this.initializeDefaultData();
+  }
+  
+  // Initialize default data if localStorage is empty
+  initializeDefaultData() {
+    // Check if data already exists
+    const hasTemplates = localStorage.getItem('airprompts_templates');
+    const hasWorkflows = localStorage.getItem('airprompts_workflows');
+    const hasSnippets = localStorage.getItem('airprompts_snippets');
+    
+    // Only initialize if all are missing (first time user)
+    if (!hasTemplates && !hasWorkflows && !hasSnippets) {
+      console.log('Initializing default data...');
+      
+      // Set default data synchronously
+      localStorage.setItem('airprompts_templates', JSON.stringify(defaultTemplates));
+      localStorage.setItem('airprompts_workflows', JSON.stringify(defaultWorkflows));
+      localStorage.setItem('airprompts_snippets', JSON.stringify(defaultSnippets));
+      
+      console.log('Default data initialized successfully');
+    }
   }
   
   // Generic error handler
@@ -17,15 +42,17 @@ class StorageServiceClass {
   }
   
   // Templates CRUD - localStorage now, API-ready interface
-  async getTemplates() {
+  async getTemplates(filters = {}) {
     if (this.isAPIEnabled && this.apiClient) {
-      return this.apiClient.get('/templates');
+      return this.apiClient.get('/templates', { params: filters });
     }
     
-    return this.handleStorageOperation(() => {
+    const templates = await this.handleStorageOperation(() => {
       const data = localStorage.getItem('airprompts_templates');
       return data ? JSON.parse(data) : [];
     }, () => []);
+    
+    return this.applyFilters(templates, filters);
   }
   
   async createTemplate(template) {
@@ -65,15 +92,18 @@ class StorageServiceClass {
   }
 
   // Workflows CRUD
-  async getWorkflows() {
+  async getWorkflows(filters = {}) {
     if (this.isAPIEnabled && this.apiClient) {
-      return this.apiClient.get('/workflows');
+      return this.apiClient.get('/workflows', { params: filters });
     }
     
-    return this.handleStorageOperation(() => {
+    const workflows = await this.handleStorageOperation(() => {
       const data = localStorage.getItem('airprompts_workflows');
       return data ? JSON.parse(data) : [];
     }, () => []);
+    
+    
+    return this.applyFilters(workflows, filters);
   }
   
   async createWorkflow(workflow) {
@@ -113,15 +143,17 @@ class StorageServiceClass {
   }
 
   // Snippets CRUD
-  async getSnippets() {
+  async getSnippets(filters = {}) {
     if (this.isAPIEnabled && this.apiClient) {
-      return this.apiClient.get('/snippets');
+      return this.apiClient.get('/snippets', { params: filters });
     }
     
-    return this.handleStorageOperation(() => {
+    const snippets = await this.handleStorageOperation(() => {
       const data = localStorage.getItem('airprompts_snippets');
       return data ? JSON.parse(data) : [];
     }, () => []);
+    
+    return this.applyFilters(snippets, filters);
   }
   
   async createSnippet(snippet) {
@@ -202,6 +234,32 @@ class StorageServiceClass {
   async getSnippetById(id) {
     const snippets = await this.getSnippets();
     return snippets.find(s => s.id === id);
+  }
+  
+  // Filter helper
+  applyFilters(items, filters) {
+    if (!filters || Object.keys(filters).length === 0) {
+      return items;
+    }
+    
+    return items.filter(item => {
+      // Filter by folder
+      if (filters.folderId && item.folderId !== filters.folderId) {
+        return false;
+      }
+      
+      // Filter by favorite
+      if (filters.favorite !== undefined && item.favorite !== filters.favorite) {
+        return false;
+      }
+      
+      // Filter by category
+      if (filters.category && item.category !== filters.category) {
+        return false;
+      }
+      
+      return true;
+    });
   }
   
   // Future: Enable API mode

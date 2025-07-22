@@ -14,16 +14,21 @@ const DragCard = ({
   keyboardNavigation = {}
 }) => {
 
+  // Check if classic dark theme is active
+  const isClassicDark = () => {
+    return document.documentElement.classList.contains('theme-classic-dark');
+  };
+
   const getTypeColor = (itemType) => {
     switch (itemType) {
       case 'workflow':
-        return 'bg-green-600 hover:bg-green-700';
+        return 'bg-success-600 hover:bg-success-700';
       case 'template':
-        return 'bg-blue-600 hover:bg-blue-700';
+        return 'bg-primary-600 hover:bg-primary-700';
       case 'snippet':
         return 'bg-purple-600 hover:bg-purple-700';
       default:
-        return 'bg-blue-600 hover:bg-blue-700';
+        return 'bg-primary-600 hover:bg-primary-700';
     }
   };
 
@@ -48,13 +53,13 @@ const DragCard = ({
     
     switch (normalizedType) {
       case 'workflow':
-        return 'hover:border-green-500 hover:border';
+        return 'hover:border-success-500 hover:border';
       case 'template':
-        return 'hover:border-blue-400 hover:border';
+        return 'hover:border-primary-400 hover:border';
       case 'snippet':
         return 'hover:border-purple-500 hover:border';
       default:
-        return 'hover:border-blue-400 hover:border';
+        return 'hover:border-primary-400 hover:border';
     }
   };
 
@@ -63,13 +68,13 @@ const DragCard = ({
     
     switch (normalizedType) {
       case 'workflow':
-        return 'border-green-500 border';
+        return 'border-success-500 border';
       case 'template':
-        return 'border-blue-400 border';
+        return 'border-primary-400 border';
       case 'snippet':
         return 'border-purple-500 border';
       default:
-        return 'border-blue-400 border';
+        return 'border-primary-400 border';
     }
   };
 
@@ -78,13 +83,13 @@ const DragCard = ({
     
     switch (normalizedType) {
       case 'workflow':
-        return <Workflow className="w-5 h-5 text-green-400" />;
+        return <Workflow className="w-5 h-5 text-success-600 dark:text-success-400" />;
       case 'template':
-        return <FileText className="w-5 h-5 text-blue-400" />;
+        return <FileText className="w-5 h-5 text-primary-600 dark:text-primary-400" />;
       case 'snippet':
-        return <Code className="w-5 h-5 text-purple-400" />;
+        return <Code className="w-5 h-5 text-purple-600 dark:text-purple-400" />;
       default:
-        return <FileText className="w-5 h-5 text-blue-400" />;
+        return <FileText className="w-5 h-5 text-primary-600 dark:text-primary-400" />;
     }
   };
 
@@ -130,8 +135,16 @@ const DragCard = ({
         data-card-name={item.name}
         className={(() => {
           const actualItemType = item.type || type;
+          // Use original dark styling for classic dark theme
+          const cardBackground = isClassicDark() 
+            ? 'bg-secondary-800' 
+            : 'bg-white dark:bg-secondary-800';
+          const cardBorder = isClassicDark()
+            ? 'border-secondary-700'
+            : 'border-secondary-300 dark:border-secondary-700';
+          
           return `
-            bg-gray-800 rounded-lg shadow-md border border-gray-700 p-4 
+            ${cardBackground} rounded-lg shadow-md border ${cardBorder} p-4 
             hover:shadow-lg transition-all duration-200 flex flex-col
             focus:outline-none
             ${getHoverBorderColor(actualItemType)}
@@ -145,11 +158,11 @@ const DragCard = ({
       {/* Minimal Header for Drag State - Only Title and Description */}
       <div className="flex items-center gap-3 min-h-[4rem]">
         {/* Drag Handle */}
-        <GripVertical className="w-5 h-5 text-gray-400 flex-shrink-0" />
+        <GripVertical className={`w-5 h-5 flex-shrink-0 ${isClassicDark() ? 'text-secondary-400' : 'text-secondary-600 dark:text-secondary-400'}`} />
         
         <div className="flex-1 pb-4">
-          <h3 className="font-semibold text-gray-100 mb-2">{item.name}</h3>
-          <p className="text-sm text-gray-300 line-clamp-2">
+          <h3 className={`font-semibold mb-2 ${isClassicDark() ? 'text-secondary-100' : 'text-secondary-900 dark:text-secondary-100'}`}>{item.name}</h3>
+          <p className={`text-sm line-clamp-2 ${isClassicDark() ? 'text-secondary-300' : 'text-secondary-600 dark:text-secondary-300'}`}>
             {item.description || 'No description'}
           </p>
         </div>

@@ -13,20 +13,57 @@ import CollapsibleSection from '../common/CollapsibleSection.jsx';
 import AdvancedSearch from '../search/AdvancedSearch.jsx';
 import Pagination from '../common/Pagination.jsx';
 import FavoritesWidget from '../widgets/FavoritesWidget.jsx';
-import useKeyboardNavigation from '../../hooks/useKeyboardNavigation.js';
-import usePagination from '../../hooks/usePagination.js';
-import useFilters from '../../hooks/useFilters.js';
-import useDragAndDrop from '../../hooks/useDragAndDrop.js';
-import { useWidgets } from '../../hooks/useWidgets.js';
-import useSectionVisibility from '../../hooks/useSectionVisibility.js';
+import SettingsModal from '../settings/SettingsModal.jsx';
+import VirtualizedGrid from '../common/ui/VirtualizedGrid.jsx';
+import VirtualizedCard from '../common/VirtualizedCard.jsx';
+import OptimizedItemRenderer from '../common/OptimizedItemRenderer.jsx';
+import MobileNavigation from '../navigation/MobileNavigation.jsx';
+import useKeyboardNavigation from '../../hooks/ui/useKeyboardNavigation.js';
+import usePagination from '../../hooks/ui/usePagination.js';
+import useFilters from '../../hooks/ui/useFilters.js';
+import useDragAndDrop from '../../hooks/ui/useDragAndDrop.js';
+import useProgressiveLoading from '../../hooks/ui/useProgressiveLoading.js';
+import { useWidgets } from '../../hooks/domain/useWidgets.js';
+import useSectionVisibility from '../../hooks/ui/useSectionVisibility.js';
 import { performAdvancedSearch } from '../../utils/searchUtils.js';
-import { useUserPreferences } from '../../hooks/useUserPreferences.js';
+import { useUserPreferences } from '../../hooks/domain/useUserPreferences.js';
 import { 
   getFolderFavorites, 
   getFolderItems,
   toggleFolderFavorite,
   isItemFavoriteInFolder
 } from '../../types/template.types.js';
+
+/**
+ * Custom collision detection that restricts dragging to section boundaries
+ */
+const createBoundedCollisionDetection = (sectionType) => {
+  return (args) => {
+    // Get the section element
+    const sectionElement = document.querySelector(`[data-section-type="${sectionType}"]`);
+    if (!sectionElement) {
+      return closestCenter(args);
+    }
+
+    const sectionRect = sectionElement.getBoundingClientRect();
+    const { pointerCoordinates } = args;
+
+    // Check if pointer is within section bounds
+    if (
+      pointerCoordinates &&
+      (pointerCoordinates.x < sectionRect.left ||
+       pointerCoordinates.x > sectionRect.right ||
+       pointerCoordinates.y < sectionRect.top ||
+       pointerCoordinates.y > sectionRect.bottom)
+    ) {
+      // Pointer is outside section bounds, return empty array to prevent dropping
+      return [];
+    }
+
+    // Use default collision detection within bounds
+    return closestCenter(args);
+  };
+};
 
 const Homepage = ({ 
   templates, 
@@ -47,9 +84,9 @@ const Homepage = ({
   onUpdateTemplate,
   onUpdateWorkflow, 
   onUpdateSnippet,
-  setTemplates,
-  setWorkflows,
-  setSnippets,
+  onReorderTemplates,
+  onReorderWorkflows,
+  onReorderSnippets,
   onCreateFolder
 }) => {
   // Use preferences system for view mode
@@ -62,6 +99,12 @@ const Homepage = ({
   
   // Initialize widgets system
   const { activeWidgets, widgetConfigs } = useWidgets();
+  
+  // Settings modal state
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  
+  // Mobile navigation state
+  const [isMobileNavOpen, setIsMobileNavOpen] = useState(false);
   
   // Section visibility state
   const favoritesVisibility = useSectionVisibility('favorites', true);
@@ -164,6 +207,7 @@ const Homepage = ({
   }, [filteredWorkflows, filteredTemplates, filteredSnippets, selectedFolderId]);
 
   
+  
   // Pagination hooks for each section
   const templatesPagination = usePagination(filteredTemplates, {
     initialPageSize: 12,
@@ -181,6 +225,27 @@ const Homepage = ({
     initialPageSize: 12,
     storageKey: `snippets_${selectedFolderId || 'global'}`,
     pageSizeOptions: [12, 24, 48, 96]
+  });
+
+  // Progressive loading voor performance optimization
+  const templatesProgressive = useProgressiveLoading(filteredTemplates, {
+    batchSize: 50,
+    virtualizationThreshold: 100
+  });
+  
+  const workflowsProgressive = useProgressiveLoading(filteredWorkflows, {
+    batchSize: 50,
+    virtualizationThreshold: 100
+  });
+  
+  const snippetsProgressive = useProgressiveLoading(filteredSnippets, {
+    batchSize: 50,
+    virtualizationThreshold: 100
+  });
+
+  const favoritesProgressive = useProgressiveLoading(favorites, {
+    batchSize: 30,
+    virtualizationThreshold: 60
   });
   
   // Handle advanced search filter changes
@@ -227,8 +292,8 @@ const Homepage = ({
       const reorderedItem = reorderedItems.find(item => item.id === workflow.id);
       return reorderedItem || workflow;
     });
-    setWorkflows(updatedWorkflows);
-  }, [workflows, setWorkflows]);
+    onReorderWorkflows(updatedWorkflows);
+  }, [workflows, onReorderWorkflows]);
 
   const templatesReorderHandler = useCallback((reorderedItems) => {
     // Update the complete templates array with the reordered items
@@ -236,8 +301,8 @@ const Homepage = ({
       const reorderedItem = reorderedItems.find(item => item.id === template.id);
       return reorderedItem || template;
     });
-    setTemplates(updatedTemplates);
-  }, [templates, setTemplates]);
+    onReorderTemplates(updatedTemplates);
+  }, [templates, onReorderTemplates]);
 
   const snippetsReorderHandler = useCallback((reorderedItems) => {
     // Update the complete snippets array with the reordered items
@@ -245,8 +310,8 @@ const Homepage = ({
       const reorderedItem = reorderedItems.find(item => item.id === snippet.id);
       return reorderedItem || snippet;
     });
-    setSnippets(updatedSnippets);
-  }, [snippets, setSnippets]);
+    onReorderSnippets(updatedSnippets);
+  }, [snippets, onReorderSnippets]);
 
   // Initialize drag and drop hooks for each section
   const favoritesDragDrop = useDragAndDrop({
@@ -1137,6 +1202,7 @@ const Homepage = ({
             onVisibilityChange={(isVisible) => {
               favoritesVisibility.setVisible(isVisible);
             }}
+            data-section-type="favorites"
           >
             <DndContext 
               sensors={sensors}
@@ -1180,12 +1246,12 @@ const Homepage = ({
               <button
                 onClick={() => onEditWorkflow({})}
                 className="
-                  p-3 bg-green-600 text-white rounded-lg font-semibold
+                  p-3 bg-success-600 text-white rounded-lg font-semibold
                   flex items-center justify-center
-                  hover:bg-green-700 hover:shadow-lg hover:scale-105
-                  focus:outline-none focus:ring-2 focus:ring-green-400 focus:ring-opacity-50
+                  hover:bg-success-700 hover:shadow-lg hover:scale-105
+                  focus:outline-none focus:ring-2 focus:ring-success-400 focus:ring-opacity-50
                   transition-all duration-200 ease-in-out
-                  border border-green-500 hover:border-green-400
+                  border border-success-500 hover:border-success-400
                 "
                 title="New Workflow"
               >
@@ -1195,6 +1261,7 @@ const Homepage = ({
             onVisibilityChange={(isVisible) => {
               workflowsVisibility.setVisible(isVisible);
             }}
+            data-section-type="workflows"
           >
             <DndContext 
               sensors={sensors}
@@ -1248,12 +1315,12 @@ const Homepage = ({
               <button
                 onClick={() => onEditTemplate({})}
                 className="
-                  p-3 bg-blue-600 text-white rounded-lg font-semibold
+                  p-3 bg-primary-600 text-white rounded-lg font-semibold
                   flex items-center justify-center
-                  hover:bg-blue-700 hover:shadow-lg hover:scale-105
-                  focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-opacity-50
+                  hover:bg-primary-700 hover:shadow-lg hover:scale-105
+                  focus:outline-none focus:ring-2 focus:ring-primary-400 focus:ring-opacity-50
                   transition-all duration-200 ease-in-out
-                  border border-blue-500 hover:border-blue-400
+                  border border-primary-500 hover:border-primary-400
                 "
                 title="New Template"
               >
@@ -1263,6 +1330,7 @@ const Homepage = ({
             onVisibilityChange={(isVisible) => {
               templatesVisibility.setVisible(isVisible);
             }}
+            data-section-type="templates"
           >
             <DndContext 
               sensors={sensors}
@@ -1331,6 +1399,7 @@ const Homepage = ({
             onVisibilityChange={(isVisible) => {
               snippetsVisibility.setVisible(isVisible);
             }}
+            data-section-type="snippets"
           >
             <DndContext 
               sensors={sensors}
@@ -1378,18 +1447,26 @@ const Homepage = ({
 
 
   return (
-    <div className="flex h-screen bg-gray-900">
-      {/* Sidebar */}
-      <div className="w-72 bg-gray-800 border-r border-gray-700 flex flex-col flex-shrink-0">
+    <div className="flex h-screen bg-secondary-50 dark:bg-secondary-900">
+      {/* Mobile Navigation */}
+      <MobileNavigation
+        isOpen={isMobileNavOpen}
+        onToggle={setIsMobileNavOpen}
+        folders={folders || []}
+        selectedFolderId={selectedFolderId}
+        onFolderSelect={setSelectedFolderId}
+        onCreateFolder={onCreateFolder}
+        onSettingsClick={() => setIsSettingsOpen(true)}
+      />
+
+      {/* Desktop Sidebar */}
+      <div className="hidden lg:flex w-72 bg-white dark:bg-secondary-900 border-r-2 border-primary-200 dark:border-primary-800 flex-col flex-shrink-0 shadow-lg">
         <FolderTree
           folders={folders || []}
           selectedFolderId={selectedFolderId}
           onFolderSelect={setSelectedFolderId}
           onCreateFolder={onCreateFolder}
-          onSettingsClick={() => {
-            // Placeholder voor settings - kan later worden geïmplementeerd
-            alert('Settings functionaliteit komt binnenkort!');
-          }}
+          onSettingsClick={() => setIsSettingsOpen(true)}
         />
       </div>
 
@@ -1400,9 +1477,28 @@ const Homepage = ({
         tabIndex={-1}
         style={{ outline: 'none' }}
       >
-        <div className="max-w-7xl mx-auto px-8 py-6">
-          {/* Breadcrumb */}
-          <div className="mb-6">
+        {/* Mobile Header */}
+        <div className="lg:hidden bg-white dark:bg-secondary-800 border-b border-secondary-200 dark:border-secondary-700 px-4 py-3 sticky top-0 z-40">
+          <div className="flex items-center justify-between">
+            <MobileNavigation
+              isOpen={isMobileNavOpen}
+              onToggle={setIsMobileNavOpen}
+              folders={folders || []}
+              selectedFolderId={selectedFolderId}
+              onFolderSelect={setSelectedFolderId}
+              onCreateFolder={onCreateFolder}
+              onSettingsClick={() => setIsSettingsOpen(true)}
+            />
+            <h1 className="text-lg font-semibold text-secondary-900 dark:text-secondary-100 truncate">
+              {folders?.find(f => f.id === selectedFolderId)?.name || 'Home'}
+            </h1>
+            <div className="w-10" /> {/* Spacer for balance */}
+          </div>
+        </div>
+
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 lg:py-6">
+          {/* Breadcrumb - Desktop only */}
+          <div className="hidden lg:block mb-6">
             <FolderBreadcrumb
               folders={folders || []}
               currentFolderId={selectedFolderId}
@@ -1455,6 +1551,12 @@ const Homepage = ({
           )}
         </div>
       </div>
+      
+      {/* Settings Modal */}
+      <SettingsModal 
+        isOpen={isSettingsOpen}
+        onClose={() => setIsSettingsOpen(false)}
+      />
     </div>
   );
 };

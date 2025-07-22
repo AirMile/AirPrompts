@@ -1,12 +1,17 @@
 import React, { useState, useEffect } from 'react';
 import { Save, X, Tag } from 'lucide-react';
 import { createSnippet, validateSnippet } from '../../types/template.types.js';
-import FolderSelector from '../common/FolderSelector.jsx';
+import FolderSelector from '../shared/form/FolderSelector.jsx';
 
 const SnippetEditor = ({ snippet, folders = [], onSave, onCancel }) => {
   const [formData, setFormData] = useState(() => {
     if (snippet) {
-      return { ...snippet, tags: snippet.tags || [] };
+      return { 
+        ...snippet, 
+        tags: snippet.tags || [],
+        favorite: snippet.favorite || false,
+        description: snippet.description || '' // Ensure controlled input
+      };
     }
     return createSnippet();
   });
@@ -17,7 +22,12 @@ const SnippetEditor = ({ snippet, folders = [], onSave, onCancel }) => {
 
   useEffect(() => {
     if (snippet) {
-      setFormData({ ...snippet, tags: snippet.tags || [] });
+      setFormData({ 
+        ...snippet, 
+        tags: snippet.tags || [],
+        favorite: snippet.favorite || false,
+        description: snippet.description || '' // Ensure controlled input
+      });
     }
   }, [snippet]);
 
@@ -32,11 +42,19 @@ const SnippetEditor = ({ snippet, folders = [], onSave, onCancel }) => {
   const handleSave = async () => {
     setIsSubmitting(true);
     
+    // Prepare data for save handler
     const snippetData = {
-      id: snippet?.id,
       ...formData,
-      updatedAt: new Date().toISOString()
+      updated_at: new Date().toISOString(),
+      // Ensure all required API fields are present
+      tags: formData.tags || [],
+      favorite: formData.favorite || false
     };
+
+    // Include ID for updates (createSaveHandler needs it to determine update vs create)
+    if (snippet?.id) {
+      snippetData.id = snippet.id;
+    }
 
     const validation = validateSnippet(snippetData);
     if (!validation.isValid) {
@@ -94,16 +112,16 @@ const SnippetEditor = ({ snippet, folders = [], onSave, onCancel }) => {
   ];
 
   return (
-    <div className="max-w-6xl mx-auto p-6">
-      <div className="bg-gray-900 rounded-xl shadow-lg p-6">
+    <div className="max-w-6xl mx-auto p-6 animate-fade-in">
+      <div className="bg-secondary-900 rounded-xl shadow-lg border border-secondary-800 animate-slide-in p-6">
         <div className="flex items-center justify-between mb-6">
-          <h2 className="text-2xl font-bold text-gray-100">
+          <h2 className="text-2xl font-bold text-secondary-100">
             {snippet ? 'Edit Snippet' : 'Create New Snippet'}
           </h2>
           <div className="flex gap-2">
             <button
               onClick={onCancel}
-              className="px-4 py-2 text-gray-300 border border-gray-600 rounded-lg hover:bg-gray-700 flex items-center gap-2"
+              className="px-4 py-2 bg-secondary-600 hover:bg-secondary-700 text-secondary-100 font-medium rounded-lg transition-all duration-200 focus-visible flex items-center gap-2"
             >
               <X className="w-4 h-4" />
               Cancel
@@ -111,18 +129,22 @@ const SnippetEditor = ({ snippet, folders = [], onSave, onCancel }) => {
             <button
               onClick={handleSave}
               disabled={isSubmitting}
-              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 flex items-center gap-2"
+              className="btn-primary focus-visible disabled:opacity-50 flex items-center gap-2"
             >
-              <Save className="w-4 h-4" />
+              {isSubmitting ? (
+                <div className="loading-spinner" />
+              ) : (
+                <Save className="w-4 h-4" />
+              )}
               {isSubmitting ? 'Saving...' : 'Save Snippet'}
             </button>
           </div>
         </div>
 
         {errors.length > 0 && (
-          <div className="mb-6 p-4 bg-red-900 border border-red-700 rounded-lg">
-            <h3 className="text-red-100 font-medium mb-2">Please fix the following errors:</h3>
-            <ul className="text-red-200 text-sm space-y-1">
+          <div className="mb-6 p-4 bg-danger-900 border border-danger-700 rounded-lg">
+            <h3 className="text-danger-100 font-medium mb-2">Please fix the following errors:</h3>
+            <ul className="text-danger-200 text-sm space-y-1">
               {errors.map((error, index) => (
                 <li key={index}>• {error}</li>
               ))}
@@ -134,37 +156,37 @@ const SnippetEditor = ({ snippet, folders = [], onSave, onCancel }) => {
           {/* Form Fields */}
           <div className="space-y-4">
             <div>
-              <label htmlFor="snippetName" className="block text-sm font-medium text-gray-300 mb-2">
+              <label htmlFor="snippetName" className="block text-sm font-medium text-secondary-300 mb-2">
                 Snippet Name *
               </label>
               <input
                 type="text"
                 id="snippetName"
                 name="name"
-                value={formData.name}
+                value={formData.name || ''}
                 onChange={handleInputChange}
-                className="w-full p-3 border border-gray-600 bg-gray-800 text-gray-100 rounded-lg focus:ring-2 focus:ring-blue-400 focus:border-transparent"
+                className="w-full p-3 border border-secondary-600 bg-secondary-800 text-secondary-100 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all duration-200"
                 placeholder="Enter snippet name..."
                 required
               />
             </div>
 
             <div>
-              <label htmlFor="snippetDescription" className="block text-sm font-medium text-gray-300 mb-2">
+              <label htmlFor="snippetDescription" className="block text-sm font-medium text-secondary-300 mb-2">
                 Description
               </label>
               <textarea
                 id="snippetDescription"
                 name="description"
-                value={formData.description}
+                value={formData.description || ''}
                 onChange={handleInputChange}
-                className="w-full h-24 p-3 border border-gray-600 bg-gray-800 text-gray-100 rounded-lg focus:ring-2 focus:ring-blue-400 focus:border-transparent"
+                className="w-full h-24 p-3 border border-secondary-600 bg-secondary-800 text-secondary-100 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all duration-200"
                 placeholder="Brief description..."
               />
             </div>
 
             <div>
-              <label htmlFor="snippetFolder" className="block text-sm font-medium text-gray-300 mb-2">
+              <label htmlFor="snippetFolder" className="block text-sm font-medium text-secondary-300 mb-2">
                 Folder
               </label>
               <FolderSelector
@@ -173,12 +195,25 @@ const SnippetEditor = ({ snippet, folders = [], onSave, onCancel }) => {
                 folders={folders}
                 selectedFolderId={formData.folderId}
                 onFolderSelect={(folderId) => setFormData({...formData, folderId})}
-                focusRingColor="blue"
+                focusRingColor="primary"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">
+              <label className="flex items-center text-sm font-medium text-secondary-300 mb-2">
+                <input
+                  type="checkbox"
+                  name="favorite"
+                  checked={formData.favorite || false}
+                  onChange={handleInputChange}
+                  className="mr-2 h-4 w-4 text-primary-600 bg-secondary-800 border-secondary-600 rounded focus:ring-primary-400"
+                />
+                Mark as Favorite
+              </label>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-secondary-300 mb-2">
                 Tags *
               </label>
               <div className="space-y-2">
@@ -190,12 +225,12 @@ const SnippetEditor = ({ snippet, folders = [], onSave, onCancel }) => {
                     value={tagInput}
                     onChange={(e) => setTagInput(e.target.value)}
                     onKeyDown={handleKeyPress}
-                    className="flex-1 p-3 border border-gray-600 bg-gray-800 text-gray-100 rounded-lg focus:ring-2 focus:ring-blue-400 focus:border-transparent"
+                    className="flex-1 p-3 border border-secondary-600 bg-secondary-800 text-secondary-100 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all duration-200"
                     placeholder="Add tags (press Enter or comma to add)..."
                   />
                   <button
                     onClick={handleAddTag}
-                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                    className="btn-primary focus-visible"
                   >
                     <Tag className="w-4 h-4" />
                   </button>
@@ -205,12 +240,12 @@ const SnippetEditor = ({ snippet, folders = [], onSave, onCancel }) => {
                   {(formData.tags || []).map((tag, index) => (
                     <span
                       key={index}
-                      className="inline-flex items-center gap-1 px-3 py-1 bg-blue-900 text-blue-100 rounded-full text-sm"
+                      className="inline-flex items-center gap-1 px-3 py-1 bg-primary-900 text-primary-100 rounded-full text-sm"
                     >
                       {tag}
                       <button
                         onClick={() => handleRemoveTag(tag)}
-                        className="ml-1 text-blue-300 hover:text-blue-100"
+                        className="ml-1 text-primary-300 hover:text-primary-100"
                       >
                         <X className="w-3 h-3" />
                       </button>
@@ -219,7 +254,7 @@ const SnippetEditor = ({ snippet, folders = [], onSave, onCancel }) => {
                 </div>
 
                 <div className="mt-2">
-                  <p className="text-sm text-gray-400 mb-1">Common tags:</p>
+                  <p className="text-sm text-secondary-400 mb-1">Common tags:</p>
                   <div className="flex flex-wrap gap-1">
                     {commonTags.map(tag => (
                       <button
@@ -229,11 +264,11 @@ const SnippetEditor = ({ snippet, folders = [], onSave, onCancel }) => {
                           if (!(formData.tags || []).includes(tag)) {
                             setFormData(prev => ({
                               ...prev,
-                              tags: [...prev.tags, tag]
+                              tags: [...(prev.tags || []), tag]
                             }));
                           }
                         }}
-                        className="px-2 py-1 bg-blue-800 text-blue-200 rounded text-xs hover:bg-blue-700 transition-colors"
+                        className="px-2 py-1 bg-primary-800 text-primary-200 rounded text-xs hover:bg-primary-700 transition-colors"
                       >
                         {tag}
                       </button>
@@ -244,15 +279,15 @@ const SnippetEditor = ({ snippet, folders = [], onSave, onCancel }) => {
             </div>
 
             <div>
-              <label htmlFor="snippetContent" className="block text-sm font-medium text-gray-300 mb-2">
+              <label htmlFor="snippetContent" className="block text-sm font-medium text-secondary-300 mb-2">
                 Content *
               </label>
               <textarea
                 id="snippetContent"
                 name="content"
-                value={formData.content}
+                value={formData.content || ''}
                 onChange={handleInputChange}
-                className="w-full h-48 p-3 border border-gray-600 bg-gray-800 text-gray-100 rounded-lg focus:ring-2 focus:ring-blue-400 focus:border-transparent"
+                className="w-full h-48 p-3 border border-secondary-600 bg-secondary-800 text-secondary-100 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all duration-200"
                 placeholder="Enter snippet content..."
                 required
               />
@@ -265,9 +300,9 @@ const SnippetEditor = ({ snippet, folders = [], onSave, onCancel }) => {
                 name="enabled"
                 checked={formData.enabled}
                 onChange={handleInputChange}
-                className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-secondary-300 rounded"
               />
-              <label htmlFor="enabled" className="ml-2 block text-sm text-gray-300">
+              <label htmlFor="enabled" className="ml-2 block text-sm text-secondary-300">
                 Enabled (snippet will be available for selection)
               </label>
             </div>
@@ -276,33 +311,33 @@ const SnippetEditor = ({ snippet, folders = [], onSave, onCancel }) => {
           {/* Preview and Usage */}
           <div className="space-y-4">
             <div>
-              <h3 className="text-lg font-semibold text-gray-100 mb-3">Preview</h3>
-              <div className="bg-gray-800 rounded-lg p-4 border border-gray-700 min-h-48">
+              <h3 className="text-lg font-semibold text-secondary-100 mb-3">Preview</h3>
+              <div className="bg-secondary-800 rounded-lg p-4 border border-secondary-700 min-h-48">
                 <div className="space-y-2">
                   <div>
-                    <span className="text-sm font-medium text-gray-300">Name: </span>
-                    <span className="text-gray-100">{formData.name || 'Untitled Snippet'}</span>
+                    <span className="text-sm font-medium text-secondary-300">Name: </span>
+                    <span className="text-secondary-100">{formData.name || 'Untitled Snippet'}</span>
                   </div>
                   {formData.description && (
                     <div>
-                      <span className="text-sm font-medium text-gray-300">Description: </span>
-                      <span className="text-gray-200">{formData.description}</span>
+                      <span className="text-sm font-medium text-secondary-300">Description: </span>
+                      <span className="text-secondary-200">{formData.description}</span>
                     </div>
                   )}
                   <div>
-                    <span className="text-sm font-medium text-gray-300">Tags: </span>
+                    <span className="text-sm font-medium text-secondary-300">Tags: </span>
                     <div className="inline-flex flex-wrap gap-1 mt-1">
                       {(formData.tags || []).map((tag, index) => (
-                        <span key={index} className="px-2 py-1 bg-blue-900 text-blue-100 rounded text-xs">
+                        <span key={index} className="px-2 py-1 bg-primary-900 text-primary-100 rounded text-xs">
                           {tag}
                         </span>
                       ))}
                     </div>
                   </div>
                   <div className="mt-4">
-                    <span className="text-sm font-medium text-gray-300">Content:</span>
-                    <div className="mt-2 p-3 bg-gray-900 rounded border border-gray-700">
-                      <div className="text-gray-200 whitespace-pre-wrap">
+                    <span className="text-sm font-medium text-secondary-300">Content:</span>
+                    <div className="mt-2 p-3 bg-secondary-900 rounded border border-secondary-700">
+                      <div className="text-secondary-200 whitespace-pre-wrap">
                         {formData.content || 'No content yet...'}
                       </div>
                     </div>
@@ -311,14 +346,14 @@ const SnippetEditor = ({ snippet, folders = [], onSave, onCancel }) => {
               </div>
             </div>
 
-            <div className="bg-blue-900 rounded-lg p-4 border border-blue-700">
-              <h4 className="text-sm font-semibold text-blue-100 mb-2">💡 How to use snippets</h4>
-              <div className="text-sm text-blue-200 space-y-2">
+            <div className="bg-primary-900 rounded-lg p-4 border border-primary-700">
+              <h4 className="text-sm font-semibold text-primary-100 mb-2">💡 How to use snippets</h4>
+              <div className="text-sm text-primary-200 space-y-2">
                 <p>
-                  <strong>Manual insertion:</strong> Use snippets in templates with: <code className="bg-blue-800 px-1 rounded">{'{{'}</code><code className="bg-blue-800 px-1 rounded">tagname</code><code className="bg-blue-800 px-1 rounded">{'}}'}</code>
+                  <strong>Manual insertion:</strong> Use snippets in templates with: <code className="bg-primary-800 px-1 rounded">{'{{'}</code><code className="bg-primary-800 px-1 rounded">tagname</code><code className="bg-primary-800 px-1 rounded">{'}}'}</code>
                 </p>
                 <p>
-                  For example: <code className="bg-blue-800 px-1 rounded">{'{{mood}}'}</code> will show all snippets tagged with "mood"
+                  For example: <code className="bg-primary-800 px-1 rounded">{'{{mood}}'}</code> will show all snippets tagged with "mood"
                 </p>
                 <p>
                   <strong>Auto-append:</strong> Snippets can also be automatically appended to templates based on matching tags
@@ -326,9 +361,9 @@ const SnippetEditor = ({ snippet, folders = [], onSave, onCancel }) => {
               </div>
             </div>
 
-            <div className="bg-gray-800 rounded-lg p-4 border border-gray-700">
-              <h4 className="text-sm font-semibold text-gray-100 mb-2">📋 Snippet Features</h4>
-              <ul className="text-sm text-gray-300 space-y-1">
+            <div className="bg-secondary-800 rounded-lg p-4 border border-secondary-700">
+              <h4 className="text-sm font-semibold text-secondary-100 mb-2">📋 Snippet Features</h4>
+              <ul className="text-sm text-secondary-300 space-y-1">
                 <li>• Snippets replace both the old "addons" and "inserts" systems</li>
                 <li>• Use tags to organize snippets by purpose, style, or context</li>
                 <li>• Multiple snippets can be selected and added to any template</li>

@@ -2,7 +2,7 @@ import React, { useState, useMemo, useCallback } from 'react';
 import { Star, Workflow, FileText, Layers, Play, Edit, Trash2, GripVertical, Settings, X } from 'lucide-react';
 import WidgetContainer from './WidgetContainer.jsx';
 import CollapsibleSection from '../common/CollapsibleSection.jsx';
-import { useUserPreferences } from '../../hooks/useUserPreferences.js';
+import { useUserPreferences } from '../../hooks/domain/useUserPreferences.js';
 import { 
   getFolderFavorites, 
   getFolderItems, 

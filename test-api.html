@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>API Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .status { padding: 10px; margin: 10px 0; border-radius: 5px; }
+        .success { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .error { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        button { padding: 8px 16px; margin: 5px; cursor: pointer; }
+        #results { margin-top: 20px; padding: 10px; background: #f8f9fa; border: 1px solid #dee2e6; border-radius: 5px; }
+    </style>
+</head>
+<body>
+    <h1>🔧 AirPrompts API Test</h1>
+    
+    <div>
+        <button onclick="testHealth()">🏥 Health Check</button>
+        <button onclick="testGetTemplates()">📥 Get Templates</button>
+        <button onclick="testCreateTemplate()">➕ Create Template</button>
+        <button onclick="clearResults()">🧹 Clear</button>
+    </div>
+
+    <div id="status"></div>
+    <div id="results"></div>
+
+    <script>
+        const API_BASE = 'http://localhost:3001/api';
+        
+        function showStatus(message, type = 'success') {
+            const statusDiv = document.getElementById('status');
+            statusDiv.innerHTML = `<div class="status ${type}">${message}</div>`;
+        }
+        
+        function appendResult(message) {
+            const resultsDiv = document.getElementById('results');
+            resultsDiv.innerHTML += `<div>${new Date().toLocaleTimeString()}: ${message}</div>`;
+        }
+        
+        function clearResults() {
+            document.getElementById('results').innerHTML = '';
+            document.getElementById('status').innerHTML = '';
+        }
+        
+        async function apiRequest(endpoint, options = {}) {
+            try {
+                showStatus('Making request...', 'info');
+                
+                const response = await fetch(`${API_BASE}${endpoint}`, {
+                    headers: {
+                        'Content-Type': 'application/json',
+                        ...options.headers
+                    },
+                    ...options
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
+                const data = await response.json();
+                showStatus(`✅ Success: ${endpoint}`, 'success');
+                return data;
+                
+            } catch (error) {
+                showStatus(`❌ Error: ${error.message}`, 'error');
+                throw error;
+            }
+        }
+        
+        async function testHealth() {
+            try {
+                const result = await apiRequest('/health');
+                appendResult(`Health Check: ${result.data.status} (uptime: ${Math.floor(result.data.uptime)}s)`);
+            } catch (error) {
+                appendResult(`Health Check failed: ${error.message}`);
+            }
+        }
+        
+        async function testGetTemplates() {
+            try {
+                const result = await apiRequest('/templates');
+                appendResult(`Templates loaded: ${result.data.length} items`);
+                if (result.data.length > 0) {
+                    result.data.forEach(template => {
+                        appendResult(`  - ${template.name}: ${template.content.substring(0, 50)}...`);
+                    });
+                }
+            } catch (error) {
+                appendResult(`Get templates failed: ${error.message}`);
+            }
+        }
+        
+        async function testCreateTemplate() {
+            try {
+                const templateData = {
+                    name: 'HTML Test Template',
+                    content: 'Hello {name}! This is created from HTML test at {time}.',
+                    category: 'test',
+                    description: 'Created from HTML test page'
+                };
+                
+                const result = await apiRequest('/templates', {
+                    method: 'POST',
+                    body: JSON.stringify(templateData)
+                });
+                
+                appendResult(`Template created: ${result.data.name} (ID: ${result.data.id})`);
+                appendResult(`Variables extracted: [${result.data.variables.join(', ')}]`);
+                
+            } catch (error) {
+                appendResult(`Create template failed: ${error.message}`);
+            }
+        }
+        
+        // Auto-run health check on load
+        window.onload = () => {
+            appendResult('🚀 API Test Page Loaded');
+            testHealth();
+        };
+    </script>
+</body>
+</html>

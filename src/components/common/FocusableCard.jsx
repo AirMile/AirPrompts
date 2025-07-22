@@ -14,16 +14,21 @@ const FocusableCard = ({
   keyboardNavigation = {}
 }) => {
 
+  // Check if classic dark theme is active
+  const isClassicDark = () => {
+    return document.documentElement.classList.contains('theme-classic-dark');
+  };
+
   const getTypeColor = (itemType) => {
     switch (itemType) {
       case 'workflow':
-        return 'bg-green-600 hover:bg-green-700';
+        return 'bg-success-600 hover:bg-success-700';
       case 'template':
-        return 'bg-blue-600 hover:bg-blue-700';
+        return 'bg-primary-600 hover:bg-primary-700';
       case 'snippet':
         return 'bg-purple-600 hover:bg-purple-700';
       default:
-        return 'bg-blue-600 hover:bg-blue-700';
+        return 'bg-primary-600 hover:bg-primary-700';
     }
   };
 
@@ -48,13 +53,13 @@ const FocusableCard = ({
     
     switch (normalizedType) {
       case 'workflow':
-        return 'hover:border-green-500 hover:border';
+        return 'hover:border-success-500 hover:border-2';
       case 'template':
-        return 'hover:border-blue-400 hover:border';
+        return 'hover:border-primary-400 hover:border-2';
       case 'snippet':
-        return 'hover:border-purple-500 hover:border';
+        return 'hover:border-purple-500 hover:border-2';
       default:
-        return 'hover:border-blue-400 hover:border';
+        return 'hover:border-primary-400 hover:border-2';
     }
   };
 
@@ -63,13 +68,13 @@ const FocusableCard = ({
     
     switch (normalizedType) {
       case 'workflow':
-        return 'border-green-400 border-2 ring-2 ring-green-400/50 bg-green-900/20';
+        return 'border-success-400 border-2 ring-2 ring-success-400/50 bg-success-900/20';
       case 'template':
-        return 'border-blue-400 border-2 ring-2 ring-blue-400/50 bg-blue-900/20';
+        return 'border-primary-400 border-2 ring-2 ring-primary-400/50 bg-primary-900/20';
       case 'snippet':
         return 'border-purple-400 border-2 ring-2 ring-purple-400/50 bg-purple-900/20';
       default:
-        return 'border-blue-400 border-2 ring-2 ring-blue-400/50 bg-blue-900/20';
+        return 'border-primary-400 border-2 ring-2 ring-primary-400/50 bg-primary-900/20';
     }
   };
 
@@ -78,13 +83,13 @@ const FocusableCard = ({
     
     switch (normalizedType) {
       case 'workflow':
-        return <Workflow className="w-5 h-5 text-gray-400" />;
+        return <Workflow className={`w-5 h-5 ${isClassicDark() ? 'text-secondary-400' : 'text-secondary-600 dark:text-secondary-400'}`} />;
       case 'template':
-        return <FileText className="w-5 h-5 text-gray-400" />;
+        return <FileText className={`w-5 h-5 ${isClassicDark() ? 'text-secondary-400' : 'text-secondary-600 dark:text-secondary-400'}`} />;
       case 'snippet':
-        return <Tag className="w-5 h-5 text-gray-400" />;
+        return <Tag className={`w-5 h-5 ${isClassicDark() ? 'text-secondary-400' : 'text-secondary-600 dark:text-secondary-400'}`} />;
       default:
-        return <FileText className="w-5 h-5 text-gray-400" />;
+        return <FileText className={`w-5 h-5 ${isClassicDark() ? 'text-secondary-400' : 'text-secondary-600 dark:text-secondary-400'}`} />;
     }
   };
 
@@ -134,12 +139,33 @@ const FocusableCard = ({
         data-card-name={item.name}
         className={(() => {
           const actualItemType = item.type || type;
+          const normalizedType = normalizeType(actualItemType);
+          
+          // Get border color based on type
+          const getBorderColor = () => {
+            switch (normalizedType) {
+              case 'workflow':
+                return 'border-success-600/50';
+              case 'template':
+                return 'border-primary-600/50';
+              case 'snippet':
+                return 'border-purple-600/50';
+              default:
+                return 'border-primary-600/50';
+            }
+          };
+          
+          // Use original dark styling for classic dark theme
+          const cardBackground = isClassicDark() 
+            ? 'bg-secondary-900' 
+            : 'bg-white dark:bg-secondary-800';
+          
           return `
-            bg-gray-800 rounded-lg shadow-md border border-gray-700 p-4 
+            ${cardBackground} rounded-lg shadow-md border-2 ${getBorderColor()} p-4 
             hover:shadow-lg transition-all duration-200 flex flex-col
             focus:outline-none
-            ${getHoverBorderColor(actualItemType)}
-            ${isKeyboardFocused ? getKeyboardFocusColor(actualItemType) : ''}
+            ${getHoverBorderColor(normalizedType)}
+            ${isKeyboardFocused ? getKeyboardFocusColor(normalizedType) : ''}
           `;
         })()}
         onKeyDown={handleKeyDown}
@@ -152,15 +178,15 @@ const FocusableCard = ({
           <div className="flex items-center gap-2 flex-1">
             {/* Type Icon */}
             {getTypeIcon(item.type || type)}
-            <h3 className="font-semibold text-gray-100 mb-1 flex-1">{item.name}</h3>
+            <h3 className={`font-semibold mb-1 flex-1 ${isClassicDark() ? 'text-secondary-100' : 'text-secondary-900 dark:text-secondary-100'}`}>{item.name}</h3>
           </div>
         </div>
         
-        <p className="text-sm text-gray-300 mb-2 line-clamp-2">
+        <p className={`text-sm mb-2 line-clamp-2 ${isClassicDark() ? 'text-secondary-300' : 'text-secondary-600 dark:text-secondary-400'}`}>
           {item.description || 'No description'}
         </p>
         
-        <div className="text-xs text-gray-400">
+        <div className={`text-xs ${isClassicDark() ? 'text-secondary-400' : 'text-secondary-500 dark:text-secondary-500'}`}>
           {getItemDetail(item, type)}
         </div>
       </div>
@@ -180,7 +206,7 @@ const FocusableCard = ({
             transition-all duration-200 hover:shadow-md
             ${isItemFavorite(item) 
               ? 'text-yellow-400 bg-yellow-900/20 border-yellow-600/50 hover:bg-yellow-900/40 hover:border-yellow-500' 
-              : 'text-gray-400 bg-gray-700 border-gray-600 hover:text-yellow-400 hover:bg-yellow-900/20 hover:border-yellow-600/50'
+              : 'text-secondary-400 bg-secondary-700 border-secondary-600 hover:text-yellow-400 hover:bg-yellow-900/20 hover:border-yellow-600/50'
             }
           `}
           aria-label={`${isItemFavorite(item) ? 'Remove from' : 'Add to'} favorites`}
@@ -196,9 +222,9 @@ const FocusableCard = ({
             onEdit(item);
           }}
           className="
-            flex-1 p-2.5 text-gray-300 bg-gray-700 border border-gray-600 rounded-md
-            hover:bg-gray-600 hover:border-gray-500 flex items-center justify-center
-            focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-opacity-50
+            flex-1 p-2.5 text-secondary-300 bg-secondary-700 border border-secondary-600 rounded-md
+            hover:bg-secondary-600 hover:border-secondary-500 flex items-center justify-center
+            focus:outline-none focus:ring-2 focus:ring-primary-400 focus:ring-opacity-50
             transition-all duration-200 hover:shadow-md
           "
           aria-label={`Edit ${type} ${item.name}`}

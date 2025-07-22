@@ -17,16 +17,21 @@ const ListView = ({
   hideDragHandle = false
 }) => {
 
+  // Check if classic dark theme is active
+  const isClassicDark = () => {
+    return document.documentElement.classList.contains('theme-classic-dark');
+  };
+
   const getTypeColor = (itemType) => {
     switch (itemType) {
       case 'workflow':
-        return 'bg-green-600 hover:bg-green-700';
+        return 'bg-success-600 hover:bg-success-700';
       case 'template':
-        return 'bg-blue-600 hover:bg-blue-700';
+        return 'bg-primary-600 hover:bg-primary-700';
       case 'snippet':
         return 'bg-purple-600 hover:bg-purple-700';
       default:
-        return 'bg-blue-600 hover:bg-blue-700';
+        return 'bg-primary-600 hover:bg-primary-700';
     }
   };
 
@@ -51,13 +56,13 @@ const ListView = ({
     
     switch (normalizedType) {
       case 'workflow':
-        return 'hover:border-green-500 hover:border';
+        return 'hover:border-success-500 hover:border';
       case 'template':
-        return 'hover:border-blue-400 hover:border';
+        return 'hover:border-primary-400 hover:border';
       case 'snippet':
         return 'hover:border-purple-500 hover:border';
       default:
-        return 'hover:border-blue-400 hover:border';
+        return 'hover:border-primary-400 hover:border';
     }
   };
 
@@ -66,13 +71,13 @@ const ListView = ({
     
     switch (normalizedType) {
       case 'workflow':
-        return 'border-green-500 border';
+        return 'border-success-500 border';
       case 'template':
-        return 'border-blue-400 border';
+        return 'border-primary-400 border';
       case 'snippet':
         return 'border-purple-500 border';
       default:
-        return 'border-blue-400 border';
+        return 'border-primary-400 border';
     }
   };
 
@@ -92,7 +97,7 @@ const ListView = ({
   if (items.length === 0) {
     return (
       <div className="text-center py-8">
-        <div className="text-gray-400 text-lg">No items to display</div>
+        <div className="text-secondary-500 dark:text-secondary-400 text-lg">No items to display</div>
       </div>
     );
   }
@@ -123,8 +128,10 @@ const ListView = ({
             data-card-name={item.name}
             className={(() => {
               // When keyboard focused, don't include the default border color to avoid conflicts
-              const baseBorderClass = isKeyboardFocused ? '' : 'border-gray-700';
-              const baseClasses = `relative bg-gray-800 rounded-lg border ${baseBorderClass} p-4 cursor-pointer hover:shadow-lg transition-all duration-200 focus:outline-none`;
+              const baseBorderClass = isKeyboardFocused ? '' : 
+                (isClassicDark() ? 'border-secondary-700' : 'border-secondary-300 dark:border-secondary-700');
+              const baseBackground = isClassicDark() ? 'bg-secondary-800' : 'bg-white dark:bg-secondary-800';
+              const baseClasses = `relative ${baseBackground} rounded-lg border ${baseBorderClass} p-4 cursor-pointer hover:shadow-lg transition-all duration-200 focus:outline-none`;
               const hoverBorder = getHoverBorderColor(actualItemType);
               const focusBorder = isKeyboardFocused ? getKeyboardFocusColor(actualItemType) : '';
               
@@ -148,7 +155,7 @@ const ListView = ({
                     {...dragAttributes}
                     {...dragListeners}
                   >
-                    <GripVertical className="w-5 h-5 text-gray-500 group-hover:text-gray-200 group-hover:scale-105 transition-transform" />
+                    <GripVertical className={`w-5 h-5 group-hover:scale-105 transition-transform ${isClassicDark() ? 'text-secondary-500 group-hover:text-secondary-200' : 'text-secondary-500 dark:text-secondary-500 group-hover:text-secondary-700 dark:group-hover:text-secondary-200'}`} />
                   </div>
                 </div>
               )}
@@ -156,12 +163,12 @@ const ListView = ({
               {/* Content */}
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 mb-2">
-                  <h3 className="font-semibold text-gray-100 truncate">
+                  <h3 className={`font-semibold truncate ${isClassicDark() ? 'text-secondary-100' : 'text-secondary-900 dark:text-secondary-100'}`}>
                     {item.name}
                   </h3>
                 </div>
 
-                <p className="text-sm text-gray-300 mb-3 line-clamp-2">
+                <p className={`text-sm mb-3 line-clamp-2 ${isClassicDark() ? 'text-secondary-300' : 'text-secondary-600 dark:text-secondary-300'}`}>
                   {item.description || 'No description'}
                 </p>
 
@@ -182,7 +189,7 @@ const ListView = ({
                     transition-all duration-200 hover:shadow-md
                     ${isItemFavorite(item) 
                       ? 'text-yellow-400 bg-yellow-900/20 border-yellow-600/50 hover:bg-yellow-900/40 hover:border-yellow-500' 
-                      : 'text-gray-400 bg-gray-700 border-gray-600 hover:text-yellow-400 hover:bg-yellow-900/20 hover:border-yellow-600/50'
+                      : 'text-secondary-500 dark:text-secondary-400 bg-secondary-200 dark:bg-secondary-700 border-secondary-400 dark:border-secondary-600 hover:text-yellow-400 hover:bg-yellow-900/20 hover:border-yellow-600/50'
                     }
                   `}
                   aria-label={`${isItemFavorite(item) ? 'Remove from' : 'Add to'} favorites`}
@@ -198,9 +205,9 @@ const ListView = ({
                     onEdit(item);
                   }}
                   className="
-                    p-2.5 text-gray-300 bg-gray-700 border border-gray-600 rounded-md
-                    hover:bg-gray-600 hover:border-gray-500 flex items-center justify-center
-                    focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-opacity-50
+                    p-2.5 text-secondary-600 dark:text-secondary-300 bg-secondary-200 dark:bg-secondary-700 border border-secondary-400 dark:border-secondary-600 rounded-md
+                    hover:bg-secondary-300 dark:hover:bg-secondary-600 hover:border-secondary-500 dark:hover:border-secondary-500 flex items-center justify-center
+                    focus:outline-none focus:ring-2 focus:ring-primary-400 focus:ring-opacity-50
                     transition-all duration-200 hover:shadow-md
                   "
                   title="Edit"
@@ -215,9 +222,9 @@ const ListView = ({
                     onDelete(item.id);
                   }}
                   className="
-                    p-2.5 text-red-400 bg-red-900/20 border border-red-600/50 rounded-md
-                    hover:bg-red-900/40 hover:border-red-500 hover:text-red-300 flex items-center justify-center
-                    focus:outline-none focus:ring-2 focus:ring-red-400 focus:ring-opacity-50
+                    p-2.5 text-danger-400 bg-danger-900/20 border border-danger-600/50 rounded-md
+                    hover:bg-danger-900/40 hover:border-danger-500 hover:text-danger-300 flex items-center justify-center
+                    focus:outline-none focus:ring-2 focus:ring-danger-400 focus:ring-opacity-50
                     transition-all duration-200 hover:shadow-md
                   "
                   title="Delete"
