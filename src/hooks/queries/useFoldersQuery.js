@@ -12,9 +12,24 @@ export const useFolders = () => {
     queryKey: ['folders'],
     queryFn: async () => {
       const response = await api.get('/folders');
-      return response;
+      console.log('🔍 Raw API response for folders:', response);
+      
+      // Transform API data to match UI expectations
+      const transformedFolders = response.map(folder => ({
+        ...folder,
+        // Convert snake_case to camelCase and null to 'root'
+        parentId: folder.parent_id === null ? 'root' : folder.parent_id,
+        // Convert sort_order to sortOrder for UI
+        sortOrder: folder.sort_order,
+        // Ensure we maintain the original fields for API calls
+        parent_id: folder.parent_id,
+        sort_order: folder.sort_order
+      }));
+      
+      console.log('🔍 Transformed folders:', transformedFolders);
+      return transformedFolders;
     },
-    staleTime: 30000, // 30 seconds
+    staleTime: 0, // Always fresh to ensure we get latest data
     gcTime: 5 * 60 * 1000 // 5 minutes
   });
 };
@@ -28,7 +43,19 @@ export const useCreateFolder = () => {
   
   return useOfflineMutation({
     mutationFn: async (folderData) => {
-      const response = await api.post('/folders', folderData);
+      // Transform UI data to API format
+      const apiData = { ...folderData };
+      
+      // Convert parentId back to parent_id for API
+      if ('parentId' in apiData) {
+        // Convert 'root' back to null for API
+        apiData.parent_id = apiData.parentId === 'root' ? null : apiData.parentId;
+        // Remove the camelCase version
+        delete apiData.parentId;
+      }
+      
+      console.log('🔍 Creating folder with API data:', apiData);
+      const response = await api.post('/folders', apiData);
       return response;
     },
     onSuccess: (data) => {
@@ -49,7 +76,26 @@ export const useUpdateFolder = () => {
   
   return useOfflineMutation({
     mutationFn: async ({ id, ...folderData }) => {
-      const response = await api.put(`/folders/${id}`, folderData);
+      // Transform UI data to API format and filter out read-only fields
+      const apiData = { ...folderData };
+      
+      // Remove read-only fields that are computed by the server
+      delete apiData.parent_name;
+      delete apiData.template_count;
+      delete apiData.workflow_count;
+      delete apiData.subfolder_count;
+      delete apiData.sortOrder; // This should be sort_order
+      
+      // Convert parentId back to parent_id for API
+      if ('parentId' in apiData) {
+        // Convert 'root' back to null for API
+        apiData.parent_id = apiData.parentId === 'root' ? null : apiData.parentId;
+        // Remove the camelCase version
+        delete apiData.parentId;
+      }
+      
+      console.log('🔍 Updating folder with API data:', apiData);
+      const response = await api.put(`/folders/${id}`, apiData);
       return response;
     },
     onSuccess: (data) => {

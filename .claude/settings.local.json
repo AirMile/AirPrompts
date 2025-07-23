@@ -6,7 +6,10 @@
       "Write",
       "MultiEdit",
       "mcp__context7__resolve-library-id",
-      "mcp__context7__get-library-docs"
+      "mcp__context7__get-library-docs",
+      "WebFetch(domain:docs.anthropic.com)",
+      "WebFetch(domain:www.pascal-poredda.com)",
+      "WebFetch(domain:github.com)"
     ],
     "deny": []
   }

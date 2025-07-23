@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useRef, useEffect } from 'react';
 import { ChevronDownIcon, ChevronRightIcon } from '@heroicons/react/24/outline';
 import useSectionVisibility from '../../hooks/ui/useSectionVisibility';
 import { useItemColors } from '../../hooks/useItemColors.js';
@@ -16,6 +16,7 @@ import { useItemColors } from '../../hooks/useItemColors.js';
  * @param {React.ReactNode} props.actionButton - Optional action button to display in header
  * @param {Function} props.onVisibilityChange - Callback when visibility changes
  * @param {boolean} props.externalVisible - External visibility state that overrides internal state
+ * @param {boolean} props.isInitialLoad - Whether this is the initial load (to prevent animations)
  */
 const CollapsibleSection = ({
   sectionId,
@@ -30,14 +31,35 @@ const CollapsibleSection = ({
   actionButton = null,
   onVisibilityChange = null,
   externalVisible = null,
+  isInitialLoad = false,
   ...restProps // Pass through any additional props
 }) => {
   const { isVisible: internalVisible, toggle } = useSectionVisibility(sectionId, defaultVisible);
   const { getColorClasses } = useItemColors();
+  const isFirstRender = useRef(true);
+  const sectionRef = useRef(null);
   
   // Use external visibility if provided, otherwise use internal state
   const isVisible = externalVisible !== null ? externalVisible : internalVisible;
   
+  // Disable animations on first render or during initial load to prevent flicker
+  useEffect(() => {
+    if ((isFirstRender.current || isInitialLoad) && sectionRef.current) {
+      // Add no-transition class to prevent animation on initial render or load
+      sectionRef.current.classList.add('no-transition');
+      
+      // Remove the class after DOM updates complete
+      const timer = setTimeout(() => {
+        if (sectionRef.current && !isInitialLoad) {
+          sectionRef.current.classList.remove('no-transition');
+        }
+      }, 100);
+      
+      isFirstRender.current = false;
+      
+      return () => clearTimeout(timer);
+    }
+  }, [isInitialLoad]);
 
   // Use subtle neutral colors for count badges
   const getCountBadgeColor = () => {
@@ -66,8 +88,24 @@ const CollapsibleSection = ({
     }
   };
 
+  // Calculate spacing based on content - ALWAYS use reduced spacing for empty sections
+  const totalCount = count || itemCount || 0;
+  const hasContent = totalCount > 0;
+  
+  // Force reduced spacing for ALL empty sections, regardless of visibility state
+  // This ensures consistent spacing across all folders
+  const shouldUseReducedSpacing = !hasContent;
+  
+  // Build spacing class - deterministic spacing regardless of input className
+  // mb-4 = 1rem = 16px, same as the py-4 container padding
+  const spacingClass = shouldUseReducedSpacing ? 'mb-4' : 'mb-6';
+  
+  // Clean className of any existing margin-bottom classes and add our spacing
+  const cleanClassName = className.replace(/mb-\d+/g, '').trim();
+  const dynamicClassName = cleanClassName ? `${cleanClassName} ${spacingClass}` : spacingClass;
+  
   return (
-    <div className={`collapsible-section section-boundary-restricted ${className}`} {...restProps}>
+    <div className={`collapsible-section section-boundary-restricted ${dynamicClassName}`} {...restProps}>
       {/* Section Header */}
       <div className={`w-full flex items-center justify-between rounded-lg overflow-hidden transition-colors duration-200 group border ${
         (count || itemCount || 0) > 0 
@@ -127,16 +165,27 @@ const CollapsibleSection = ({
         )}
       </div>
 
-      {/* Section Content */}
+      {/* Section Content - CSS Grid Collapse Animation */}
       <div
+        ref={sectionRef}
         id={`section-content-${sectionId}`}
-        className={`overflow-hidden transition-all duration-300 ease-in-out ${
-          isVisible ? 'max-h-screen opacity-100' : 'max-h-0 opacity-0'
-        }`}
+        className="grid transition-[grid-template-rows] duration-300 ease-in-out"
+        style={{
+          gridTemplateRows: isVisible ? '1fr' : '0fr'
+        }}
         aria-hidden={!isVisible}
       >
-        <div className="pt-6">
-          {children}
+        <div className="overflow-hidden">
+          <div 
+            className={`transition-all duration-300 ease-in-out ${
+              hasContent ? 'pt-6' : ''
+            }`}
+            style={{
+              opacity: isVisible ? 1 : 0
+            }}
+          >
+            {children}
+          </div>
         </div>
       </div>
     </div>

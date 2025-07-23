@@ -1,5 +1,6 @@
 import React from 'react';
 import { Edit, Trash2, Star, Workflow, FileText, Code, GripVertical } from 'lucide-react';
+import { useItemColors } from '../../hooks/useItemColors.js';
 
 const DragCard = ({ 
   item,
@@ -13,23 +14,11 @@ const DragCard = ({
   isItemFavorite = () => false,
   keyboardNavigation = {}
 }) => {
+  const { getColorClasses } = useItemColors();
 
   // Check if classic dark theme is active
   const isClassicDark = () => {
     return document.documentElement.classList.contains('theme-classic-dark');
-  };
-
-  const getTypeColor = (itemType) => {
-    switch (itemType) {
-      case 'workflow':
-        return 'bg-success-600 hover:bg-success-700';
-      case 'template':
-        return 'bg-primary-600 hover:bg-primary-700';
-      case 'snippet':
-        return 'bg-purple-600 hover:bg-purple-700';
-      default:
-        return 'bg-primary-600 hover:bg-primary-700';
-    }
   };
 
   const normalizeType = (itemType) => {
@@ -48,34 +37,10 @@ const DragCard = ({
     }
   };
 
-  const getHoverBorderColor = (itemType) => {
-    const normalizedType = normalizeType(itemType);
-    
-    switch (normalizedType) {
-      case 'workflow':
-        return 'hover:border-success-500 hover:border';
-      case 'template':
-        return 'hover:border-primary-400 hover:border';
-      case 'snippet':
-        return 'hover:border-purple-500 hover:border';
-      default:
-        return 'hover:border-primary-400 hover:border';
-    }
-  };
 
   const getKeyboardFocusColor = (itemType) => {
     const normalizedType = normalizeType(itemType);
-    
-    switch (normalizedType) {
-      case 'workflow':
-        return 'border-success-500 border';
-      case 'template':
-        return 'border-primary-400 border';
-      case 'snippet':
-        return 'border-purple-500 border';
-      default:
-        return 'border-primary-400 border';
-    }
+    return getColorClasses(normalizedType, 'border');
   };
 
   const getTypeIcon = (itemType) => {
@@ -147,7 +112,7 @@ const DragCard = ({
             ${cardBackground} rounded-lg shadow-md border ${cardBorder} p-4 
             hover:shadow-lg transition-all duration-200 flex flex-col
             focus:outline-none
-            ${getHoverBorderColor(actualItemType)}
+            ${getColorClasses(actualItemType, 'hover')}
             ${isKeyboardFocused ? getKeyboardFocusColor(actualItemType) : ''}
           `;
         })()}

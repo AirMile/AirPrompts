@@ -40,7 +40,16 @@ const FocusableCard = ({
 
   const getHoverBorderColor = (itemType) => {
     const normalizedType = normalizeType(itemType);
-    return `hover:border-2 ${getColorClasses(normalizedType, 'border').replace('border-', 'hover:border-')}`;
+    switch (normalizedType) {
+      case 'workflow':
+        return 'hover:border-success-600';
+      case 'template':
+        return 'hover:border-primary-600';
+      case 'snippet':
+        return 'hover:border-purple-600';
+      default:
+        return 'hover:border-primary-600';
+    }
   };
 
   const getKeyboardFocusColor = (itemType) => {
@@ -129,9 +138,13 @@ const FocusableCard = ({
           
           const cardBackground = 'bg-white dark:bg-secondary-800';
           
+          const getShadowClass = () => {
+            return normalizedType === 'snippet' ? 'shadow-sm hover:shadow-md' : 'shadow-md hover:shadow-lg';
+          };
+          
           return `
-            ${cardBackground} rounded-lg shadow-md border-2 ${getBorderColor()} p-4 
-            hover:shadow-lg transition-all duration-200 flex flex-col
+            ${cardBackground} rounded-lg ${getShadowClass()} border-2 ${getBorderColor()} p-4 
+            transition-all duration-200 flex flex-col
             focus:outline-none
             ${getHoverBorderColor(normalizedType)}
             ${isKeyboardFocused ? getKeyboardFocusColor(normalizedType) : ''}

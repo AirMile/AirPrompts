@@ -82,31 +82,33 @@ const themeStore = create(
       setColorScheme: (schemeName) => {
         const scheme = get().colorSchemes[schemeName];
         if (scheme) {
-          // Remove all theme classes
-          Object.values(get().colorSchemes).forEach(s => {
-            document.documentElement.classList.remove(s.light, s.dark);
+          get().applyThemeWithTransition(() => {
+            // Remove all theme classes
+            Object.values(get().colorSchemes).forEach(s => {
+              document.documentElement.classList.remove(s.light, s.dark);
+            });
+            
+            // Remove legacy classes
+            document.documentElement.classList.remove('theme-purple', 'theme-orange');
+            
+            // Add new theme class based on current mode
+            const isDark = get().isDarkMode;
+            document.documentElement.classList.add(isDark ? scheme.dark : scheme.light);
+            
+            // Also update Tailwind dark class
+            if (isDark) {
+              document.documentElement.classList.add('dark');
+            } else {
+              document.documentElement.classList.remove('dark');
+            }
+            
+            // Update the appropriate scheme based on current mode
+            if (isDark) {
+              set({ darkModeScheme: schemeName });
+            } else {
+              set({ lightModeScheme: schemeName });
+            }
           });
-          
-          // Remove legacy classes
-          document.documentElement.classList.remove('theme-purple', 'theme-orange');
-          
-          // Add new theme class based on current mode
-          const isDark = get().isDarkMode;
-          document.documentElement.classList.add(isDark ? scheme.dark : scheme.light);
-          
-          // Also update Tailwind dark class
-          if (isDark) {
-            document.documentElement.classList.add('dark');
-          } else {
-            document.documentElement.classList.remove('dark');
-          }
-          
-          // Update the appropriate scheme based on current mode
-          if (isDark) {
-            set({ darkModeScheme: schemeName });
-          } else {
-            set({ lightModeScheme: schemeName });
-          }
         }
       },
       
@@ -118,7 +120,9 @@ const themeStore = create(
           
           // If currently in light mode, apply the theme immediately
           if (!get().isDarkMode) {
-            get().applyCurrentTheme();
+            get().applyThemeWithTransition(() => {
+              get().applyCurrentTheme();
+            });
           }
         }
       },
@@ -131,7 +135,9 @@ const themeStore = create(
           
           // If currently in dark mode, apply the theme immediately
           if (get().isDarkMode) {
-            get().applyCurrentTheme();
+            get().applyThemeWithTransition(() => {
+              get().applyCurrentTheme();
+            });
           }
         }
       },
@@ -166,34 +172,38 @@ const themeStore = create(
       toggleDarkMode: () => {
         const newDarkMode = !get().isDarkMode;
         
-        set({ isDarkMode: newDarkMode });
-        
-        // Apply the correct theme for the new mode
-        get().applyCurrentTheme();
+        get().applyThemeWithTransition(() => {
+          set({ isDarkMode: newDarkMode });
+          
+          // Apply the correct theme for the new mode
+          get().applyCurrentTheme();
+        });
       },
       
       // Set theme directly (for UI that combines scheme + mode)
       setTheme: (schemeName, isDark) => {
         const scheme = get().colorSchemes[schemeName];
         if (scheme) {
-          // Remove all theme classes
-          Object.values(get().colorSchemes).forEach(s => {
-            document.documentElement.classList.remove(s.light, s.dark);
-          });
-          
-          // Add new theme class
-          document.documentElement.classList.add(isDark ? scheme.dark : scheme.light);
-          
-          // Also update Tailwind dark class
-          if (isDark) {
-            document.documentElement.classList.add('dark');
-          } else {
-            document.documentElement.classList.remove('dark');
-          }
-          
-          set({ 
-            currentColorScheme: schemeName,
-            isDarkMode: isDark 
+          get().applyThemeWithTransition(() => {
+            // Remove all theme classes
+            Object.values(get().colorSchemes).forEach(s => {
+              document.documentElement.classList.remove(s.light, s.dark);
+            });
+            
+            // Add new theme class
+            document.documentElement.classList.add(isDark ? scheme.dark : scheme.light);
+            
+            // Also update Tailwind dark class
+            if (isDark) {
+              document.documentElement.classList.add('dark');
+            } else {
+              document.documentElement.classList.remove('dark');
+            }
+            
+            set({ 
+              currentColorScheme: schemeName,
+              isDarkMode: isDark 
+            });
           });
         }
       },
@@ -232,6 +242,31 @@ const themeStore = create(
         }
       },
       
+      // Modern theme transition with View Transitions API
+      applyThemeWithTransition: (applyThemeFunction) => {
+        // Simple check for View Transitions support
+        if (!document.startViewTransition || window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+          applyThemeFunction();
+          return;
+        }
+        
+        // Mark as transitioning to disable conflicting animations
+        document.documentElement.setAttribute('data-theme-transitioning', 'true');
+        
+        // Use View Transitions API
+        console.log('[Theme] Starting view transition');
+        const transition = document.startViewTransition(() => {
+          console.log('[Theme] Applying theme changes');
+          applyThemeFunction();
+        });
+        
+        // Clean up after transition
+        transition.finished.finally(() => {
+          console.log('[Theme] View transition completed');
+          document.documentElement.removeAttribute('data-theme-transitioning');
+        });
+      },
+
       // Initialize theme on mount
       initializeTheme: () => {
         // Apply current theme

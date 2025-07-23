@@ -15,6 +15,7 @@ const MobileNavigation = ({
   onCreateFolder = () => {},
   onUpdateFolder = () => {},
   onDeleteFolder = () => {},
+  onReorderFolders = () => {},
   onSettingsClick = () => {},
   className = ''
 }) => {
@@ -123,6 +124,7 @@ const MobileNavigation = ({
                 onCreateFolder={onCreateFolder}
                 onUpdateFolder={onUpdateFolder}
                 onDeleteFolder={onDeleteFolder}
+                onReorderFolders={onReorderFolders}
                 onSettingsClick={onSettingsClick}
                 className="h-full"
               />

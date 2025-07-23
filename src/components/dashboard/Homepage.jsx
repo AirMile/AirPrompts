@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useMemo, useCallback, memo, useState } from 'react';
+import React, { useEffect, useLayoutEffect, useRef, useMemo, useCallback, memo, useState } from 'react';
 import { Plus, Play, Edit, Trash2, Search, Workflow, FileText, Star, Tag, Puzzle, GripVertical } from 'lucide-react';
 import { DndContext, DragOverlay, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
 import { SortableContext, verticalListSortingStrategy, rectSortingStrategy } from '@dnd-kit/sortable';
@@ -25,6 +25,7 @@ import useDragAndDrop from '../../hooks/ui/useDragAndDrop.js';
 import useProgressiveLoading from '../../hooks/ui/useProgressiveLoading.js';
 import { useWidgets } from '../../hooks/domain/useWidgets.js';
 import useSectionVisibility from '../../hooks/ui/useSectionVisibility.js';
+import useFolderSectionVisibility from '../../hooks/ui/useFolderSectionVisibility.js';
 import { performAdvancedSearch } from '../../utils/searchUtils.js';
 import { useUserPreferences } from '../../hooks/domain/useUserPreferences.js';
 import { useItemColors } from '../../hooks/useItemColors.js';
@@ -91,6 +92,7 @@ const Homepage = ({
   onCreateFolder,
   onUpdateFolder,
   onDeleteFolder,
+  onReorderFolders,
   onToggleFolderFavorite
 }) => {
   // Use preferences system for view mode
@@ -111,14 +113,71 @@ const Homepage = ({
   // Mobile navigation state
   const [isMobileNavOpen, setIsMobileNavOpen] = useState(false);
   
-  // Section visibility state
-  const favoritesVisibility = useSectionVisibility('favorites', true);
-  const workflowsVisibility = useSectionVisibility('workflows', true);
-  const templatesVisibility = useSectionVisibility('templates', true);
-  const snippetsVisibility = useSectionVisibility('snippets', true);
+  // Section visibility state - use folder-specific or global visibility
+  const isInFolder = selectedFolderId && selectedFolderId !== 'home';
+  
+  // For global/home view, use regular section visibility
+  const globalFavoritesVisibility = useSectionVisibility('favorites', true);
+  const globalWorkflowsVisibility = useSectionVisibility('workflows', true);
+  const globalTemplatesVisibility = useSectionVisibility('templates', true);
+  const globalSnippetsVisibility = useSectionVisibility('snippets', true);
+  
+  // For folder view, use folder-specific section visibility  
+  const folderFavoritesVisibility = useFolderSectionVisibility(selectedFolderId, 'favorites', true);
+  const folderWorkflowsVisibility = useFolderSectionVisibility(selectedFolderId, 'workflows', true);
+  const folderTemplatesVisibility = useFolderSectionVisibility(selectedFolderId, 'templates', true);
+  const folderSnippetsVisibility = useFolderSectionVisibility(selectedFolderId, 'snippets', true);
+  
+  // Choose which visibility hooks to use based on context
+  const favoritesVisibility = isInFolder ? folderFavoritesVisibility : globalFavoritesVisibility;
+  const workflowsVisibility = isInFolder ? folderWorkflowsVisibility : globalWorkflowsVisibility;
+  const templatesVisibility = isInFolder ? folderTemplatesVisibility : globalTemplatesVisibility;
+  const snippetsVisibility = isInFolder ? folderSnippetsVisibility : globalSnippetsVisibility;
   
   const mainContentRef = useRef(null);
   
+  // Track folder changes to prevent animation flicker
+  const previousFolderIdRef = useRef(selectedFolderId);
+  const [isFolderChanging, setIsFolderChanging] = useState(false);
+  const disableAnimationsRef = useRef(false);
+  
+  // Use layoutEffect to synchronously disable animations before DOM updates
+  useLayoutEffect(() => {
+    if (previousFolderIdRef.current !== selectedFolderId) {
+      // Immediately disable animations before any DOM updates
+      disableAnimationsRef.current = true;
+      setIsFolderChanging(true);
+      
+      // Add CSS class to disable animations globally during folder switch
+      document.body.classList.add('folder-switching');
+      
+      previousFolderIdRef.current = selectedFolderId;
+    }
+  }, [selectedFolderId]);
+  
+  // Re-enable animations after the component has rendered with new folder data
+  useEffect(() => {
+    if (isFolderChanging) {
+      // Use requestAnimationFrame to ensure DOM has fully updated
+      const cleanup = () => {
+        document.body.classList.remove('folder-switching');
+        disableAnimationsRef.current = false;
+        setIsFolderChanging(false);
+      };
+      
+      requestAnimationFrame(() => {
+        requestAnimationFrame(cleanup);
+      });
+    }
+  }, [isFolderChanging]);
+  
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      document.body.classList.remove('folder-switching');
+    };
+  }, []);
+
   // Initialize filter system with item collections
   const filterSystem = useFilters({
     templates,
@@ -200,30 +259,13 @@ const Homepage = ({
     return applySorting(searchResults);
   }, [selectedFolderId, searchQuery, filterSystem, applySorting]);
 
+  // Define filtered data after all filter functions are available
   const filteredTemplates = useMemo(() => getFilteredItems(templates, 'template'), [templates, getFilteredItems]);
-
-  const filteredWorkflows = useMemo(() => getFilteredItems(workflows, 'workflow'), [workflows, getFilteredItems]);
-
+  const filteredWorkflows = useMemo(() => getFilteredItems(workflows, 'workflow'), [workflows, getFilteredItems]);  
   const filteredSnippets = useMemo(() => getFilteredItems(snippets, 'snippet'), [snippets, getFilteredItems]);
 
-  // Auto-collapse empty sections
-  useEffect(() => {
-    if (filteredWorkflows.length === 0 && workflowsVisibility.isVisible) {
-      workflowsVisibility.setVisible(false);
-    }
-  }, [filteredWorkflows.length]);
-
-  useEffect(() => {
-    if (filteredTemplates.length === 0 && templatesVisibility.isVisible) {
-      templatesVisibility.setVisible(false);
-    }
-  }, [filteredTemplates.length]);
-
-  useEffect(() => {
-    if (filteredSnippets.length === 0 && snippetsVisibility.isVisible) {
-      snippetsVisibility.setVisible(false);
-    }
-  }, [filteredSnippets.length]);
+  // REMOVED auto-collapse useEffects to prevent infinite loops
+  // Empty sections get consistent spacing through CollapsibleSection component
 
   // Get folder-specific favorites from all items
   const favorites = useMemo(() => {
@@ -248,12 +290,7 @@ const Homepage = ({
     );
   }, [filteredWorkflows, filteredTemplates, filteredSnippets, selectedFolderId]);
 
-  // Auto-collapse empty favorites section
-  useEffect(() => {
-    if (favorites.length === 0 && favoritesVisibility.isVisible) {
-      favoritesVisibility.setVisible(false);
-    }
-  }, [favorites.length]);
+  // REMOVED auto-collapse for favorites to prevent infinite loops
   
   // Pagination hooks for each section
   const templatesPagination = usePagination(filteredTemplates, {
@@ -1259,11 +1296,11 @@ const Homepage = ({
             sectionId="favorites"
             title="Favorites"
             itemCount={data.length}
-            className="mb-6"
             externalVisible={favoritesVisibility.isVisible}
             onVisibilityChange={(isVisible) => {
               favoritesVisibility.setVisible(isVisible);
             }}
+            isInitialLoad={isFolderChanging}
             data-section-type="favorites"
           >
             <DndContext 
@@ -1302,7 +1339,6 @@ const Homepage = ({
             sectionId="workflows"
             title="Workflows"
             itemCount={fullData ? fullData.length : data.length}
-            className="mb-6"
             externalVisible={workflowsVisibility.isVisible}
             actionButton={
               <button
@@ -1316,6 +1352,7 @@ const Homepage = ({
             onVisibilityChange={(isVisible) => {
               workflowsVisibility.setVisible(isVisible);
             }}
+            isInitialLoad={isFolderChanging}
             data-section-type="workflows"
           >
             <DndContext 
@@ -1364,7 +1401,6 @@ const Homepage = ({
             sectionId="templates"
             title="Templates"
             itemCount={fullData ? fullData.length : data.length}
-            className="mb-6"
             externalVisible={templatesVisibility.isVisible}
             actionButton={
               <button
@@ -1378,6 +1414,7 @@ const Homepage = ({
             onVisibilityChange={(isVisible) => {
               templatesVisibility.setVisible(isVisible);
             }}
+            isInitialLoad={isFolderChanging}
             data-section-type="templates"
           >
             <DndContext 
@@ -1426,7 +1463,6 @@ const Homepage = ({
             sectionId="snippets"
             title="Snippets"
             itemCount={fullData ? fullData.length : data.length}
-            className="mb-6"
             externalVisible={snippetsVisibility.isVisible}
             actionButton={
               <button
@@ -1440,6 +1476,7 @@ const Homepage = ({
             onVisibilityChange={(isVisible) => {
               snippetsVisibility.setVisible(isVisible);
             }}
+            isInitialLoad={isFolderChanging}
             data-section-type="snippets"
           >
             <DndContext 
@@ -1499,6 +1536,7 @@ const Homepage = ({
         onCreateFolder={onCreateFolder}
         onUpdateFolder={onUpdateFolder}
         onDeleteFolder={onDeleteFolder}
+        onReorderFolders={onReorderFolders}
         onSettingsClick={() => setIsSettingsOpen(true)}
       />
 
@@ -1511,6 +1549,7 @@ const Homepage = ({
           onCreateFolder={onCreateFolder}
           onUpdateFolder={onUpdateFolder}
           onDeleteFolder={onDeleteFolder}
+          onReorderFolders={onReorderFolders}
           onSettingsClick={() => setIsSettingsOpen(true)}
           onAccountClick={() => console.log('Account clicked')}
         />
@@ -1544,7 +1583,7 @@ const Homepage = ({
           </div>
         </div>
 
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 lg:py-6">
+        <div className="max-w-7xl mx-auto pl-4 sm:pl-6 lg:pl-8 pr-0 py-4 lg:py-6">
           {/* Breadcrumb - Desktop only */}
           <div className="hidden lg:block mb-6">
             <FolderBreadcrumb

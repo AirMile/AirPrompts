@@ -1,5 +1,6 @@
 import React from 'react';
 import { Play, Edit, Trash2, Star, GripVertical, Workflow, FileText, Tag } from 'lucide-react';
+import { useItemColors } from '../../hooks/useItemColors.js';
 
 const ListView = ({ 
   items = [],
@@ -16,23 +17,11 @@ const ListView = ({
   isDragging = false,
   hideDragHandle = false
 }) => {
+  const { getColorClasses } = useItemColors();
 
   // Check if classic dark theme is active
   const isClassicDark = () => {
     return document.documentElement.classList.contains('theme-classic-dark');
-  };
-
-  const getTypeColor = (itemType) => {
-    switch (itemType) {
-      case 'workflow':
-        return 'bg-success-600 hover:bg-success-700';
-      case 'template':
-        return 'bg-primary-600 hover:bg-primary-700';
-      case 'snippet':
-        return 'bg-purple-600 hover:bg-purple-700';
-      default:
-        return 'bg-primary-600 hover:bg-primary-700';
-    }
   };
 
   const normalizeType = (itemType) => {
@@ -51,34 +40,9 @@ const ListView = ({
     }
   };
 
-  const getHoverBorderColor = (itemType) => {
-    const normalizedType = normalizeType(itemType);
-    
-    switch (normalizedType) {
-      case 'workflow':
-        return 'hover:border-success-500 hover:border';
-      case 'template':
-        return 'hover:border-primary-400 hover:border';
-      case 'snippet':
-        return 'hover:border-purple-500 hover:border';
-      default:
-        return 'hover:border-primary-400 hover:border';
-    }
-  };
-
   const getKeyboardFocusColor = (itemType) => {
     const normalizedType = normalizeType(itemType);
-    
-    switch (normalizedType) {
-      case 'workflow':
-        return 'border-success-500 border';
-      case 'template':
-        return 'border-primary-400 border';
-      case 'snippet':
-        return 'border-purple-500 border';
-      default:
-        return 'border-primary-400 border';
-    }
+    return getColorClasses(normalizedType, 'border');
   };
 
   const getItemDetail = (item, itemType) => {
@@ -132,7 +96,7 @@ const ListView = ({
                 (isClassicDark() ? 'border-secondary-700' : 'border-secondary-300 dark:border-secondary-700');
               const baseBackground = isClassicDark() ? 'bg-secondary-800' : 'bg-white dark:bg-secondary-800';
               const baseClasses = `relative ${baseBackground} rounded-lg border ${baseBorderClass} p-4 cursor-pointer hover:shadow-lg transition-all duration-200 focus:outline-none`;
-              const hoverBorder = getHoverBorderColor(actualItemType);
+              const hoverBorder = getColorClasses(actualItemType, 'hover');
               const focusBorder = isKeyboardFocused ? getKeyboardFocusColor(actualItemType) : '';
               
               const finalClasses = `${baseClasses} ${hoverBorder} ${focusBorder}`;
@@ -185,15 +149,15 @@ const ListView = ({
                     e.currentTarget.blur(); // Remove focus after click
                   }}
                   className="
-                    p-2.5 text-secondary-600 dark:text-secondary-300 bg-secondary-200 dark:bg-secondary-700 border border-secondary-400 dark:border-secondary-600 rounded-md
-                    hover:bg-secondary-300 dark:hover:bg-secondary-600 hover:border-secondary-500 dark:hover:border-secondary-500 flex items-center justify-center
+                    p-2.5 text-secondary-500 dark:text-secondary-400 bg-secondary-100 dark:bg-secondary-700 border border-secondary-300 dark:border-secondary-600 rounded-md
+                    hover:bg-secondary-200 dark:hover:bg-secondary-600 hover:border-secondary-400 dark:hover:border-secondary-500 flex items-center justify-center
                     focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-400 focus-visible:ring-opacity-50
                     transition-all duration-200 hover:shadow-md
                   "
                   aria-label={`${isItemFavorite(item) ? 'Remove from' : 'Add to'} favorites`}
                   title={isItemFavorite(item) ? 'Remove from favorites' : 'Add to favorites'}
                 >
-                  <Star className={`w-4 h-4 text-secondary-600 dark:text-secondary-300 ${isItemFavorite(item) ? 'fill-current' : ''}`} />
+                  <Star className={`w-4 h-4 text-secondary-500 dark:text-secondary-400 ${isItemFavorite(item) ? 'fill-current' : ''}`} />
                 </button>
                 
                 <button
@@ -203,8 +167,8 @@ const ListView = ({
                     onEdit(item);
                   }}
                   className="
-                    p-2.5 text-secondary-600 dark:text-secondary-300 bg-secondary-200 dark:bg-secondary-700 border border-secondary-400 dark:border-secondary-600 rounded-md
-                    hover:bg-secondary-300 dark:hover:bg-secondary-600 hover:border-secondary-500 dark:hover:border-secondary-500 flex items-center justify-center
+                    p-2.5 text-secondary-500 dark:text-secondary-400 bg-secondary-100 dark:bg-secondary-700 border border-secondary-300 dark:border-secondary-600 rounded-md
+                    hover:bg-secondary-200 dark:hover:bg-secondary-600 hover:border-secondary-400 dark:hover:border-secondary-500 flex items-center justify-center
                     focus:outline-none focus:ring-2 focus:ring-primary-400 focus:ring-opacity-50
                     transition-all duration-200 hover:shadow-md
                   "
@@ -220,8 +184,8 @@ const ListView = ({
                     onDelete(item.id);
                   }}
                   className="
-                    p-2.5 text-secondary-600 dark:text-secondary-300 bg-secondary-200 dark:bg-secondary-700 border border-secondary-400 dark:border-secondary-600 rounded-md
-                    hover:bg-secondary-300 dark:hover:bg-secondary-600 hover:border-secondary-500 dark:hover:border-secondary-500 flex items-center justify-center
+                    p-2.5 text-secondary-500 dark:text-secondary-400 bg-secondary-100 dark:bg-secondary-700 border border-secondary-300 dark:border-secondary-600 rounded-md
+                    hover:bg-secondary-200 dark:hover:bg-secondary-600 hover:border-secondary-400 dark:hover:border-secondary-500 flex items-center justify-center
                     focus:outline-none focus:ring-2 focus:ring-secondary-400 focus:ring-opacity-50
                     transition-all duration-200 hover:shadow-md
                   "

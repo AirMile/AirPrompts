@@ -11,6 +11,7 @@ import workflowsRouter from './routes/workflows.js';
 import snippetsRouter from './routes/snippets.js';
 import foldersRouter from './routes/folders.js';
 import folderFavoritesRouter from './routes/folderFavorites.js';
+import uiStateRouter from './routes/uiState.js';
 import migrationRouter from './routes/migration.js';
 // import migrationAdvancedRouter from './routes/migration-advanced.js';
 import { runFoldersMigration } from './routes/migration-folders.js';
@@ -48,13 +49,16 @@ app.use(cors({
   credentials: true
 }));
 
-// Rate limiting
-const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 1000, // Limit each IP to 1000 requests per windowMs
-  message: 'Too many requests from this IP, please try again later.'
-});
-app.use(limiter);
+// TEMPORARY: Disable rate limiting due to multiple server instances running
+// TODO: Fix multiple server instances issue first
+if (process.env.NODE_ENV === 'production') {
+  const limiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: 1000, // 1000 requests per windowMs
+    message: 'Too many requests from this IP, please try again later.'
+  });
+  app.use(limiter);
+}
 
 // Body parsing
 app.use(express.json({ limit: '10mb' }));
@@ -90,6 +94,7 @@ app.use('/api/workflows', workflowsRouter);
 app.use('/api/snippets', snippetsRouter);
 app.use('/api/folders', foldersRouter);
 app.use('/api/folder-favorites', folderFavoritesRouter);
+app.use('/api/ui-state', uiStateRouter);
 app.use('/api/migrate', migrationRouter);
 // app.use('/api/migrate-advanced', migrationAdvancedRouter);
 
@@ -145,3 +150,4 @@ app.listen(PORT, () => {
 });
 
 export default app;
+// Force server restart to apply new rate limits

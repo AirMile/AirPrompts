@@ -1,5 +1,6 @@
 @import './colors.css';
 @import './theme-variables.css';
+@import './view-transitions.css';
 @import './dragDrop.css';
 @import './components.css';
 @tailwind base;
@@ -44,6 +45,40 @@ body {
 #root {
   margin: 0;
   padding: 0;
+}
+
+/* View transitions are now handled in view-transitions.css */
+
+/* Remove any forced scrollbar behavior - let browser handle it naturally */
+html {
+  overflow-y: auto; /* Only show scrollbar when content actually overflows */
+}
+
+/* Custom grid collapse animation utilities */
+.grid-rows-0 {
+  grid-template-rows: 0fr;
+}
+
+.grid-rows-1 {
+  grid-template-rows: 1fr;
+}
+
+/* View transition names removed to prevent conflicts during theme switching */
+
+/* Reduced motion preferences are handled in view-transitions.css */
+
+/* No transition utility class to prevent animations on initial load */
+.no-transition,
+.no-transition * {
+  transition: none !important;
+  animation: none !important;
+}
+
+/* Disable all animations during folder switching */
+.folder-switching,
+.folder-switching * {
+  transition: none !important;
+  animation: none !important;
 }
 
 /* Focus styles */

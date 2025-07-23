@@ -8,6 +8,8 @@ import {
   useSnippets, useCreateSnippet, useUpdateSnippet, useDeleteSnippet,
   useToggleFolderFavorite
 } from '../hooks/queries';
+import { useFolders, useCreateFolder, useUpdateFolder, useDeleteFolder } from '../hooks/queries/useFoldersQuery';
+import { useQueryClient } from '@tanstack/react-query';
 import { LoadingSpinner } from './shared/ui';
 
 // Lazy load heavy components
@@ -29,17 +31,20 @@ import { useSyncStatus } from '../hooks/domain/useSyncStatus';
 import defaultTemplates from '../data/defaultTemplates.json';
 import defaultWorkflows from '../data/defaultWorkflows.json';
 import defaultSnippets from '../data/defaultSnippets.json';
-import defaultFolders from '../data/defaultFolders.json';
 
 // Inner component that uses the hooks
 const PromptTemplateSystemInner = () => {
   // Use Zustand for UI state
   const { searchQuery, setSearchQuery, selectedFolderId, setSelectedFolder } = useUIStore();
   
+  // Get query client for cache management
+  const queryClient = useQueryClient();
+  
   // Use TanStack Query for data
   const { data: templates = [], isLoading: templatesLoading } = useTemplates();
   const { data: workflows = [], isLoading: workflowsLoading } = useWorkflows();
   const { data: snippets = [], isLoading: snippetsLoading } = useSnippets();
+  const { data: folders = [], isLoading: foldersLoading } = useFolders();
   
   // Mutations
   const createTemplate = useCreateTemplate();
@@ -55,44 +60,110 @@ const PromptTemplateSystemInner = () => {
   const deleteSnippet = useDeleteSnippet();
   
   const toggleFolderFavorite = useToggleFolderFavorite();
+  
+  // Folder mutations
+  const createFolderMutation = useCreateFolder();
+  const updateFolderMutation = useUpdateFolder();
+  const deleteFolderMutation = useDeleteFolder();
 
   // Local state for editing
   const [editingTemplate, setEditingTemplate] = useState(null);
   const [editingWorkflow, setEditingWorkflow] = useState(null);
   const [editingSnippet, setEditingSnippet] = useState(null);
   const [executingItem, setExecutingItem] = useState(null);
-  const [folders, setFolders] = useState(defaultFolders); // TODO: Move to Zustand
 
   // Folder management functions
   const handleCreateFolder = (folderData) => {
-    setFolders(prev => [...prev, folderData]);
-    // TODO: Persist to backend
+    createFolderMutation.mutate(folderData);
   };
 
   const handleUpdateFolder = (folderData) => {
-    setFolders(prev => prev.map(f => f.id === folderData.id ? folderData : f));
-    // TODO: Persist to backend
+    updateFolderMutation.mutate(folderData);
   };
 
   const handleDeleteFolder = (folderId) => {
-    // Delete folder and all its subfolders
-    const deleteRecursive = (id) => {
-      const childIds = folders.filter(f => f.parentId === id).map(f => f.id);
-      childIds.forEach(childId => deleteRecursive(childId));
-      return [id, ...childIds];
-    };
-    
-    const idsToDelete = deleteRecursive(folderId);
-    setFolders(prev => prev.filter(f => !idsToDelete.includes(f.id)));
-    
-    // Reset selection if deleted folder was selected
-    if (idsToDelete.includes(selectedFolderId)) {
-      setSelectedFolder('root');
-    }
-    // TODO: Persist to backend
+    deleteFolderMutation.mutate(folderId, {
+      onSuccess: () => {
+        // Reset selection if deleted folder was selected
+        if (selectedFolderId === folderId) {
+          setSelectedFolder('root');
+        }
+      }
+    });
   };
 
-  const isLoading = templatesLoading || workflowsLoading || snippetsLoading;
+  const handleReorderFolders = async (updatedFolders) => {
+    // Use the server API to update folder sort orders
+    const updates = updatedFolders.map(folder => ({
+      id: folder.id,
+      sort_order: folder.sortOrder
+    }));
+    
+    try {
+      console.log('🔄 Batch updating folder sort orders:', updates);
+      
+      // Optimistic update - update query cache immediately
+      queryClient.setQueryData(['folders'], (oldData) => {
+        if (!oldData) return oldData;
+        
+        const updateMap = new Map(updates.map(u => [u.id, u.sort_order]));
+        
+        // Update folders with new sort_order values
+        const updatedFolders = oldData.map(folder => {
+          if (updateMap.has(folder.id)) {
+            const newSortOrder = updateMap.get(folder.id);
+            return { 
+              ...folder, 
+              sort_order: newSortOrder,
+              sortOrder: newSortOrder  // Also update camelCase version for UI
+            };
+          }
+          return folder;
+        });
+        
+        // Sort by parent_id first (nulls/root first), then by sort_order
+        return updatedFolders.sort((a, b) => {
+          // Group by parent - root folders first
+          const aParent = a.parent_id || '';
+          const bParent = b.parent_id || '';
+          
+          if (aParent !== bParent) {
+            return aParent.localeCompare(bParent);
+          }
+          
+          // Within same parent, sort by sort_order
+          return (a.sort_order || 0) - (b.sort_order || 0);
+        });
+      });
+      
+      // Call the batch sort-order API endpoint
+      const response = await fetch('http://localhost:3001/api/folders/batch-sort-order', {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ updates })
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to update folder sort order');
+      }
+      
+      console.log('✅ Successfully updated folder sort orders');
+      
+      // Small delay before invalidating to allow server to process the update
+      setTimeout(() => {
+        queryClient.invalidateQueries({ queryKey: ['folders'] });
+      }, 100);
+      
+    } catch (error) {
+      console.error('Error updating folder sort order:', error);
+      // Revert optimistic update on error
+      queryClient.invalidateQueries({ queryKey: ['folders'] });
+    }
+  };
+
+  const isLoading = templatesLoading || workflowsLoading || snippetsLoading || foldersLoading;
   
   // Monitor online status
   const { isOnline, hasBeenOffline } = useOnlineStatus();
@@ -233,6 +304,7 @@ const PromptTemplateSystemInner = () => {
         onCreateFolder={handleCreateFolder}
         onUpdateFolder={handleUpdateFolder}
         onDeleteFolder={handleDeleteFolder}
+        onReorderFolders={handleReorderFolders}
         onUpdateSnippet={(snippet) => updateSnippet.mutate({ id: snippet.id, ...snippet })}
         onToggleFolderFavorite={toggleFolderFavorite}
         onReorderTemplates={(reorderedTemplates) => {
@@ -268,7 +340,7 @@ const PromptTemplateSystem = () => {
     templates: defaultTemplates,
     workflows: defaultWorkflows,
     snippets: defaultSnippets,
-    folders: defaultFolders
+    folders: []
   });
 
   return (

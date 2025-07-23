@@ -107,11 +107,23 @@ const createTables = () => {
       name TEXT NOT NULL,
       description TEXT,
       parent_id TEXT,
+      sort_order INTEGER DEFAULT 0,
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
       updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
       FOREIGN KEY (parent_id) REFERENCES folders(id) ON DELETE CASCADE
     )
   `);
+  
+  // Add sort_order column to existing folders table if it doesn't exist
+  try {
+    db.exec(`ALTER TABLE folders ADD COLUMN sort_order INTEGER DEFAULT 0`);
+    console.log('📁 Added sort_order column to folders table');
+  } catch (error) {
+    // Column already exists, which is fine
+    if (!error.message.includes('duplicate column name')) {
+      console.warn('Warning adding sort_order column:', error.message);
+    }
+  }
   
   // Item folders table for many-to-many relationships
   db.exec(`
@@ -152,6 +164,33 @@ const createTables = () => {
     )
   `);
   
+  // Folder UI state table for persisting collapsed/expanded status
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS folder_ui_state (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      folder_id TEXT NOT NULL,
+      is_expanded BOOLEAN DEFAULT TRUE,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (folder_id) REFERENCES folders(id) ON DELETE CASCADE,
+      UNIQUE(folder_id)
+    )
+  `);
+  
+  // Header UI state table for persisting collapsed/expanded status per folder
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS header_ui_state (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      folder_id TEXT NOT NULL,
+      header_type TEXT NOT NULL, -- 'templates', 'workflows', 'snippets', etc.
+      is_expanded BOOLEAN DEFAULT TRUE,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (folder_id) REFERENCES folders(id) ON DELETE CASCADE,
+      UNIQUE(folder_id, header_type)
+    )
+  `);
+  
   console.log('📋 Database tables created successfully');
 };
 
@@ -181,6 +220,11 @@ const createIndexes = () => {
   
   db.exec(`CREATE INDEX IF NOT EXISTS idx_usage_stats_entity ON usage_stats(entity_type, entity_id)`);
   db.exec(`CREATE INDEX IF NOT EXISTS idx_usage_stats_timestamp ON usage_stats(timestamp)`);
+  
+  db.exec(`CREATE INDEX IF NOT EXISTS idx_folder_ui_state_folder ON folder_ui_state(folder_id)`);
+  
+  db.exec(`CREATE INDEX IF NOT EXISTS idx_header_ui_state_folder ON header_ui_state(folder_id)`);
+  db.exec(`CREATE INDEX IF NOT EXISTS idx_header_ui_state_composite ON header_ui_state(folder_id, header_type)`);
   
   console.log('🔍 Database indexes created successfully');
 };

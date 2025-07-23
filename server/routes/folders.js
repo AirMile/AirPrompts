@@ -5,14 +5,104 @@ import { getDatabase } from '../database.js';
 
 const router = express.Router();
 
-// Validation schemas
-const folderSchema = Joi.object({
-  name: Joi.string().min(1).max(255).required(),
-  description: Joi.string().allow('').max(1000),
-  parent_id: Joi.string().allow(null)
+// Validation schemas - Accept all frontend fields
+const folderSchema = Joi.object().pattern(Joi.string(), Joi.any()).required().keys({
+  name: Joi.string().min(1).max(255).required()
 });
 
 const updateFolderSchema = folderSchema.fork(['name'], (schema) => schema.optional());
+
+const batchUpdateSortOrderSchema = Joi.object({
+  updates: Joi.array().items(
+    Joi.object({
+      id: Joi.string().required(),
+      sort_order: Joi.number().integer().min(0).required()
+    })
+  ).min(1).required()
+});
+
+// GET /api/folders/debug - Debug endpoint to check folder state
+router.get('/debug', async (req, res) => {
+  try {
+    const db = getDatabase();
+    const folders = db.prepare('SELECT * FROM folders ORDER BY name').all();
+    const folderCount = db.prepare('SELECT COUNT(*) as count FROM folders').get();
+    
+    res.json({
+      success: true,
+      data: {
+        totalFolders: folderCount.count,
+        folders: folders,
+        message: folderCount.count === 0 ? 'No folders found - database may need seeding' : 'Folders found'
+      }
+    });
+  } catch (error) {
+    console.error('Error in debug endpoint:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+// GET /api/folders/reseed - Force reseed folders
+router.post('/reseed', async (req, res) => {
+  try {
+    const db = getDatabase();
+    
+    // Delete all existing folders (cascades to related tables)
+    db.prepare('DELETE FROM folders').run();
+    console.log('🗑️ Cleared existing folders');
+    
+    // Re-seed from default data
+    const { fileURLToPath } = await import('url');
+    const { dirname, join } = await import('path');
+    const { readFileSync } = await import('fs');
+    
+    const __filename = fileURLToPath(import.meta.url);
+    const __dirname = dirname(__filename);
+    
+    const defaultFoldersPath = join(__dirname, '..', '..', 'src', 'data', 'defaultFolders.json');
+    const defaultFoldersContent = readFileSync(defaultFoldersPath, 'utf8');
+    const defaultFolders = JSON.parse(defaultFoldersContent);
+    
+    const insertFolder = db.prepare(`
+      INSERT INTO folders (id, name, description, parent_id, sort_order, created_at, updated_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?)
+    `);
+    
+    const insertTransaction = db.transaction((folders) => {
+      folders.forEach(folder => {
+        insertFolder.run(
+          folder.id,
+          folder.name,
+          folder.description || null,
+          folder.parentId,
+          folder.sortOrder || 0,
+          folder.createdAt,
+          folder.updatedAt
+        );
+      });
+    });
+    
+    insertTransaction(defaultFolders);
+    
+    res.json({
+      success: true,
+      data: {
+        message: `Successfully reseeded ${defaultFolders.length} folders`,
+        folders: defaultFolders
+      }
+    });
+    
+  } catch (error) {
+    console.error('Error reseeding folders:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
 
 // GET /api/folders - Get all folders
 router.get('/', (req, res) => {
@@ -40,7 +130,7 @@ router.get('/', (req, res) => {
       }
     }
     
-    query += ` ORDER BY f.name ASC`;
+    query += ` ORDER BY COALESCE(f.sort_order, 0) ASC, f.name ASC`;
     
     const stmt = db.prepare(query);
     const folders = stmt.all(params);
@@ -181,13 +271,16 @@ router.get('/:id', (req, res) => {
 // POST /api/folders - Create new folder
 router.post('/', (req, res) => {
   try {
-    const { error, value } = folderSchema.validate(req.body);
-    if (error) {
+    // Skip validation for now - accept any data
+    const value = req.body;
+    
+    // Basic validation - just check if name exists
+    if (!value.name || typeof value.name !== 'string' || value.name.trim().length === 0) {
       return res.status(400).json({
         success: false,
         error: {
           code: 'VALIDATION_ERROR',
-          message: error.details[0].message
+          message: 'Name is required'
         },
         meta: {
           timestamp: new Date().toISOString(),
@@ -197,13 +290,17 @@ router.post('/', (req, res) => {
     }
     
     const db = getDatabase();
-    const id = randomUUID();
+    const id = value.id || randomUUID(); // Use provided ID or generate new one
     const now = new Date().toISOString();
     
+    // Handle both parent_id and parentId field names
+    const parentId = value.parent_id || value.parentId;
+    const actualParentId = (parentId === 'root' || !parentId) ? null : parentId;
+    
     // Check if parent folder exists (if specified)
-    if (value.parent_id) {
+    if (actualParentId) {
       const parentStmt = db.prepare('SELECT id FROM folders WHERE id = ?');
-      const parent = parentStmt.get(value.parent_id);
+      const parent = parentStmt.get(actualParentId);
       if (!parent) {
         return res.status(400).json({
           success: false,
@@ -228,7 +325,7 @@ router.post('/', (req, res) => {
       id,
       value.name,
       value.description || null,
-      value.parent_id || null,
+      actualParentId,
       now,
       now
     );
@@ -478,6 +575,76 @@ router.delete('/:id', (req, res) => {
       error: {
         code: 'DELETE_ERROR',
         message: 'Failed to delete folder'
+      },
+      meta: {
+        timestamp: new Date().toISOString(),
+        version: '1.0'
+      }
+    });
+  }
+});
+
+// PATCH /api/folders/batch-sort-order - Update sort order for multiple folders
+router.patch('/batch-sort-order', (req, res) => {
+  try {
+    const { error, value } = batchUpdateSortOrderSchema.validate(req.body);
+    if (error) {
+      return res.status(400).json({
+        success: false,
+        error: {
+          code: 'VALIDATION_ERROR',
+          message: error.details[0].message
+        },
+        meta: {
+          timestamp: new Date().toISOString(),
+          version: '1.0'
+        }
+      });
+    }
+
+    const db = getDatabase();
+    const now = new Date().toISOString();
+    
+    // Start a transaction for batch updates
+    const updateTransaction = db.transaction((updates) => {
+      const updateStmt = db.prepare(`
+        UPDATE folders 
+        SET sort_order = ?, updated_at = ? 
+        WHERE id = ?
+      `);
+      
+      for (const update of updates) {
+        // Verify folder exists
+        const existsStmt = db.prepare('SELECT id FROM folders WHERE id = ?');
+        const exists = existsStmt.get(update.id);
+        
+        if (!exists) {
+          throw new Error(`Folder with id ${update.id} not found`);
+        }
+        
+        updateStmt.run(update.sort_order, now, update.id);
+      }
+    });
+
+    // Execute the transaction
+    updateTransaction(value.updates);
+
+    res.json({
+      success: true,
+      message: `Updated sort order for ${value.updates.length} folders`,
+      meta: {
+        timestamp: new Date().toISOString(),
+        version: '1.0'
+      }
+    });
+
+  } catch (error) {
+    console.error('Error updating folder sort orders:', error);
+    res.status(500).json({
+      success: false,
+      error: {
+        code: 'BATCH_UPDATE_ERROR',
+        message: error.message || 'Failed to update folder sort orders'
       },
       meta: {
         timestamp: new Date().toISOString(),

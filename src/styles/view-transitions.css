@@ -1,0 +1,52 @@
+/* View Transitions Configuration for Theme Switching */
+
+/* Default View Transitions behavior - simple crossfade */
+::view-transition-old(root) {
+  animation: 0.25s ease-out both fade-out;
+}
+
+::view-transition-new(root) {
+  animation: 0.25s ease-in both fade-in;
+}
+
+@keyframes fade-out {
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+}
+
+/* Remove all element-specific view transitions during theme switch */
+html[data-theme-transitioning="true"] * {
+  view-transition-name: none !important;
+}
+
+/* Fallback for browsers without View Transitions */
+@supports not (view-transition-name: root) {
+  :root,
+  :root * {
+    transition: background-color 0.25s ease-in-out,
+                color 0.25s ease-in-out,
+                border-color 0.25s ease-in-out,
+                fill 0.25s ease-in-out,
+                stroke 0.25s ease-in-out !important;
+  }
+}
+
+/* Respect reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-old(root),
+  ::view-transition-new(root) {
+    animation-duration: 0.001s !important;
+  }
+  
+  :root,
+  :root * {
+    transition-duration: 0.001s !important;
+  }
+}

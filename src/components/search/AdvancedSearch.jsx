@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Search, X, Clock, Filter, ChevronDown, ChevronUp, Sun, Moon } from 'lucide-react';
+import { Search, X, Clock, Sun, Moon } from 'lucide-react';
 import { searchHistory, generateSearchSuggestions, debounceSearch } from '../../utils/searchUtils.js';
 import themeStore from '../../store/themeStore.js';
 
@@ -15,17 +15,10 @@ const AdvancedSearch = ({
   placeholder = "Search templates, workflows, snippets, and tags...",
   className = ""
 }) => {
-  const [isExpanded, setIsExpanded] = useState(false);
   const [suggestions, setSuggestions] = useState([]);
   const [searchHistoryList, setSearchHistoryList] = useState([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [selectedSuggestionIndex, setSelectedSuggestionIndex] = useState(-1);
-  const [filters, setFilters] = useState({
-    type: 'all', // 'all', 'templates', 'workflows', 'snippets'
-    category: 'all',
-    favoriteOnly: false,
-    hasContent: false
-  });
   
   const searchInputRef = useRef(null);
   const suggestionsRef = useRef(null);
@@ -73,9 +66,9 @@ const AdvancedSearch = ({
     setShowSuggestions(false);
     setSelectedSuggestionIndex(-1);
     
-    // Apply filters if callback provided
+    // Apply search if callback provided
     if (onFilter) {
-      onFilter({ searchTerm, filters });
+      onFilter({ searchTerm });
     }
   };
   
@@ -117,15 +110,6 @@ const AdvancedSearch = ({
     handleSearchSubmit(suggestion);
   };
   
-  // Handle filter changes
-  const handleFilterChange = (filterType, value) => {
-    const newFilters = { ...filters, [filterType]: value };
-    setFilters(newFilters);
-    
-    if (onFilter) {
-      onFilter({ searchTerm: searchQuery, filters: newFilters });
-    }
-  };
   
   // Clear search
   const clearSearch = () => {
@@ -135,7 +119,7 @@ const AdvancedSearch = ({
     setSelectedSuggestionIndex(-1);
     
     if (onFilter) {
-      onFilter({ searchTerm: '', filters });
+      onFilter({ searchTerm: '' });
     }
   };
   
@@ -151,18 +135,6 @@ const AdvancedSearch = ({
     handleSearchSubmit(historyItem);
   };
   
-  // Get unique categories from all items
-  const getUniqueCategories = () => {
-    const categories = new Set();
-    allItems.forEach(item => {
-      if (item.category) {
-        categories.add(item.category);
-      }
-    });
-    return Array.from(categories).sort();
-  };
-  
-  const uniqueCategories = getUniqueCategories();
   
   return (
     <div className={`relative ${className}`}>
@@ -186,14 +158,14 @@ const AdvancedSearch = ({
             // Delay hiding suggestions to allow for clicks
             setTimeout(() => setShowSuggestions(false), 200);
           }}
-          className="w-full pl-10 pr-28 py-3 border border-secondary-300 dark:border-secondary-600 bg-white dark:bg-secondary-800 text-secondary-900 dark:text-secondary-100 rounded-lg focus:outline-none focus:border-primary-500 placeholder-secondary-400 dark:placeholder-secondary-500 transition-colors duration-200"
+          className="w-full pl-10 pr-20 py-3 border border-secondary-300 dark:border-secondary-600 bg-white dark:bg-secondary-800 text-secondary-900 dark:text-secondary-100 rounded-lg focus:outline-none focus:border-primary-500 placeholder-secondary-400 dark:placeholder-secondary-500"
         />
         
         {/* Clear Button */}
         {searchQuery && (
           <button
             onClick={clearSearch}
-            className="absolute right-20 top-1/2 transform -translate-y-1/2 text-secondary-400 hover:text-secondary-600 dark:hover:text-secondary-300"
+            className="absolute right-12 top-1/2 transform -translate-y-1/2 text-secondary-400 hover:text-secondary-600 dark:hover:text-secondary-300"
           >
             <X className="w-4 h-4" />
           </button>
@@ -203,7 +175,7 @@ const AdvancedSearch = ({
         {/* Dark Mode Toggle */}
         <button
           onClick={toggleDarkMode}
-          className="absolute right-12 top-1/2 transform -translate-y-1/2 text-secondary-400 hover:text-secondary-600 dark:hover:text-secondary-300 p-1 rounded-lg transition-colors"
+          className="absolute right-3 top-1/2 transform -translate-y-1/2 text-secondary-400 hover:text-secondary-600 dark:hover:text-secondary-300 p-1 rounded-lg"
           title={isDarkMode ? "Switch to light mode" : "Switch to dark mode"}
         >
           {isDarkMode ? (
@@ -213,13 +185,6 @@ const AdvancedSearch = ({
           )}
         </button>
         
-        {/* Advanced Search Toggle */}
-        <button
-          onClick={() => setIsExpanded(!isExpanded)}
-          className="absolute right-3 top-1/2 transform -translate-y-1/2 text-secondary-400 hover:text-secondary-600 dark:hover:text-secondary-300"
-        >
-          <Filter className="w-4 h-4" />
-        </button>
       </div>
       
       {/* Suggestions Dropdown */}
@@ -274,111 +239,6 @@ const AdvancedSearch = ({
         </div>
       )}
       
-      {/* Advanced Filters */}
-      {isExpanded && (
-        <div className="mt-4 p-4 bg-white dark:bg-secondary-800 border border-secondary-200 dark:border-secondary-600 rounded-lg">
-          <div className="flex items-center justify-between mb-3">
-            <h3 className="text-sm font-medium text-secondary-900 dark:text-secondary-100">Advanced Filters</h3>
-            <button
-              onClick={() => setIsExpanded(false)}
-              className="text-secondary-400 hover:text-secondary-600 dark:hover:text-secondary-300"
-            >
-              <ChevronUp className="w-4 h-4" />
-            </button>
-          </div>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            {/* Type Filter */}
-            <div>
-              <label className="block text-xs text-secondary-500 dark:text-secondary-400 mb-1">Type</label>
-              <select
-                value={filters.type}
-                onChange={(e) => handleFilterChange('type', e.target.value)}
-                className="w-full px-3 py-2 bg-secondary-50 dark:bg-secondary-700 border border-secondary-300 dark:border-secondary-600 rounded text-secondary-900 dark:text-secondary-100 text-sm"
-              >
-                <option value="all">All Types</option>
-                <option value="templates">Templates</option>
-                <option value="workflows">Workflows</option>
-                <option value="snippets">Snippets</option>
-              </select>
-            </div>
-            
-            {/* Category Filter */}
-            <div>
-              <label className="block text-xs text-secondary-500 dark:text-secondary-400 mb-1">Category</label>
-              <select
-                value={filters.category}
-                onChange={(e) => handleFilterChange('category', e.target.value)}
-                className="w-full px-3 py-2 bg-secondary-50 dark:bg-secondary-700 border border-secondary-300 dark:border-secondary-600 rounded text-secondary-900 dark:text-secondary-100 text-sm"
-              >
-                <option value="all">All Categories</option>
-                {uniqueCategories.map(category => (
-                  <option key={category} value={category}>{category}</option>
-                ))}
-              </select>
-            </div>
-            
-            {/* Favorites Only */}
-            <div>
-              <label className="flex items-center space-x-2 text-sm text-secondary-900 dark:text-secondary-100">
-                <input
-                  type="checkbox"
-                  checked={filters.favoriteOnly}
-                  onChange={(e) => handleFilterChange('favoriteOnly', e.target.checked)}
-                  className="rounded border-secondary-400 dark:border-secondary-600 bg-secondary-50 dark:bg-secondary-700 text-primary-600 focus:ring-primary-500"
-                />
-                <span>Favorites Only</span>
-              </label>
-            </div>
-            
-            {/* Has Content */}
-            <div>
-              <label className="flex items-center space-x-2 text-sm text-secondary-900 dark:text-secondary-100">
-                <input
-                  type="checkbox"
-                  checked={filters.hasContent}
-                  onChange={(e) => handleFilterChange('hasContent', e.target.checked)}
-                  className="rounded border-secondary-400 dark:border-secondary-600 bg-secondary-50 dark:bg-secondary-700 text-primary-600 focus:ring-primary-500"
-                />
-                <span>Has Content</span>
-              </label>
-            </div>
-          </div>
-          
-          {/* Quick Actions */}
-          <div className="mt-4 pt-3 border-t border-secondary-200 dark:border-secondary-600">
-            <div className="flex items-center justify-between">
-              <button
-                onClick={() => {
-                  setFilters({
-                    type: 'all',
-                    category: 'all',
-                    favoriteOnly: false,
-                    hasContent: false
-                  });
-                  if (onFilter) {
-                    onFilter({ searchTerm: searchQuery, filters: {
-                      type: 'all',
-                      category: 'all',
-                      favoriteOnly: false,
-                      hasContent: false
-                    }});
-                  }
-                }}
-                className="text-sm text-secondary-500 dark:text-secondary-400 hover:text-secondary-600 dark:hover:text-secondary-300"
-              >
-                Clear Filters
-              </button>
-              
-              <div className="text-xs text-secondary-500 dark:text-secondary-400">
-                {Object.values(filters).some(f => f !== 'all' && f !== false) && (
-                  <span>Filters applied</span>
-                )}
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 };

@@ -73,6 +73,12 @@ export const useAPI = (options = {}) => {
         throw new Error(`HTTP ${response.status}: ${response.statusText}`);
       }
 
+      // Handle responses with no content (e.g., 204 DELETE responses)
+      if (response.status === 204 || response.headers.get('content-length') === '0') {
+        console.log(`✅ API Success: ${method} ${endpoint} (No Content)`);
+        return null;
+      }
+
       const result = await response.json();
 
       // Validate response format
