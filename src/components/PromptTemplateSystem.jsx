@@ -5,7 +5,8 @@ import themeStore from '../store/themeStore.js';
 import { 
   useTemplates, useCreateTemplate, useUpdateTemplate, useDeleteTemplate,
   useWorkflows, useCreateWorkflow, useUpdateWorkflow, useDeleteWorkflow,
-  useSnippets, useCreateSnippet, useUpdateSnippet, useDeleteSnippet 
+  useSnippets, useCreateSnippet, useUpdateSnippet, useDeleteSnippet,
+  useToggleFolderFavorite
 } from '../hooks/queries';
 import { LoadingSpinner } from './shared/ui';
 
@@ -52,6 +53,8 @@ const PromptTemplateSystemInner = () => {
   const createSnippet = useCreateSnippet();
   const updateSnippet = useUpdateSnippet();
   const deleteSnippet = useDeleteSnippet();
+  
+  const toggleFolderFavorite = useToggleFolderFavorite();
 
   // Local state for editing
   const [editingTemplate, setEditingTemplate] = useState(null);
@@ -59,6 +62,35 @@ const PromptTemplateSystemInner = () => {
   const [editingSnippet, setEditingSnippet] = useState(null);
   const [executingItem, setExecutingItem] = useState(null);
   const [folders, setFolders] = useState(defaultFolders); // TODO: Move to Zustand
+
+  // Folder management functions
+  const handleCreateFolder = (folderData) => {
+    setFolders(prev => [...prev, folderData]);
+    // TODO: Persist to backend
+  };
+
+  const handleUpdateFolder = (folderData) => {
+    setFolders(prev => prev.map(f => f.id === folderData.id ? folderData : f));
+    // TODO: Persist to backend
+  };
+
+  const handleDeleteFolder = (folderId) => {
+    // Delete folder and all its subfolders
+    const deleteRecursive = (id) => {
+      const childIds = folders.filter(f => f.parentId === id).map(f => f.id);
+      childIds.forEach(childId => deleteRecursive(childId));
+      return [id, ...childIds];
+    };
+    
+    const idsToDelete = deleteRecursive(folderId);
+    setFolders(prev => prev.filter(f => !idsToDelete.includes(f.id)));
+    
+    // Reset selection if deleted folder was selected
+    if (idsToDelete.includes(selectedFolderId)) {
+      setSelectedFolder('root');
+    }
+    // TODO: Persist to backend
+  };
 
   const isLoading = templatesLoading || workflowsLoading || snippetsLoading;
   
@@ -198,7 +230,11 @@ const PromptTemplateSystemInner = () => {
         onDeleteSnippet={(id) => deleteSnippet.mutate(id)}
         onUpdateTemplate={(template) => updateTemplate.mutate({ id: template.id, ...template })}
         onUpdateWorkflow={(workflow) => updateWorkflow.mutate({ id: workflow.id, ...workflow })}
+        onCreateFolder={handleCreateFolder}
+        onUpdateFolder={handleUpdateFolder}
+        onDeleteFolder={handleDeleteFolder}
         onUpdateSnippet={(snippet) => updateSnippet.mutate({ id: snippet.id, ...snippet })}
+        onToggleFolderFavorite={toggleFolderFavorite}
         onReorderTemplates={(reorderedTemplates) => {
           // Use optimistic updates for reordering
           reorderedTemplates.forEach(template => {
@@ -215,7 +251,6 @@ const PromptTemplateSystemInner = () => {
             updateSnippet.mutate({ id: snippet.id, ...snippet });
           });
         }}
-        onCreateFolder={(folder) => setFolders([...folders, folder])}
       />
     </Suspense>
   );

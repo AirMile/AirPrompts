@@ -39,22 +39,16 @@ const CollapsibleSection = ({
   const isVisible = externalVisible !== null ? externalVisible : internalVisible;
   
 
-  // Get color based on section title/type using custom colors
-  const getCountBadgeColor = (title) => {
-    const titleLower = title.toLowerCase();
-    if (titleLower.includes('favorite')) {
-      return 'bg-yellow-600 dark:bg-yellow-500 text-yellow-100 dark:text-yellow-50';
-    } else if (titleLower.includes('workflow')) {
-      return getColorClasses('workflow', 'tag');
-    } else if (titleLower.includes('template')) {
-      return getColorClasses('template', 'tag');
-    } else if (titleLower.includes('snippet')) {
-      return getColorClasses('snippet', 'tag');
-    }
-    return getColorClasses('template', 'tag'); // default to template color
+  // Use subtle neutral colors for count badges
+  const getCountBadgeColor = () => {
+    return 'bg-secondary-100 dark:bg-secondary-800 text-secondary-600 dark:text-secondary-400 border border-secondary-200 dark:border-secondary-700';
   };
 
   const handleToggle = () => {
+    // Only allow toggle if there are items
+    const totalCount = count || itemCount || 0;
+    if (totalCount === 0) return;
+    
     if (externalVisible !== null && onVisibilityChange) {
       // When using external control, only call the callback
       const newState = !externalVisible;
@@ -75,22 +69,33 @@ const CollapsibleSection = ({
   return (
     <div className={`collapsible-section section-boundary-restricted ${className}`} {...restProps}>
       {/* Section Header */}
-      <div className="w-full flex items-center justify-between bg-primary-50 dark:bg-primary-900/10 hover:bg-primary-100 dark:hover:bg-primary-900/20 rounded-lg overflow-hidden transition-colors duration-200 group has-[.action-button:hover]:bg-primary-50 dark:has-[.action-button:hover]:bg-primary-900/10">
+      <div className={`w-full flex items-center justify-between rounded-lg overflow-hidden transition-colors duration-200 group border ${
+        (count || itemCount || 0) > 0 
+          ? 'bg-primary-50 dark:bg-primary-900/10 hover:bg-primary-100 dark:hover:bg-primary-900/20 has-[.action-button:hover]:bg-primary-50 dark:has-[.action-button:hover]:bg-primary-900/10 border-primary-200 dark:border-primary-800/50' 
+          : 'bg-secondary-50 dark:bg-secondary-900/10 border-secondary-200 dark:border-secondary-800/50'
+      }`}>
         <button
           type="button"
           onClick={handleToggle}
           onKeyDown={handleKeyDown}
-          className="flex-1 flex items-center justify-start p-3 focus:outline-none"
+          className={`flex-1 flex items-center justify-between p-3 focus:outline-none ${
+            (count || itemCount || 0) === 0 ? 'cursor-default' : ''
+          }`}
           aria-expanded={isVisible}
           aria-controls={`section-content-${sectionId}`}
+          disabled={(count || itemCount || 0) === 0}
           {...headerProps}
         >
           <div className="flex items-center space-x-2">
-            {/* Collapse/Expand Icon */}
-            {isVisible ? (
-              <ChevronDownIcon className="w-5 h-5 text-secondary-600 dark:text-secondary-400" />
+            {/* Collapse/Expand Icon - only show if there are items */}
+            {(count > 0 || itemCount > 0) ? (
+              isVisible ? (
+                <ChevronDownIcon className="w-5 h-5 text-secondary-600 dark:text-secondary-400" />
+              ) : (
+                <ChevronRightIcon className="w-5 h-5 text-secondary-600 dark:text-secondary-400" />
+              )
             ) : (
-              <ChevronRightIcon className="w-5 h-5 text-secondary-600 dark:text-secondary-400" />
+              <div className="w-5 h-5" /> // Empty space to maintain alignment
             )}
             
             {/* Section Icon */}
@@ -104,14 +109,14 @@ const CollapsibleSection = ({
             <h3 className="text-lg font-medium text-secondary-900 dark:text-secondary-100">
               {title}
             </h3>
-            
-            {/* Item Count Badge */}
-            {(count > 0 || itemCount > 0) && (
-              <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold ${getCountBadgeColor(title)}`}>
-                {count || itemCount}
-              </span>
-            )}
           </div>
+          
+          {/* Item Count Badge */}
+          {(count > 0 || itemCount > 0) && (
+            <span className={`inline-flex items-center justify-center min-w-[1.5rem] h-6 px-2 rounded-full text-xs font-medium tabular-nums ${getCountBadgeColor()}`}>
+              {count || itemCount}
+            </span>
+          )}
         </button>
         
         {/* Action Button */}

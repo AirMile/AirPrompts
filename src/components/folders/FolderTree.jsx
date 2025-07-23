@@ -1,16 +1,25 @@
 import React, { useState, useEffect } from 'react';
-import { Settings, User } from 'lucide-react';
+import { Settings, User, MoreVertical, Edit2, Trash2, Plus, FolderPlus, ChevronDown, ChevronUp } from 'lucide-react';
+import FolderModal from './FolderModal';
+import { AVAILABLE_ICONS } from '../../constants/folderIcons';
 
 const FolderTree = ({ 
   folders = [], 
   selectedFolderId, 
   onFolderSelect, 
   onCreateFolder,
+  onUpdateFolder,
+  onDeleteFolder,
   className = '',
   onSettingsClick
 }) => {
   const [expandedFolders, setExpandedFolders] = useState(new Set(['root', 'general']));
   const [favoriteFolders, setFavoriteFolders] = useState(new Set());
+  const [showFolderModal, setShowFolderModal] = useState(false);
+  const [editingFolder, setEditingFolder] = useState(null);
+  const [parentFolderForNew, setParentFolderForNew] = useState(null);
+  const [showContextMenu, setShowContextMenu] = useState(null);
+  const [contextMenuPosition, setContextMenuPosition] = useState({ x: 0, y: 0 });
 
   // Initialize favorite folders from props
   useEffect(() => {
@@ -56,6 +65,12 @@ const FolderTree = ({
       newFavorites.add(folderId);
     }
     setFavoriteFolders(newFavorites);
+    
+    // Update the folder's favorite status
+    const folder = folders.find(f => f.id === folderId);
+    if (folder && onUpdateFolder) {
+      onUpdateFolder({ ...folder, favorite: !folder.favorite });
+    }
   };
 
   const expandAll = () => {
@@ -66,6 +81,69 @@ const FolderTree = ({
   const collapseAll = () => {
     setExpandedFolders(new Set(['root']));
   };
+
+  // Helper functions
+  const handleContextMenu = (e, folder) => {
+    e.stopPropagation();
+    const rect = e.currentTarget.getBoundingClientRect();
+    setContextMenuPosition({ x: rect.right, y: rect.bottom });
+    setShowContextMenu(folder.id);
+  };
+
+  const handleCreateNewFolder = (parentId) => {
+    const parent = folders.find(f => f.id === parentId) || { id: 'root', name: 'Root' };
+    setParentFolderForNew(parent);
+    setEditingFolder(null);
+    setShowFolderModal(true);
+  };
+
+  const handleEditFolder = (folder) => {
+    setEditingFolder(folder);
+    setParentFolderForNew(null);
+    setShowFolderModal(true);
+    setShowContextMenu(null);
+  };
+
+  const handleDeleteFolder = (folderId) => {
+    // Check if folder has children or items
+    const hasSubfolders = folders.some(f => f.parentId === folderId);
+    const warningMessage = hasSubfolders 
+      ? 'Deze map bevat submappen. Weet je zeker dat je deze map en alle inhoud wilt verwijderen?'
+      : 'Weet je zeker dat je deze map wilt verwijderen?';
+    
+    if (confirm(warningMessage)) {
+      onDeleteFolder(folderId);
+    }
+    setShowContextMenu(null);
+  };
+
+  const handleSaveFolder = (folderData) => {
+    if (editingFolder) {
+      onUpdateFolder(folderData);
+    } else {
+      onCreateFolder(folderData);
+    }
+  };
+
+  const renderFolderIcon = (folder, isSelected) => {
+    const iconName = folder.icon || 'Folder';
+    const IconComponent = AVAILABLE_ICONS[iconName] || AVAILABLE_ICONS.Folder;
+    
+    return (
+      <IconComponent 
+        className={`w-4 h-4 mr-2 ${isSelected ? 'text-primary-700 dark:text-primary-300' : 'text-primary-600 dark:text-primary-400'}`}
+      />
+    );
+  };
+
+  // Close context menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = () => setShowContextMenu(null);
+    if (showContextMenu) {
+      document.addEventListener('click', handleClickOutside);
+      return () => document.removeEventListener('click', handleClickOutside);
+    }
+  }, [showContextMenu]);
 
   const renderFolder = (folder, level = 0) => {
     const isExpanded = expandedFolders.has(folder.id);
@@ -93,10 +171,10 @@ const FolderTree = ({
                 e.stopPropagation();
                 toggleFolder(folder.id);
               }}
-              className="mr-1 p-0.5 hover:bg-secondary-200 dark:hover:bg-secondary-700 rounded"
+              className="mr-1 p-1 hover:bg-secondary-200 dark:hover:bg-secondary-700 rounded"
             >
               <svg 
-                className={`w-3 h-3 transform transition-transform ${isExpanded ? 'rotate-90' : ''}`}
+                className={`w-4 h-4 transform transition-transform ${isExpanded ? 'rotate-90' : ''}`}
                 fill="currentColor" 
                 viewBox="0 0 20 20"
               >
@@ -106,19 +184,20 @@ const FolderTree = ({
           )}
           {!folderHasChildren && <div className="w-4" />}
           
-          <svg className={`w-4 h-4 mr-2 ${_isSelected ? 'text-primary-700 dark:text-primary-300' : 'text-primary-600 dark:text-primary-400'}`} fill="currentColor" viewBox="0 0 20 20">
-            <path d="M2 6a2 2 0 012-2h5l2 2h5a2 2 0 012 2v6a2 2 0 01-2 2H4a2 2 0 01-2-2V6z" />
-          </svg>
+          {renderFolderIcon(folder, _isSelected)}
           
           <span className="truncate flex-1">{folder.name}</span>
           
           <button
-            onClick={(e) => toggleFavorite(folder.id, e)}
-            className={`ml-1 p-0.5 rounded opacity-0 group-hover:opacity-100 transition-opacity ${isFavorite ? 'opacity-100' : ''}`}
+            onClick={(e) => {
+              toggleFavorite(folder.id, e);
+              e.currentTarget.blur(); // Remove focus after click
+            }}
+            className={`ml-1 p-1 rounded border border-transparent hover:border-secondary-300 dark:hover:border-secondary-600 opacity-0 group-hover:opacity-100 transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-400 focus-visible:ring-opacity-50 ${isFavorite ? 'opacity-100' : ''}`}
             title={isFavorite ? 'Remove from favorites' : 'Add to favorites'}
           >
             <svg 
-              className={`w-3 h-3 ${isFavorite ? 'text-yellow-500 fill-current' : 'text-secondary-400 dark:text-secondary-500'}`}
+              className={`w-4 h-4 text-secondary-600 dark:text-secondary-300 ${isFavorite ? 'fill-current' : ''}`}
               fill={isFavorite ? 'currentColor' : 'none'}
               stroke="currentColor" 
               viewBox="0 0 24 24"
@@ -126,6 +205,17 @@ const FolderTree = ({
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
             </svg>
           </button>
+          
+          {/* Context menu button */}
+          {folder.id !== 'root' && (
+            <button
+              onClick={(e) => handleContextMenu(e, folder)}
+              className="ml-1 p-1 rounded opacity-0 group-hover:opacity-100 transition-opacity hover:bg-secondary-200 dark:hover:bg-secondary-700"
+              title="Meer opties"
+            >
+              <MoreVertical className="w-4 h-4" />
+            </button>
+          )}
         </div>
 
         {isExpanded && children.length > 0 && (
@@ -148,105 +238,163 @@ const FolderTree = ({
             <h3 className="text-sm font-medium text-secondary-700 dark:text-secondary-300">
               Folders
             </h3>
-          <div className="flex items-center gap-1">
-            {onCreateFolder && (
+            <div className="flex items-center gap-1">
               <button
-                onClick={() => onCreateFolder(selectedFolderId || 'root')}
+                onClick={() => handleCreateNewFolder('root')}
                 className="p-1 rounded hover:bg-secondary-100 dark:hover:bg-secondary-800 text-secondary-600 dark:text-secondary-400"
-                title="Create new folder"
+                title="Nieuwe map aanmaken"
               >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                </svg>
+                <FolderPlus className="w-4 h-4" />
               </button>
-            )}
-          </div>
-        </div>
-
-        {/* Expand/Collapse All Buttons */}
-        <div className="flex gap-1 mb-3">
-            <button
-              onClick={expandAll}
-              className="flex-1 px-2 py-1 text-xs border border-secondary-300 dark:border-secondary-600 rounded text-secondary-600 dark:text-secondary-400 hover:bg-secondary-100 dark:hover:bg-secondary-800"
-            >
-              Expand All
-            </button>
-            <button
-              onClick={collapseAll}
-              className="flex-1 px-2 py-1 text-xs border border-secondary-300 dark:border-secondary-600 rounded text-secondary-600 dark:text-secondary-400 hover:bg-secondary-100 dark:hover:bg-secondary-800"
-            >
-              Collapse All
-            </button>
-        </div>
-
-        {/* Favorites Section */}
-        {favoriteFolders.size > 0 && (
-          <div className="mb-4">
-            <h4 className="text-xs font-medium text-secondary-500 dark:text-secondary-400 mb-2 uppercase tracking-wide">
-              Favorites
-            </h4>
-            <div className="space-y-1 border-b border-secondary-200 dark:border-secondary-700 pb-3 mb-3">
-              {Array.from(favoriteFolders)
-                .map(id => folders.find(f => f.id === id))
-                .filter(Boolean)
-                .map(folder => {
-                  const isSelected = selectedFolderId === folder.id;
-                  return (
-                  <div
-                    key={`fav-${folder.id}`}
-                    className={`
-                      flex items-center cursor-pointer rounded-md text-sm group
-                      hover:bg-secondary-100 dark:hover:bg-secondary-800
-                      text-secondary-700 dark:text-secondary-300
-                      py-1
-                      ${isSelected ? 'bg-primary-100 dark:bg-primary-900/20 text-primary-800 dark:text-primary-200' : ''}
-                    `}
-                    style={{ paddingLeft: '8px', paddingRight: '8px' }}
-                    onClick={() => onFolderSelect(folder.id)}
-                  >
-                    <div className="w-4 mr-1" />
-                    <svg className={`w-4 h-4 mr-2 ${isSelected ? 'text-primary-700 dark:text-primary-300' : 'text-primary-600 dark:text-primary-400'}`} fill="currentColor" viewBox="0 0 20 20">
-                      <path d="M2 6a2 2 0 012-2h5l2 2h5a2 2 0 012 2v6a2 2 0 01-2 2H4a2 2 0 01-2-2V6z" />
-                    </svg>
-                    <span className="truncate">{folder.name}</span>
-                  </div>
-                  );
-                })}
             </div>
           </div>
-        )}
 
-        <div className="space-y-1">
-          {topLevelFolders.map(folder => renderFolder(folder))}
+          {/* Toggle Expand/Collapse Button */}
+          <div className="mb-3">
+            <button
+              onClick={() => {
+                // Check if most folders are expanded to determine toggle action
+                const expandableFolders = folders.filter(f => hasChildren(f.id));
+                const expandedCount = expandableFolders.filter(f => expandedFolders.has(f.id)).length;
+                const isExpanded = expandedCount > expandableFolders.length / 2;
+                
+                if (isExpanded) {
+                  collapseAll();
+                } else {
+                  expandAll();
+                }
+              }}
+              className="w-full flex items-center justify-center gap-2 px-3 py-1.5 text-xs border border-secondary-300 dark:border-secondary-600 rounded text-secondary-600 dark:text-secondary-400 hover:bg-secondary-100 dark:hover:bg-secondary-800 transition-colors"
+              title={expandedFolders.size > 1 ? "Collapse all folders" : "Expand all folders"}
+            >
+              {expandedFolders.size > 1 ? (
+                <>
+                  <ChevronUp className="w-3 h-3" />
+                  <span>Collapse All</span>
+                </>
+              ) : (
+                <>
+                  <ChevronDown className="w-3 h-3" />
+                  <span>Expand All</span>
+                </>
+              )}
+            </button>
+          </div>
+
+          {/* Favorites Section */}
+          {favoriteFolders.size > 0 && (
+            <div className="mb-4">
+              <h4 className="text-xs font-medium text-secondary-500 dark:text-secondary-400 mb-2 uppercase tracking-wide">
+                Favorites
+              </h4>
+              <div className="space-y-1 border-b border-secondary-200 dark:border-secondary-700 pb-3 mb-3">
+                {Array.from(favoriteFolders)
+                  .map(id => folders.find(f => f.id === id))
+                  .filter(Boolean)
+                  .map(folder => {
+                    const isSelected = selectedFolderId === folder.id;
+                    return (
+                    <div
+                      key={`fav-${folder.id}`}
+                      className={`
+                        flex items-center cursor-pointer rounded-md text-sm group
+                        hover:bg-secondary-100 dark:hover:bg-secondary-800
+                        text-secondary-700 dark:text-secondary-300
+                        py-1
+                        ${isSelected ? 'bg-primary-100 dark:bg-primary-900/20 text-primary-800 dark:text-primary-200' : ''}
+                      `}
+                      style={{ paddingLeft: '8px', paddingRight: '8px' }}
+                      onClick={() => onFolderSelect(folder.id)}
+                    >
+                      <div className="w-4 mr-1" />
+                      {renderFolderIcon(folder, isSelected)}
+                      <span className="truncate">{folder.name}</span>
+                    </div>
+                    );
+                  })}
+              </div>
+            </div>
+          )}
+
+          <div className="space-y-1">
+            {topLevelFolders.map(folder => renderFolder(folder))}
+          </div>
         </div>
       </div>
-    </div>
-    
-    {/* Account & Settings Section */}
-    <div className="border-t-2 border-primary-200 dark:border-primary-800 p-3 bg-secondary-50 dark:bg-secondary-800">
-      <div className="flex items-center justify-between">
-        {/* Account Placeholder */}
-        <div className="flex items-center gap-3 flex-1">
-          <div className="w-8 h-8 bg-secondary-200 dark:bg-secondary-700 rounded-full flex items-center justify-center">
-            <User className="w-4 h-4 text-secondary-600 dark:text-secondary-400" />
+      
+      {/* Account & Settings Section */}
+      <div className="border-t border-secondary-200 dark:border-secondary-700 p-3 bg-secondary-50 dark:bg-secondary-800">
+        <div className="flex items-center justify-between">
+          {/* Account Placeholder */}
+          <div className="flex items-center gap-3 flex-1">
+            <div className="w-8 h-8 bg-secondary-200 dark:bg-secondary-700 rounded-full flex items-center justify-center">
+              <User className="w-4 h-4 text-secondary-600 dark:text-secondary-400" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <div className="text-sm font-medium text-secondary-700 dark:text-secondary-300 truncate">Account</div>
+              <div className="text-xs text-secondary-500 dark:text-secondary-500">Not signed in</div>
+            </div>
           </div>
-          <div className="flex-1 min-w-0">
-            <div className="text-sm font-medium text-secondary-700 dark:text-secondary-300 truncate">Account</div>
-            <div className="text-xs text-secondary-500 dark:text-secondary-500">Not signed in</div>
-          </div>
+          
+          {/* Settings Button */}
+          <button
+            onClick={onSettingsClick}
+            className="p-2 rounded-lg hover:bg-secondary-200 dark:hover:bg-secondary-700 text-secondary-600 dark:text-secondary-400 hover:text-secondary-700 dark:hover:text-secondary-300 transition-colors"
+            title="Settings"
+          >
+            <Settings className="w-5 h-5" />
+          </button>
         </div>
-        
-        {/* Settings Button */}
-        <button
-          onClick={onSettingsClick}
-          className="p-2 rounded-lg hover:bg-secondary-200 dark:hover:bg-secondary-700 text-secondary-600 dark:text-secondary-400 hover:text-secondary-700 dark:hover:text-secondary-300 transition-colors"
-          title="Settings"
+      </div>
+      
+      {/* Context Menu */}
+      {showContextMenu && (
+        <div
+          className="fixed bg-white dark:bg-secondary-800 rounded-lg shadow-lg border border-secondary-200 dark:border-secondary-700 py-1 z-50"
+          style={{ left: contextMenuPosition.x, top: contextMenuPosition.y }}
         >
-          <Settings className="w-5 h-5" />
-        </button>
-      </div>
+          <button
+            onClick={() => {
+              const folder = folders.find(f => f.id === showContextMenu);
+              handleEditFolder(folder);
+            }}
+            className="flex items-center gap-2 px-3 py-2 text-sm hover:bg-secondary-100 dark:hover:bg-secondary-700 w-full text-left"
+          >
+            <Edit2 className="w-4 h-4" />
+            Bewerken
+          </button>
+          <button
+            onClick={() => handleCreateNewFolder(showContextMenu)}
+            className="flex items-center gap-2 px-3 py-2 text-sm hover:bg-secondary-100 dark:hover:bg-secondary-700 w-full text-left"
+          >
+            <FolderPlus className="w-4 h-4" />
+            Nieuwe submap
+          </button>
+          <hr className="my-1 border-secondary-200 dark:border-secondary-700" />
+          <button
+            onClick={() => handleDeleteFolder(showContextMenu)}
+            className="flex items-center gap-2 px-3 py-2 text-sm hover:bg-red-50 dark:hover:bg-red-900/20 text-red-600 dark:text-red-400 w-full text-left"
+          >
+            <Trash2 className="w-4 h-4" />
+            Verwijderen
+          </button>
+        </div>
+      )}
+      
+      {/* Folder Modal */}
+      <FolderModal
+        isOpen={showFolderModal}
+        onClose={() => {
+          setShowFolderModal(false);
+          setEditingFolder(null);
+          setParentFolderForNew(null);
+        }}
+        onSave={handleSaveFolder}
+        folder={editingFolder}
+        parentFolder={parentFolderForNew}
+        folders={folders}
+      />
     </div>
-  </div>
   );
 };
 

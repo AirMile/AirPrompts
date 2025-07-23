@@ -4,15 +4,17 @@
     "name": "Root",
     "parentId": null,
     "type": "folder",
+    "icon": "Folder",
     "favorite": false,
     "createdAt": "2025-01-13T00:00:00.000Z",
     "updatedAt": "2025-01-13T00:00:00.000Z"
   },
   {
     "id": "home",
-    "name": "🏠 Home",
+    "name": "Home",
     "parentId": "root",
     "type": "folder",
+    "icon": "Home",
     "favorite": false,
     "createdAt": "2025-01-13T00:00:00.000Z",
     "updatedAt": "2025-01-13T00:00:00.000Z"
@@ -22,6 +24,7 @@
     "name": "Projects",
     "parentId": "root",
     "type": "folder",
+    "icon": "Briefcase",
     "favorite": false,
     "createdAt": "2025-01-13T00:00:00.000Z",
     "updatedAt": "2025-01-13T00:00:00.000Z"
@@ -31,6 +34,7 @@
     "name": "Writing",
     "parentId": "root",
     "type": "folder",
+    "icon": "PenTool",
     "favorite": false,
     "createdAt": "2025-01-13T00:00:00.000Z",
     "updatedAt": "2025-01-13T00:00:00.000Z"
@@ -40,6 +44,7 @@
     "name": "School",
     "parentId": "root",
     "type": "folder",
+    "icon": "GraduationCap",
     "favorite": false,
     "createdAt": "2025-01-13T00:00:00.000Z",
     "updatedAt": "2025-01-13T00:00:00.000Z"
@@ -49,6 +54,7 @@
     "name": "Development",
     "parentId": "root",
     "type": "folder",
+    "icon": "Code",
     "favorite": false,
     "createdAt": "2025-01-13T00:00:00.000Z",
     "updatedAt": "2025-01-13T00:00:00.000Z"
@@ -58,6 +64,7 @@
     "name": "Workshop",
     "parentId": "root",
     "type": "folder",
+    "icon": "Hammer",
     "favorite": true,
     "createdAt": "2025-01-13T00:00:00.000Z",
     "updatedAt": "2025-01-13T00:00:00.000Z"
@@ -67,6 +74,7 @@
     "name": "Moods",
     "parentId": "workshop",
     "type": "folder",
+    "icon": "Heart",
     "favorite": false,
     "createdAt": "2025-01-13T00:00:00.000Z",
     "updatedAt": "2025-01-13T00:00:00.000Z"
@@ -76,6 +84,7 @@
     "name": "Blocks",
     "parentId": "workshop",
     "type": "folder",
+    "icon": "Package",
     "favorite": false,
     "createdAt": "2025-01-13T00:00:00.000Z",
     "updatedAt": "2025-01-13T00:00:00.000Z"
@@ -85,6 +94,7 @@
     "name": "AI Character Story",
     "parentId": "projects",
     "type": "folder",
+    "icon": "Users",
     "favorite": false,
     "createdAt": "2025-01-13T00:00:00.000Z",
     "updatedAt": "2025-01-13T00:00:00.000Z"
@@ -94,6 +104,7 @@
     "name": "Prompt Website",
     "parentId": "projects",
     "type": "folder",
+    "icon": "Globe",
     "favorite": false,
     "createdAt": "2025-01-13T00:00:00.000Z",
     "updatedAt": "2025-01-13T00:00:00.000Z"
@@ -103,6 +114,7 @@
     "name": "Rogue-lite Game",
     "parentId": "projects",
     "type": "folder",
+    "icon": "Gamepad2",
     "favorite": false,
     "createdAt": "2025-01-13T00:00:00.000Z",
     "updatedAt": "2025-01-13T00:00:00.000Z"

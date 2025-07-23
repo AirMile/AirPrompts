@@ -225,4 +225,16 @@ export const useFoldersAPI = () => {
   };
 };
 
+// Folder Favorites API hook
+export const useFolderFavoritesAPI = () => {
+  const api = useAPI();
+  
+  return {
+    ...api,
+    getFolderFavorites: (folderId) => api.get(`/folder-favorites/${folderId}`),
+    addFolderFavorite: (data) => api.post('/folder-favorites', data),
+    removeFolderFavorite: (data) => api.delete('/folder-favorites', data)
+  };
+};
+
 export default useAPI;

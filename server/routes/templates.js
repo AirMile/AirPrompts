@@ -13,7 +13,8 @@ const templateSchema = Joi.object({
   category: Joi.string().min(1).max(100).required(),
   variables: Joi.array().items(Joi.string()),
   favorite: Joi.boolean().default(false),
-  folder_id: Joi.string().allow(null)
+  folder_id: Joi.string().allow(null),
+  folderIds: Joi.array().items(Joi.string()).min(1)
 });
 
 const updateTemplateSchema = templateSchema.fork(['name', 'content', 'category'], (schema) => schema.optional());
@@ -41,9 +42,9 @@ router.get('/', (req, res) => {
     const { category, favorite, folder_id, limit, offset } = req.query;
     
     let query = `
-      SELECT t.*, f.name as folder_name 
+      SELECT DISTINCT t.* 
       FROM templates t 
-      LEFT JOIN folders f ON t.folder_id = f.id 
+      LEFT JOIN item_folders if ON if.item_type = 'template' AND if.item_id = t.id
       WHERE 1=1
     `;
     const params = [];
@@ -59,8 +60,8 @@ router.get('/', (req, res) => {
     }
     
     if (folder_id) {
-      query += ` AND t.folder_id = ?`;
-      params.push(folder_id);
+      query += ` AND (if.folder_id = ? OR t.folder_id = ?)`;
+      params.push(folder_id, folder_id);
     }
     
     query += ` ORDER BY t.updated_at DESC`;
@@ -78,11 +79,57 @@ router.get('/', (req, res) => {
     const stmt = db.prepare(query);
     const templates = stmt.all(params);
     
-    // Parse variables JSON
+    // Get folder associations for each template
+    const folderStmt = db.prepare(`
+      SELECT folder_id, f.name as folder_name 
+      FROM item_folders if
+      LEFT JOIN folders f ON if.folder_id = f.id
+      WHERE if.item_type = 'template' AND if.item_id = ?
+    `);
+    
+    templates.forEach(template => {
+      const folders = folderStmt.all(template.id);
+      template.folderIds = folders.map(f => f.folder_id);
+      template.folderNames = folders.map(f => f.folder_name);
+      // Keep backward compatibility
+      if (folders.length > 0) {
+        template.folder_id = folders[0].folder_id;
+        template.folder_name = folders[0].folder_name;
+      }
+    });
+    
+    // Get folder favorites for all templates
+    const templateIds = templates.map(t => t.id);
+    const folderFavoritesData = {};
+    
+    if (templateIds.length > 0) {
+      const favoritesQuery = `
+        SELECT entity_id, folder_id, favorite_order 
+        FROM folder_favorites 
+        WHERE entity_type = 'template' 
+        AND entity_id IN (${templateIds.map(() => '?').join(',')})
+      `;
+      const favoritesStmt = db.prepare(favoritesQuery);
+      const favorites = favoritesStmt.all(templateIds);
+      
+      // Group favorites by entity_id
+      favorites.forEach(fav => {
+        if (!folderFavoritesData[fav.entity_id]) {
+          folderFavoritesData[fav.entity_id] = {};
+        }
+        folderFavoritesData[fav.entity_id][fav.folder_id] = {
+          isFavorite: true,
+          favoriteOrder: fav.favorite_order
+        };
+      });
+    }
+    
+    // Parse variables JSON and add folderFavorites
     const processedTemplates = templates.map(template => ({
       ...template,
       variables: template.variables ? JSON.parse(template.variables) : [],
-      favorite: Boolean(template.favorite)
+      favorite: Boolean(template.favorite),
+      folderFavorites: folderFavoritesData[template.id] || {}
     }));
     
     res.json({
@@ -117,9 +164,8 @@ router.get('/:id', (req, res) => {
     const { id } = req.params;
     
     const stmt = db.prepare(`
-      SELECT t.*, f.name as folder_name 
+      SELECT t.* 
       FROM templates t 
-      LEFT JOIN folders f ON t.folder_id = f.id 
       WHERE t.id = ?
     `);
     const template = stmt.get(id);
@@ -138,9 +184,43 @@ router.get('/:id', (req, res) => {
       });
     }
     
+    // Get folder associations
+    const folderStmt = db.prepare(`
+      SELECT folder_id, f.name as folder_name 
+      FROM item_folders if
+      LEFT JOIN folders f ON if.folder_id = f.id
+      WHERE if.item_type = 'template' AND if.item_id = ?
+    `);
+    const folders = folderStmt.all(id);
+    template.folderIds = folders.map(f => f.folder_id);
+    template.folderNames = folders.map(f => f.folder_name);
+    // Keep backward compatibility
+    if (folders.length > 0) {
+      template.folder_id = folders[0].folder_id;
+      template.folder_name = folders[0].folder_name;
+    }
+    
+    // Get folder favorites for this template
+    const favoritesStmt = db.prepare(`
+      SELECT folder_id, favorite_order 
+      FROM folder_favorites 
+      WHERE entity_type = 'template' AND entity_id = ?
+    `);
+    const favorites = favoritesStmt.all(id);
+    
+    // Build folderFavorites object
+    const folderFavorites = {};
+    favorites.forEach(fav => {
+      folderFavorites[fav.folder_id] = {
+        isFavorite: true,
+        favoriteOrder: fav.favorite_order
+      };
+    });
+    
     // Parse variables JSON and convert favorite to boolean
     template.variables = template.variables ? JSON.parse(template.variables) : [];
     template.favorite = Boolean(template.favorite);
+    template.folderFavorites = folderFavorites;
     
     res.json({
       success: true,
@@ -185,43 +265,58 @@ router.post('/', (req, res) => {
       });
     }
     
-    const db = req.db;
+    const db = getDatabase();
     const id = randomUUID();
     const now = new Date().toISOString();
     
     // Extract variables from content
     const variables = extractVariables(value.content);
     
-    const stmt = db.prepare(`
-      INSERT INTO templates (id, name, description, content, category, variables, favorite, folder_id, created_at, updated_at)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `);
+    // Start transaction
+    const transaction = db.transaction(() => {
+      // Insert template
+      const stmt = db.prepare(`
+        INSERT INTO templates (id, name, description, content, category, variables, favorite, folder_id, created_at, updated_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `);
+      
+      const folderIds = value.folderIds || (value.folder_id ? [value.folder_id] : ['general']);
+      const primaryFolderId = folderIds[0] || null;
+      
+      stmt.run(
+        id,
+        value.name,
+        value.description || null,
+        value.content,
+        value.category,
+        JSON.stringify(variables),
+        value.favorite ? 1 : 0,
+        primaryFolderId,
+        now,
+        now
+      );
+      
+      // Insert folder associations
+      const folderStmt = db.prepare(`
+        INSERT INTO item_folders (item_type, item_id, folder_id)
+        VALUES ('template', ?, ?)
+      `);
+      
+      folderIds.forEach(folderId => {
+        if (folderId) {
+          folderStmt.run(id, folderId);
+        }
+      });
+    });
     
-    // Debug all parameters
-    const params = [
-      id,
-      value.name,
-      value.description || null,
-      value.content,
-      value.category,
-      JSON.stringify(variables),
-      value.favorite ? 1 : 0,
-      value.folder_id || null,
-      now,
-      now
-    ];
-    
-    console.log('Insert parameters:', params.map((p, i) => `${i}: ${typeof p} = ${p}`));
-    
-    const result = stmt.run(...params);
-    
-    console.log('Database insert result:', result);
+    transaction();
     
     // Return the created template
     const newTemplate = {
       id,
       ...value,
       variables,
+      folderIds: value.folderIds || (value.folder_id ? [value.folder_id] : ['general']),
       created_at: now,
       updated_at: now
     };
@@ -271,7 +366,7 @@ router.put('/:id', (req, res) => {
       });
     }
     
-    const db = req.db;
+    const db = getDatabase();
     const { id } = req.params;
     
     // Check if template exists
@@ -298,43 +393,91 @@ router.put('/:id', (req, res) => {
       variables = extractVariables(value.content);
     }
     
-    const updateFields = [];
-    const updateParams = [];
-    
-    Object.keys(value).forEach(key => {
-      if (value[key] !== undefined) {
-        updateFields.push(`${key} = ?`);
-        // Convert boolean to integer for SQLite
-        if (key === 'favorite') {
-          updateParams.push(value[key] ? 1 : 0);
-        } else {
-          updateParams.push(value[key]);
+    // Start transaction
+    const transaction = db.transaction(() => {
+      const updateFields = [];
+      const updateParams = [];
+      
+      // Handle folderIds separately
+      const folderIds = value.folderIds;
+      delete value.folderIds;
+      
+      Object.keys(value).forEach(key => {
+        if (value[key] !== undefined) {
+          updateFields.push(`${key} = ?`);
+          // Convert boolean to integer for SQLite
+          if (key === 'favorite') {
+            updateParams.push(value[key] ? 1 : 0);
+          } else {
+            updateParams.push(value[key]);
+          }
         }
+      });
+      
+      if (variables) {
+        updateFields.push('variables = ?');
+        updateParams.push(JSON.stringify(variables));
+      }
+      
+      // Update folder_id to primary folder
+      if (folderIds && folderIds.length > 0) {
+        updateFields.push('folder_id = ?');
+        updateParams.push(folderIds[0]);
+      }
+      
+      if (updateFields.length > 0) {
+        updateFields.push('updated_at = ?');
+        updateParams.push(new Date().toISOString());
+        updateParams.push(id);
+        
+        const updateStmt = db.prepare(`
+          UPDATE templates 
+          SET ${updateFields.join(', ')} 
+          WHERE id = ?
+        `);
+        
+        updateStmt.run(updateParams);
+      }
+      
+      // Update folder associations if provided
+      if (folderIds && folderIds.length > 0) {
+        // Delete existing associations
+        const deleteStmt = db.prepare(`
+          DELETE FROM item_folders 
+          WHERE item_type = 'template' AND item_id = ?
+        `);
+        deleteStmt.run(id);
+        
+        // Insert new associations
+        const insertStmt = db.prepare(`
+          INSERT INTO item_folders (item_type, item_id, folder_id)
+          VALUES ('template', ?, ?)
+        `);
+        
+        folderIds.forEach(folderId => {
+          if (folderId) {
+            insertStmt.run(id, folderId);
+          }
+        });
       }
     });
     
-    if (variables) {
-      updateFields.push('variables = ?');
-      updateParams.push(JSON.stringify(variables));
-    }
+    transaction();
     
-    updateFields.push('updated_at = ?');
-    updateParams.push(new Date().toISOString());
-    updateParams.push(id);
-    
-    const updateStmt = db.prepare(`
-      UPDATE templates 
-      SET ${updateFields.join(', ')} 
-      WHERE id = ?
-    `);
-    
-    updateStmt.run(updateParams);
-    
-    // Return updated template
+    // Return updated template with folders
     const getStmt = db.prepare('SELECT * FROM templates WHERE id = ?');
     const updatedTemplate = getStmt.get(id);
+    
+    // Get folder associations
+    const folderStmt = db.prepare(`
+      SELECT folder_id FROM item_folders 
+      WHERE item_type = 'template' AND item_id = ?
+    `);
+    const folders = folderStmt.all(id);
+    
     updatedTemplate.variables = JSON.parse(updatedTemplate.variables || '[]');
     updatedTemplate.favorite = Boolean(updatedTemplate.favorite);
+    updatedTemplate.folderIds = folders.map(f => f.folder_id);
     
     res.json({
       success: true,
@@ -367,8 +510,18 @@ router.delete('/:id', (req, res) => {
     const db = getDatabase();
     const { id } = req.params;
     
-    const stmt = db.prepare('DELETE FROM templates WHERE id = ?');
-    const result = stmt.run(id);
+    // Start transaction to delete template and associations
+    const transaction = db.transaction(() => {
+      // Delete folder associations
+      const folderStmt = db.prepare('DELETE FROM item_folders WHERE item_type = ? AND item_id = ?');
+      folderStmt.run('template', id);
+      
+      // Delete template
+      const stmt = db.prepare('DELETE FROM templates WHERE id = ?');
+      return stmt.run(id);
+    });
+    
+    const result = transaction();
     
     if (result.changes === 0) {
       return res.status(404).json({

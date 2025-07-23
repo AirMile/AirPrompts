@@ -92,7 +92,7 @@ Templates and workflows use consistent structure defined in `src/types/template.
 - Gebruik open vragen en verificatievragen
 - Communiceer kort, duidelijk en met eenvoudige woorden
 - Suggesties voor verbeteringen zijn altijd welkom en gewenst
-- Let op alle mogelijke valkuilen: technisch, gebruikservaring en onderhoudbaarheid
+- Let op alle mogelijke valkuilen: technisch, gebruikerservaring en onderhoudbaarheid
 
 **Voorbeelden van goede vragen:**
 - "Begrijp ik goed dat je ... bedoelt?"
@@ -137,3 +137,13 @@ Templates and workflows use consistent structure defined in `src/types/template.
 ## Image Access
 
 **IMPORTANT:** You can always view images from the user's screenshot directory: `/mnt/d/Users/mzeil/OneDrive - Hogeschool Rotterdam/Documenten/ShareX/Screenshots/2025-07/`. When the user provides a screenshot filename, read it directly from this path to analyze visual feedback and debug UI issues.
+
+## Werkinstructies voor Prompt Handling
+
+- **Prompt Handling Regel**: 
+  - Wanneer je al bezig bent met een taak en de gebruiker voegt een nieuwe prompt toe met het teken '-' aan het begin, voeg deze dan toe aan de todo-lijst
+  - Als er geen extra informatie wordt toegevoegd, beschouw het dan als een toevoeging aan de huidige prompt
+
+## Server Running Tips
+
+- Je hoeft de server niet te runnen om te zien of een wijziging goed werkt vraag dit door mij te doen de server runt namelijk al

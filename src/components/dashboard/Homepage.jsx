@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useMemo, useCallback, memo, useState } from '
 import { Plus, Play, Edit, Trash2, Search, Workflow, FileText, Star, Tag, Puzzle, GripVertical } from 'lucide-react';
 import { DndContext, DragOverlay, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
 import { SortableContext, verticalListSortingStrategy, rectSortingStrategy } from '@dnd-kit/sortable';
-import FolderTree from '../folders/FolderTree.jsx';
+import CollapsibleFolderTree from '../folders/CollapsibleFolderTree.jsx';
 import FolderBreadcrumb from '../folders/FolderBreadcrumb.jsx';
 import ListView from '../common/ListView.jsx';
 import FocusableCard from '../common/FocusableCard.jsx';
@@ -88,7 +88,10 @@ const Homepage = ({
   onReorderTemplates,
   onReorderWorkflows,
   onReorderSnippets,
-  onCreateFolder
+  onCreateFolder,
+  onUpdateFolder,
+  onDeleteFolder,
+  onToggleFolderFavorite
 }) => {
   // Use preferences system for view mode
   const { layout, updateLayout } = useUserPreferences();
@@ -140,20 +143,38 @@ const Homepage = ({
     
     // Apply folder filtering first
     const folderFiltered = items.filter(item => {
-      // Folder filtering logic
+      // Support both single folderId and multiple folderIds
       let folderMatch = false;
+      
       if (!selectedFolderId || selectedFolderId === 'root') {
-        // For root folder, only show items that actually belong to root
-        folderMatch = !item.folderId || item.folderId === 'root';
+        // For root folder, show items that belong to root
+        if (item.folderIds && item.folderIds.length > 0) {
+          folderMatch = item.folderIds.includes('root');
+        } else {
+          folderMatch = !item.folderId || item.folderId === 'root';
+        }
       } else if (selectedFolderId === 'home') {
-        // For Home folder, show items from root and immediate children, but exclude deep project nesting
-        folderMatch = !item.folderId || item.folderId === 'root' || 
-          (item.folderId !== 'projects' && item.folderId !== 'ai-character-story' && 
-           item.folderId !== 'prompt-website' && item.folderId !== 'rogue-lite-game' &&
-           item.folderId !== 'content');
+        // For Home folder, show items from root and immediate children
+        if (item.folderIds && item.folderIds.length > 0) {
+          folderMatch = item.folderIds.some(id => 
+            !id || id === 'root' || 
+            (id !== 'projects' && id !== 'ai-character-story' && 
+             id !== 'prompt-website' && id !== 'rogue-lite-game' &&
+             id !== 'content')
+          );
+        } else {
+          folderMatch = !item.folderId || item.folderId === 'root' || 
+            (item.folderId !== 'projects' && item.folderId !== 'ai-character-story' && 
+             item.folderId !== 'prompt-website' && item.folderId !== 'rogue-lite-game' &&
+             item.folderId !== 'content');
+        }
       } else {
-        // Only show items that belong directly to the selected folder
-        folderMatch = item.folderId === selectedFolderId;
+        // Check if item belongs to selected folder
+        if (item.folderIds && item.folderIds.length > 0) {
+          folderMatch = item.folderIds.includes(selectedFolderId);
+        } else {
+          folderMatch = item.folderId === selectedFolderId;
+        }
       }
       
       return folderMatch;
@@ -185,6 +206,25 @@ const Homepage = ({
 
   const filteredSnippets = useMemo(() => getFilteredItems(snippets, 'snippet'), [snippets, getFilteredItems]);
 
+  // Auto-collapse empty sections
+  useEffect(() => {
+    if (filteredWorkflows.length === 0 && workflowsVisibility.isVisible) {
+      workflowsVisibility.setVisible(false);
+    }
+  }, [filteredWorkflows.length]);
+
+  useEffect(() => {
+    if (filteredTemplates.length === 0 && templatesVisibility.isVisible) {
+      templatesVisibility.setVisible(false);
+    }
+  }, [filteredTemplates.length]);
+
+  useEffect(() => {
+    if (filteredSnippets.length === 0 && snippetsVisibility.isVisible) {
+      snippetsVisibility.setVisible(false);
+    }
+  }, [filteredSnippets.length]);
+
   // Get folder-specific favorites from all items
   const favorites = useMemo(() => {
     const allItems = [];
@@ -208,7 +248,12 @@ const Homepage = ({
     );
   }, [filteredWorkflows, filteredTemplates, filteredSnippets, selectedFolderId]);
 
-  
+  // Auto-collapse empty favorites section
+  useEffect(() => {
+    if (favorites.length === 0 && favoritesVisibility.isVisible) {
+      favoritesVisibility.setVisible(false);
+    }
+  }, [favorites.length]);
   
   // Pagination hooks for each section
   const templatesPagination = usePagination(filteredTemplates, {
@@ -353,6 +398,21 @@ const Homepage = ({
        sectionType === 'snippets' ? 'snippet' : 
        'template');
     
+    // Check if item is currently a favorite in this folder
+    const isFavorite = isItemFavoriteInFolder(item, selectedFolderId);
+    
+    // Toggle favorite using the API mutation
+    if (onToggleFolderFavorite && onToggleFolderFavorite.mutate) {
+      onToggleFolderFavorite.mutate({
+        entityType: itemType,
+        entityId: item.id,
+        folderId: selectedFolderId,
+        isFavorite: !isFavorite,
+        favoriteOrder: item.folderFavorites?.[selectedFolderId]?.favoriteOrder || 0
+      });
+    }
+    
+    // Also update the item locally for optimistic updates
     const updatedItem = toggleFolderFavorite(item, selectedFolderId);
     
     // Update the appropriate collection based on item type
@@ -363,7 +423,7 @@ const Homepage = ({
     } else if (itemType === 'snippet') {
       onUpdateSnippet(updatedItem);
     }
-  }, [selectedFolderId, onUpdateWorkflow, onUpdateTemplate, onUpdateSnippet]);
+  }, [selectedFolderId, onUpdateWorkflow, onUpdateTemplate, onUpdateSnippet, onToggleFolderFavorite]);
 
   // Create sections with their data in fixed order - always show favorites section
   const sections = [
@@ -1247,16 +1307,10 @@ const Homepage = ({
             actionButton={
               <button
                 onClick={() => onEditWorkflow({})}
-                className={`
-                  p-3 ${getColorClasses('workflow', 'button')} rounded-lg font-semibold
-                  flex items-center justify-center
-                  hover:shadow-lg hover:scale-105
-                  focus:outline-none focus:ring-2 focus:ring-opacity-50
-                  transition-all duration-200 ease-in-out
-                `}
+                className="p-2 text-secondary-600 dark:text-secondary-400 hover:text-secondary-900 dark:hover:text-secondary-100 hover:bg-secondary-100 dark:hover:bg-secondary-800 rounded-lg transition-colors"
                 title="New Workflow"
               >
-                <Plus className="w-5 h-5" />
+                <Plus className="w-4 h-4" />
               </button>
             }
             onVisibilityChange={(isVisible) => {
@@ -1315,16 +1369,10 @@ const Homepage = ({
             actionButton={
               <button
                 onClick={() => onEditTemplate({})}
-                className={`
-                  p-3 ${getColorClasses('template', 'button')} rounded-lg font-semibold
-                  flex items-center justify-center
-                  hover:shadow-lg hover:scale-105
-                  focus:outline-none focus:ring-2 focus:ring-opacity-50
-                  transition-all duration-200 ease-in-out
-                `}
+                className="p-2 text-secondary-600 dark:text-secondary-400 hover:text-secondary-900 dark:hover:text-secondary-100 hover:bg-secondary-100 dark:hover:bg-secondary-800 rounded-lg transition-colors"
                 title="New Template"
               >
-                <Plus className="w-5 h-5" />
+                <Plus className="w-4 h-4" />
               </button>
             }
             onVisibilityChange={(isVisible) => {
@@ -1383,16 +1431,10 @@ const Homepage = ({
             actionButton={
               <button
                 onClick={() => onEditSnippet({})}
-                className={`
-                  p-3 ${getColorClasses('snippet', 'button')} rounded-lg font-semibold
-                  flex items-center justify-center
-                  hover:shadow-lg hover:scale-105
-                  focus:outline-none focus:ring-2 focus:ring-opacity-50
-                  transition-all duration-200 ease-in-out
-                `}
+                className="p-2 text-secondary-600 dark:text-secondary-400 hover:text-secondary-900 dark:hover:text-secondary-100 hover:bg-secondary-100 dark:hover:bg-secondary-800 rounded-lg transition-colors"
                 title="New Snippet"
               >
-                <Plus className="w-5 h-5" />
+                <Plus className="w-4 h-4" />
               </button>
             }
             onVisibilityChange={(isVisible) => {
@@ -1455,17 +1497,22 @@ const Homepage = ({
         selectedFolderId={selectedFolderId}
         onFolderSelect={setSelectedFolderId}
         onCreateFolder={onCreateFolder}
+        onUpdateFolder={onUpdateFolder}
+        onDeleteFolder={onDeleteFolder}
         onSettingsClick={() => setIsSettingsOpen(true)}
       />
 
       {/* Desktop Sidebar */}
-      <div className="hidden lg:flex w-72 bg-white dark:bg-secondary-900 border-r-2 border-primary-200 dark:border-primary-800 flex-col flex-shrink-0 shadow-lg">
-        <FolderTree
+      <div className="hidden lg:flex bg-white dark:bg-secondary-900 border-r border-secondary-200 dark:border-secondary-700 flex-shrink-0 shadow-lg">
+        <CollapsibleFolderTree
           folders={folders || []}
           selectedFolderId={selectedFolderId}
           onFolderSelect={setSelectedFolderId}
           onCreateFolder={onCreateFolder}
+          onUpdateFolder={onUpdateFolder}
+          onDeleteFolder={onDeleteFolder}
           onSettingsClick={() => setIsSettingsOpen(true)}
+          onAccountClick={() => console.log('Account clicked')}
         />
       </div>
 
@@ -1486,6 +1533,8 @@ const Homepage = ({
               selectedFolderId={selectedFolderId}
               onFolderSelect={setSelectedFolderId}
               onCreateFolder={onCreateFolder}
+              onUpdateFolder={onUpdateFolder}
+              onDeleteFolder={onDeleteFolder}
               onSettingsClick={() => setIsSettingsOpen(true)}
             />
             <h1 className="text-lg font-semibold text-secondary-900 dark:text-secondary-100 truncate">

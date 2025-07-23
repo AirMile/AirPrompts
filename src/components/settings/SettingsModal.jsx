@@ -9,8 +9,7 @@ const SettingsModal = ({ isOpen, onClose }) => {
   if (!isOpen) return null;
 
   const tabs = [
-    { id: 'appearance', label: 'Appearance', icon: Palette },
-    { id: 'colors', label: 'Item Colors', icon: Brush }
+    { id: 'appearance', label: 'Appearance', icon: Palette }
   ];
 
   return (
@@ -70,20 +69,14 @@ const SettingsModal = ({ isOpen, onClose }) => {
             {/* Tab Content */}
             <div className="flex-1 p-6 overflow-y-auto">
               {activeTab === 'appearance' && (
-                <div>
-                  <h3 className="text-xl font-semibold text-secondary-900 dark:text-secondary-100 mb-2">
-                    Appearance Settings
-                  </h3>
-                  <p className="text-secondary-600 dark:text-secondary-400 mb-6">
-                    Customize how AirPrompts looks and feels.
-                  </p>
-                  
+                <div className="space-y-8">
                   <ThemeSelector />
+                  
+                  {/* Divider */}
+                  <div className="border-t border-secondary-200 dark:border-secondary-700 pt-8">
+                    <ItemColorSettings />
+                  </div>
                 </div>
-              )}
-              
-              {activeTab === 'colors' && (
-                <ItemColorSettings />
               )}
             </div>
           </div>

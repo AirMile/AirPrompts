@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Palette, RotateCcw, FileText, Info, Layers, Workflow } from 'lucide-react';
-import { AVAILABLE_COLORS, getUserItemColors, saveUserItemColors, resetItemColors } from '../../utils/itemColors.js';
+import { Palette, FileText, Info, Layers, Workflow } from 'lucide-react';
+import { AVAILABLE_COLORS, getUserItemColors, saveUserItemColors } from '../../utils/itemColors.js';
 
 const ColorOption = ({ color, isSelected, onSelect }) => {
   const colorClasses = {
@@ -102,23 +102,10 @@ const ItemColorSettings = () => {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h3 className="text-xl font-semibold text-secondary-900 dark:text-secondary-100 mb-2">
-            Item Colors
-          </h3>
-          <p className="text-secondary-600 dark:text-secondary-400">
-            Customize the colors for different types of items throughout the application.
-          </p>
-        </div>
-        
-        <button
-          onClick={handleReset}
-          className="flex items-center gap-2 px-4 py-2 text-secondary-600 dark:text-secondary-400 hover:text-secondary-900 dark:hover:text-secondary-100 hover:bg-secondary-100 dark:hover:bg-secondary-800 rounded-lg transition-colors"
-        >
-          <RotateCcw className="w-4 h-4" />
-          Reset to Defaults
-        </button>
+      <div>
+        <h3 className="text-xl font-semibold text-secondary-900 dark:text-secondary-100 mb-2">
+          Item Colors
+        </h3>
       </div>
 
       <div className="bg-secondary-50 dark:bg-secondary-800/50 rounded-xl p-6 space-y-1">
@@ -155,19 +142,6 @@ const ItemColorSettings = () => {
         />
       </div>
 
-      <div className="bg-primary-50 dark:bg-primary-900/20 border border-primary-200 dark:border-primary-700 rounded-lg p-4">
-        <div className="flex items-start gap-3">
-          <Palette className="w-5 h-5 text-primary-600 dark:text-primary-400 flex-shrink-0 mt-0.5" />
-          <div className="text-sm">
-            <p className="text-primary-900 dark:text-primary-100 font-medium mb-1">
-              Color Preview
-            </p>
-            <p className="text-primary-700 dark:text-primary-300">
-              Changes will be applied immediately across all components. The colors will adapt automatically to light and dark themes.
-            </p>
-          </div>
-        </div>
-      </div>
     </div>
   );
 };

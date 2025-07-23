@@ -61,14 +61,14 @@ export const getItemColorClasses = (itemType, variant = 'base') => {
   switch (variant) {
     case 'button':
       return {
-        primary: 'bg-primary-600 hover:bg-primary-700 text-white',
-        success: 'bg-success-600 hover:bg-success-700 text-white',
-        warning: 'bg-warning-600 hover:bg-warning-700 text-white',
-        danger: 'bg-danger-600 hover:bg-danger-700 text-white',
-        orange: 'bg-orange-600 hover:bg-orange-700 text-white',
-        purple: 'bg-purple-600 hover:bg-purple-700 text-white',
-        pink: 'bg-pink-600 hover:bg-pink-700 text-white',
-        indigo: 'bg-indigo-600 hover:bg-indigo-700 text-white'
+        primary: 'bg-primary-100/50 dark:bg-primary-900/50 hover:bg-primary-100/70 dark:hover:bg-primary-900/70 text-primary-700 dark:text-primary-300 border border-primary-500 dark:border-primary-600/50',
+        success: 'bg-success-100/50 dark:bg-success-900/50 hover:bg-success-100/70 dark:hover:bg-success-900/70 text-success-700 dark:text-success-300 border border-success-500 dark:border-success-600/50',
+        warning: 'bg-warning-100/50 dark:bg-warning-900/50 hover:bg-warning-100/70 dark:hover:bg-warning-900/70 text-warning-700 dark:text-warning-300 border border-warning-500 dark:border-warning-600/50',
+        danger: 'bg-danger-100/50 dark:bg-danger-900/50 hover:bg-danger-100/70 dark:hover:bg-danger-900/70 text-danger-700 dark:text-danger-300 border border-danger-500 dark:border-danger-600/50',
+        orange: 'bg-orange-100/50 dark:bg-orange-900/50 hover:bg-orange-100/70 dark:hover:bg-orange-900/70 text-orange-700 dark:text-orange-300 border border-orange-500 dark:border-orange-600/50',
+        purple: 'bg-purple-100/50 dark:bg-purple-900/50 hover:bg-purple-100/70 dark:hover:bg-purple-900/70 text-purple-700 dark:text-purple-300 border border-purple-500 dark:border-purple-600/50',
+        pink: 'bg-pink-100/50 dark:bg-pink-900/50 hover:bg-pink-100/70 dark:hover:bg-pink-900/70 text-pink-700 dark:text-pink-300 border border-pink-500 dark:border-pink-600/50',
+        indigo: 'bg-indigo-100/50 dark:bg-indigo-900/50 hover:bg-indigo-100/70 dark:hover:bg-indigo-900/70 text-indigo-700 dark:text-indigo-300 border border-indigo-500 dark:border-indigo-600/50'
       }[colorScheme];
       
     case 'gradient':

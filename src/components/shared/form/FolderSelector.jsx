@@ -112,7 +112,7 @@ const FolderSelector = ({
     <div ref={dropdownRef} className={`relative ${className}`}>
       <button
         type="button"
-        className={`w-full p-3 border border-secondary-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-secondary-900 dark:text-gray-100 rounded-lg focus:ring-2 ${focusRingClasses[focusRingColor]} focus:border-transparent flex items-center justify-between text-left`}
+        className={`w-full p-3 border-2 border-primary-500 dark:border-primary-400 bg-white dark:bg-gray-800 text-secondary-900 dark:text-gray-100 rounded-lg focus:ring-2 focus:ring-primary-400 focus:border-primary-600 dark:focus:border-primary-300 flex items-center justify-between text-left transition-colors`}
         onClick={() => setIsOpen(!isOpen)}
       >
         <div className="flex items-center">

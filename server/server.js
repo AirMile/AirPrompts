@@ -10,8 +10,10 @@ import templatesRouter from './routes/templates.js';
 import workflowsRouter from './routes/workflows.js';
 import snippetsRouter from './routes/snippets.js';
 import foldersRouter from './routes/folders.js';
+import folderFavoritesRouter from './routes/folderFavorites.js';
 import migrationRouter from './routes/migration.js';
 // import migrationAdvancedRouter from './routes/migration-advanced.js';
+import { runFoldersMigration } from './routes/migration-folders.js';
 
 // Database initialization
 import { initializeDatabase, getDatabase } from './database.js';
@@ -24,6 +26,14 @@ const PORT = process.env.PORT || 3001;
 
 // Initialize database
 await initializeDatabase();
+
+// Run multi-folder migration
+try {
+  console.log('🔄 Running multi-folder migration...');
+  runFoldersMigration();
+} catch (error) {
+  console.error('❌ Migration failed:', error);
+}
 
 // Middleware to provide database to routes
 app.use((req, res, next) => {
@@ -79,6 +89,7 @@ app.use('/api/templates', templatesRouter);
 app.use('/api/workflows', workflowsRouter);
 app.use('/api/snippets', snippetsRouter);
 app.use('/api/folders', foldersRouter);
+app.use('/api/folder-favorites', folderFavoritesRouter);
 app.use('/api/migrate', migrationRouter);
 // app.use('/api/migrate-advanced', migrationAdvancedRouter);
 

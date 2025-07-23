@@ -86,3 +86,35 @@ body {
   scrollbar-width: thin;
   scrollbar-color: rgb(var(--scrollbar-thumb)) rgb(var(--scrollbar-track));
 }
+
+/* Custom scrollbar for icon grid - light mode */
+.scrollbar-thin::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.scrollbar-track-secondary-100::-webkit-scrollbar-track {
+  background: rgb(var(--color-secondary-100));
+}
+
+.scrollbar-thumb-secondary-300::-webkit-scrollbar-thumb {
+  background: rgb(var(--color-secondary-300));
+  border-radius: 4px;
+}
+
+.scrollbar-thumb-secondary-300::-webkit-scrollbar-thumb:hover {
+  background: rgb(var(--color-secondary-400));
+}
+
+/* Custom scrollbar for icon grid - dark mode */
+.dark .scrollbar-track-secondary-800::-webkit-scrollbar-track {
+  background: rgb(var(--color-secondary-800));
+}
+
+.dark .scrollbar-thumb-secondary-700::-webkit-scrollbar-thumb {
+  background: rgb(var(--color-secondary-700));
+}
+
+.dark .scrollbar-thumb-secondary-700::-webkit-scrollbar-thumb:hover {
+  background: rgb(var(--color-secondary-600));
+}

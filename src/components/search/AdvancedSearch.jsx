@@ -186,7 +186,7 @@ const AdvancedSearch = ({
             // Delay hiding suggestions to allow for clicks
             setTimeout(() => setShowSuggestions(false), 200);
           }}
-          className="w-full pl-10 pr-28 py-3 border-2 border-secondary-300 dark:border-secondary-600 bg-white dark:bg-secondary-800 text-secondary-900 dark:text-secondary-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 placeholder-secondary-400 dark:placeholder-secondary-500 transition-all duration-200"
+          className="w-full pl-10 pr-28 py-3 border border-secondary-300 dark:border-secondary-600 bg-white dark:bg-secondary-800 text-secondary-900 dark:text-secondary-100 rounded-lg focus:outline-none focus:border-primary-500 placeholder-secondary-400 dark:placeholder-secondary-500 transition-colors duration-200"
         />
         
         {/* Clear Button */}

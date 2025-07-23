@@ -23,7 +23,7 @@ export const Card = forwardRef(function Card({
   return (
     <div 
       ref={ref}
-      className={`bg-secondary-50 dark:bg-secondary-900 rounded-lg shadow-sm border-2 ${getBorderColor()} ${className}`}
+      className={`bg-secondary-50 dark:bg-secondary-800 rounded-lg shadow-sm border-2 ${getBorderColor()} ${className}`}
       {...props}
     >
       {children}

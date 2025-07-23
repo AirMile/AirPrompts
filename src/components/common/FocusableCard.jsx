@@ -16,10 +16,6 @@ const FocusableCard = ({
 }) => {
   const { getColorClasses } = useItemColors();
 
-  // Check if classic dark theme is active
-  const isClassicDark = () => {
-    return document.documentElement.classList.contains('theme-classic-dark');
-  };
 
   const getTypeColor = (itemType) => {
     const normalizedType = normalizeType(itemType);
@@ -59,13 +55,13 @@ const FocusableCard = ({
     
     switch (normalizedType) {
       case 'workflow':
-        return <Workflow className={`w-5 h-5 ${isClassicDark() ? 'text-secondary-400' : 'text-secondary-600 dark:text-secondary-400'}`} />;
+        return <Workflow className="w-5 h-5 text-secondary-600 dark:text-secondary-400" />;
       case 'template':
-        return <FileText className={`w-5 h-5 ${isClassicDark() ? 'text-secondary-400' : 'text-secondary-600 dark:text-secondary-400'}`} />;
+        return <FileText className="w-5 h-5 text-secondary-600 dark:text-secondary-400" />;
       case 'snippet':
-        return <Tag className={`w-5 h-5 ${isClassicDark() ? 'text-secondary-400' : 'text-secondary-600 dark:text-secondary-400'}`} />;
+        return <Tag className="w-5 h-5 text-secondary-600 dark:text-secondary-400" />;
       default:
-        return <FileText className={`w-5 h-5 ${isClassicDark() ? 'text-secondary-400' : 'text-secondary-600 dark:text-secondary-400'}`} />;
+        return <FileText className="w-5 h-5 text-secondary-600 dark:text-secondary-400" />;
     }
   };
 
@@ -131,10 +127,7 @@ const FocusableCard = ({
             }
           };
           
-          // Use original dark styling for classic dark theme
-          const cardBackground = isClassicDark() 
-            ? 'bg-secondary-900' 
-            : 'bg-white dark:bg-secondary-800';
+          const cardBackground = 'bg-white dark:bg-secondary-800';
           
           return `
             ${cardBackground} rounded-lg shadow-md border-2 ${getBorderColor()} p-4 
@@ -154,15 +147,15 @@ const FocusableCard = ({
           <div className="flex items-center gap-2 flex-1">
             {/* Type Icon */}
             {getTypeIcon(item.type || type)}
-            <h3 className={`font-semibold mb-1 flex-1 ${isClassicDark() ? 'text-secondary-100' : 'text-secondary-900 dark:text-secondary-100'}`}>{item.name}</h3>
+            <h3 className="font-semibold mb-1 flex-1 text-secondary-900 dark:text-secondary-100">{item.name}</h3>
           </div>
         </div>
         
-        <p className={`text-sm mb-2 line-clamp-2 ${isClassicDark() ? 'text-secondary-300' : 'text-secondary-600 dark:text-secondary-400'}`}>
+        <p className="text-sm mb-2 line-clamp-2 text-secondary-600 dark:text-secondary-400">
           {item.description || 'No description'}
         </p>
         
-        <div className={`text-xs ${isClassicDark() ? 'text-secondary-400' : 'text-secondary-500 dark:text-secondary-500'}`}>
+        <div className="text-xs text-secondary-500 dark:text-secondary-500">
           {getItemDetail(item, type)}
         </div>
       </div>
@@ -175,20 +168,18 @@ const FocusableCard = ({
             e.preventDefault();
             e.stopPropagation();
             onToggleFavorite(item);
+            e.currentTarget.blur(); // Remove focus after click
           }}
-          className={`
-            p-2.5 rounded-md flex items-center justify-center border
-            focus:outline-none
+          className="
+            p-2.5 text-secondary-600 dark:text-secondary-300 bg-secondary-100 dark:bg-secondary-700 border border-secondary-300 dark:border-secondary-600 rounded-md
+            hover:bg-secondary-200 dark:hover:bg-secondary-600 hover:border-secondary-400 dark:hover:border-secondary-500 flex items-center justify-center
+            focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-400 focus-visible:ring-opacity-50
             transition-all duration-200 hover:shadow-md
-            ${isItemFavorite(item) 
-              ? 'text-yellow-400 bg-yellow-900/20 border-yellow-600/50 hover:bg-yellow-900/40 hover:border-yellow-500' 
-              : 'text-secondary-400 bg-secondary-700 border-secondary-600 hover:text-yellow-400 hover:bg-yellow-900/20 hover:border-yellow-600/50'
-            }
-          `}
+          "
           aria-label={`${isItemFavorite(item) ? 'Remove from' : 'Add to'} favorites`}
           title={isItemFavorite(item) ? 'Remove from favorites' : 'Add to favorites'}
         >
-          <Star className={`w-4 h-4 ${isItemFavorite(item) ? 'fill-current' : ''}`} aria-hidden="true" />
+          <Star className={`w-4 h-4 text-secondary-600 dark:text-secondary-300 ${isItemFavorite(item) ? 'fill-current' : ''}`} aria-hidden="true" />
         </button>
 
         <button
@@ -198,8 +189,8 @@ const FocusableCard = ({
             onEdit(item);
           }}
           className="
-            flex-1 p-2.5 text-secondary-300 bg-secondary-700 border border-secondary-600 rounded-md
-            hover:bg-secondary-600 hover:border-secondary-500 flex items-center justify-center
+            flex-1 p-2.5 text-secondary-600 dark:text-secondary-300 bg-secondary-100 dark:bg-secondary-700 border border-secondary-300 dark:border-secondary-600 rounded-md
+            hover:bg-secondary-200 dark:hover:bg-secondary-600 hover:border-secondary-400 dark:hover:border-secondary-500 flex items-center justify-center
             focus:outline-none focus:ring-2 focus:ring-primary-400 focus:ring-opacity-50
             transition-all duration-200 hover:shadow-md
           "
@@ -217,9 +208,9 @@ const FocusableCard = ({
             onDelete(item.id);
           }}
           className="
-            p-2.5 text-red-400 bg-red-900/20 border border-red-600/50 rounded-md
-            hover:bg-red-900/40 hover:border-red-500 hover:text-red-300 flex items-center justify-center
-            focus:outline-none focus:ring-2 focus:ring-red-400 focus:ring-opacity-50
+            p-2.5 text-secondary-600 dark:text-secondary-300 bg-secondary-100 dark:bg-secondary-700 border border-secondary-300 dark:border-secondary-600 rounded-md
+            hover:bg-secondary-200 dark:hover:bg-secondary-600 hover:border-secondary-400 dark:hover:border-secondary-500 hover:text-secondary-700 dark:hover:text-secondary-200 flex items-center justify-center
+            focus:outline-none focus:ring-2 focus:ring-secondary-400 focus:ring-opacity-50
             transition-all duration-200 hover:shadow-md
           "
           aria-label={`Delete ${type} ${item.name}`}

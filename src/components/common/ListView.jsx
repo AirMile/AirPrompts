@@ -182,20 +182,18 @@ const ListView = ({
                     e.preventDefault();
                     e.stopPropagation();
                     onToggleFavorite(item);
+                    e.currentTarget.blur(); // Remove focus after click
                   }}
-                  className={`
-                    p-2.5 rounded-md flex items-center justify-center border
-                    focus:outline-none
+                  className="
+                    p-2.5 text-secondary-600 dark:text-secondary-300 bg-secondary-200 dark:bg-secondary-700 border border-secondary-400 dark:border-secondary-600 rounded-md
+                    hover:bg-secondary-300 dark:hover:bg-secondary-600 hover:border-secondary-500 dark:hover:border-secondary-500 flex items-center justify-center
+                    focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-400 focus-visible:ring-opacity-50
                     transition-all duration-200 hover:shadow-md
-                    ${isItemFavorite(item) 
-                      ? 'text-yellow-400 bg-yellow-900/20 border-yellow-600/50 hover:bg-yellow-900/40 hover:border-yellow-500' 
-                      : 'text-secondary-500 dark:text-secondary-400 bg-secondary-200 dark:bg-secondary-700 border-secondary-400 dark:border-secondary-600 hover:text-yellow-400 hover:bg-yellow-900/20 hover:border-yellow-600/50'
-                    }
-                  `}
+                  "
                   aria-label={`${isItemFavorite(item) ? 'Remove from' : 'Add to'} favorites`}
                   title={isItemFavorite(item) ? 'Remove from favorites' : 'Add to favorites'}
                 >
-                  <Star className={`w-4 h-4 ${isItemFavorite(item) ? 'fill-current' : ''}`} />
+                  <Star className={`w-4 h-4 text-secondary-600 dark:text-secondary-300 ${isItemFavorite(item) ? 'fill-current' : ''}`} />
                 </button>
                 
                 <button
@@ -222,9 +220,9 @@ const ListView = ({
                     onDelete(item.id);
                   }}
                   className="
-                    p-2.5 text-danger-400 bg-danger-900/20 border border-danger-600/50 rounded-md
-                    hover:bg-danger-900/40 hover:border-danger-500 hover:text-danger-300 flex items-center justify-center
-                    focus:outline-none focus:ring-2 focus:ring-danger-400 focus:ring-opacity-50
+                    p-2.5 text-secondary-600 dark:text-secondary-300 bg-secondary-200 dark:bg-secondary-700 border border-secondary-400 dark:border-secondary-600 rounded-md
+                    hover:bg-secondary-300 dark:hover:bg-secondary-600 hover:border-secondary-500 dark:hover:border-secondary-500 flex items-center justify-center
+                    focus:outline-none focus:ring-2 focus:ring-secondary-400 focus:ring-opacity-50
                     transition-all duration-200 hover:shadow-md
                   "
                   title="Delete"

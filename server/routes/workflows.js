@@ -12,6 +12,7 @@ const workflowSchema = Joi.object({
   category: Joi.string().min(1).max(100).required(),
   favorite: Joi.boolean().default(false),
   folder_id: Joi.string().allow(null),
+  folderIds: Joi.array().items(Joi.string()).min(1),
   steps: Joi.array().items(Joi.string()).min(1).required()
 });
 
@@ -24,9 +25,9 @@ router.get('/', (req, res) => {
     const { category, favorite, folder_id, limit, offset } = req.query;
     
     let query = `
-      SELECT w.*, f.name as folder_name 
+      SELECT DISTINCT w.* 
       FROM workflows w 
-      LEFT JOIN folders f ON w.folder_id = f.id 
+      LEFT JOIN item_folders if ON if.item_type = 'workflow' AND if.item_id = w.id
       WHERE 1=1
     `;
     const params = [];
@@ -42,8 +43,8 @@ router.get('/', (req, res) => {
     }
     
     if (folder_id) {
-      query += ` AND w.folder_id = ?`;
-      params.push(folder_id);
+      query += ` AND (if.folder_id = ? OR w.folder_id = ?)`;
+      params.push(folder_id, folder_id);
     }
     
     query += ` ORDER BY w.updated_at DESC`;
@@ -70,13 +71,55 @@ router.get('/', (req, res) => {
       ORDER BY ws.step_order
     `);
     
+    // Get folder favorites for all workflows
+    const workflowIds = workflows.map(w => w.id);
+    const folderFavoritesData = {};
+    
+    if (workflowIds.length > 0) {
+      const favoritesQuery = `
+        SELECT entity_id, folder_id, favorite_order 
+        FROM folder_favorites 
+        WHERE entity_type = 'workflow' 
+        AND entity_id IN (${workflowIds.map(() => '?').join(',')})
+      `;
+      const favoritesStmt = db.prepare(favoritesQuery);
+      const favorites = favoritesStmt.all(workflowIds);
+      
+      // Group favorites by entity_id
+      favorites.forEach(fav => {
+        if (!folderFavoritesData[fav.entity_id]) {
+          folderFavoritesData[fav.entity_id] = {};
+        }
+        folderFavoritesData[fav.entity_id][fav.folder_id] = {
+          isFavorite: true,
+          favoriteOrder: fav.favorite_order
+        };
+      });
+    }
+    
+    // Get folder associations for each workflow
+    const folderStmt = db.prepare(`
+      SELECT folder_id, f.name as folder_name 
+      FROM item_folders if
+      LEFT JOIN folders f ON if.folder_id = f.id
+      WHERE if.item_type = 'workflow' AND if.item_id = ?
+    `);
+    
     const processedWorkflows = workflows.map(workflow => {
       const steps = stepStmt.all(workflow.id);
+      const folders = folderStmt.all(workflow.id);
+      
       return {
         ...workflow,
         steps: steps.map(step => step.template_id),
         step_details: steps,
-        favorite: Boolean(workflow.favorite)
+        favorite: Boolean(workflow.favorite),
+        folderFavorites: folderFavoritesData[workflow.id] || {},
+        folderIds: folders.map(f => f.folder_id),
+        folderNames: folders.map(f => f.folder_name),
+        // Keep backward compatibility
+        folder_id: folders.length > 0 ? folders[0].folder_id : workflow.folder_id,
+        folder_name: folders.length > 0 ? folders[0].folder_name : null
       };
     });
     
@@ -112,9 +155,8 @@ router.get('/:id', (req, res) => {
     const { id } = req.params;
     
     const stmt = db.prepare(`
-      SELECT w.*, f.name as folder_name 
+      SELECT w.* 
       FROM workflows w 
-      LEFT JOIN folders f ON w.folder_id = f.id 
       WHERE w.id = ?
     `);
     const workflow = stmt.get(id);
@@ -143,9 +185,43 @@ router.get('/:id', (req, res) => {
     `);
     const steps = stepStmt.all(id);
     
+    // Get folder favorites for this workflow
+    const favoritesStmt = db.prepare(`
+      SELECT folder_id, favorite_order 
+      FROM folder_favorites 
+      WHERE entity_type = 'workflow' AND entity_id = ?
+    `);
+    const favorites = favoritesStmt.all(id);
+    
+    // Build folderFavorites object
+    const folderFavorites = {};
+    favorites.forEach(fav => {
+      folderFavorites[fav.folder_id] = {
+        isFavorite: true,
+        favoriteOrder: fav.favorite_order
+      };
+    });
+    
+    // Get folder associations
+    const folderStmt = db.prepare(`
+      SELECT folder_id, f.name as folder_name 
+      FROM item_folders if
+      LEFT JOIN folders f ON if.folder_id = f.id
+      WHERE if.item_type = 'workflow' AND if.item_id = ?
+    `);
+    const folders = folderStmt.all(id);
+    
     workflow.steps = steps.map(step => step.template_id);
     workflow.step_details = steps;
     workflow.favorite = Boolean(workflow.favorite);
+    workflow.folderFavorites = folderFavorites;
+    workflow.folderIds = folders.map(f => f.folder_id);
+    workflow.folderNames = folders.map(f => f.folder_name);
+    // Keep backward compatibility
+    if (folders.length > 0) {
+      workflow.folder_id = folders[0].folder_id;
+      workflow.folder_name = folders[0].folder_name;
+    }
     
     res.json({
       success: true,
@@ -216,6 +292,9 @@ router.post('/', (req, res) => {
     // Start transaction
     const transaction = db.transaction(() => {
       // Create workflow
+      const folderIds = value.folderIds || (value.folder_id ? [value.folder_id] : ['workflows']);
+      const primaryFolderId = folderIds[0] || null;
+      
       const workflowStmt = db.prepare(`
         INSERT INTO workflows (id, name, description, category, favorite, folder_id, created_at, updated_at)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?)
@@ -227,10 +306,22 @@ router.post('/', (req, res) => {
         value.description || null,
         value.category,
         value.favorite ? 1 : 0,
-        value.folder_id || null,
+        primaryFolderId,
         now,
         now
       );
+      
+      // Create folder associations
+      const folderStmt = db.prepare(`
+        INSERT INTO item_folders (item_type, item_id, folder_id)
+        VALUES ('workflow', ?, ?)
+      `);
+      
+      folderIds.forEach(folderId => {
+        if (folderId) {
+          folderStmt.run(id, folderId);
+        }
+      });
       
       // Create workflow steps
       const stepStmt = db.prepare(`
@@ -249,6 +340,7 @@ router.post('/', (req, res) => {
     const newWorkflow = {
       id,
       ...value,
+      folderIds: value.folderIds || (value.folder_id ? [value.folder_id] : ['workflows']),
       created_at: now,
       updated_at: now
     };
@@ -296,7 +388,7 @@ router.put('/:id', (req, res) => {
       });
     }
     
-    const db = req.db;
+    const db = getDatabase();
     const { id } = req.params;
     
     // Check if workflow exists
@@ -336,6 +428,10 @@ router.put('/:id', (req, res) => {
       const updateFields = [];
       const updateParams = [];
       
+      // Handle folderIds separately
+      const folderIds = value.folderIds;
+      delete value.folderIds;
+      
       Object.keys(value).forEach(key => {
         if (key !== 'steps' && value[key] !== undefined) {
           updateFields.push(`${key} = ?`);
@@ -347,6 +443,12 @@ router.put('/:id', (req, res) => {
           }
         }
       });
+      
+      // Update folder_id to primary folder
+      if (folderIds && folderIds.length > 0) {
+        updateFields.push('folder_id = ?');
+        updateParams.push(folderIds[0]);
+      }
       
       if (updateFields.length > 0) {
         updateFields.push('updated_at = ?');
@@ -360,6 +462,28 @@ router.put('/:id', (req, res) => {
         `);
         
         updateStmt.run(updateParams);
+      }
+      
+      // Update folder associations if provided
+      if (folderIds && folderIds.length > 0) {
+        // Delete existing associations
+        const deleteStmt = db.prepare(`
+          DELETE FROM item_folders 
+          WHERE item_type = 'workflow' AND item_id = ?
+        `);
+        deleteStmt.run(id);
+        
+        // Insert new associations
+        const insertStmt = db.prepare(`
+          INSERT INTO item_folders (item_type, item_id, folder_id)
+          VALUES ('workflow', ?, ?)
+        `);
+        
+        folderIds.forEach(folderId => {
+          if (folderId) {
+            insertStmt.run(id, folderId);
+          }
+        });
       }
       
       // Update steps if provided
@@ -395,8 +519,16 @@ router.put('/:id', (req, res) => {
     `);
     const steps = stepStmt.all(id);
     
+    // Get folder associations
+    const folderStmt = db.prepare(`
+      SELECT folder_id FROM item_folders 
+      WHERE item_type = 'workflow' AND item_id = ?
+    `);
+    const folders = folderStmt.all(id);
+    
     updatedWorkflow.steps = steps.map(step => step.template_id);
     updatedWorkflow.favorite = Boolean(updatedWorkflow.favorite);
+    updatedWorkflow.folderIds = folders.map(f => f.folder_id);
     
     res.json({
       success: true,
@@ -429,8 +561,18 @@ router.delete('/:id', (req, res) => {
     const db = getDatabase();
     const { id } = req.params;
     
-    const stmt = db.prepare('DELETE FROM workflows WHERE id = ?');
-    const result = stmt.run(id);
+    // Start transaction to delete workflow and associations
+    const transaction = db.transaction(() => {
+      // Delete folder associations
+      const folderStmt = db.prepare('DELETE FROM item_folders WHERE item_type = ? AND item_id = ?');
+      folderStmt.run('workflow', id);
+      
+      // Delete workflow (cascade will handle workflow_steps)
+      const stmt = db.prepare('DELETE FROM workflows WHERE id = ?');
+      return stmt.run(id);
+    });
+    
+    const result = transaction();
     
     if (result.changes === 0) {
       return res.status(404).json({

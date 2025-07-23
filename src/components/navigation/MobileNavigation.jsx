@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
 import { X, Menu } from 'lucide-react';
-import FolderTree from '../folders/FolderTree.jsx';
+import CollapsibleFolderTree from '../folders/CollapsibleFolderTree.jsx';
 
 /**
  * Mobile Navigation Component
@@ -13,6 +13,8 @@ const MobileNavigation = ({
   selectedFolderId = null,
   onFolderSelect = () => {},
   onCreateFolder = () => {},
+  onUpdateFolder = () => {},
+  onDeleteFolder = () => {},
   onSettingsClick = () => {},
   className = ''
 }) => {
@@ -114,11 +116,13 @@ const MobileNavigation = ({
 
             {/* Folder Tree */}
             <div className="flex-1 overflow-y-auto">
-              <FolderTree
+              <CollapsibleFolderTree
                 folders={folders}
                 selectedFolderId={selectedFolderId}
                 onFolderSelect={handleFolderSelect}
                 onCreateFolder={onCreateFolder}
+                onUpdateFolder={onUpdateFolder}
+                onDeleteFolder={onDeleteFolder}
                 onSettingsClick={onSettingsClick}
                 className="h-full"
               />

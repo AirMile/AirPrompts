@@ -116,9 +116,6 @@ const ThemeSelector = ({ compact = false }) => {
         <h3 className="text-lg font-semibold text-secondary-900 dark:text-secondary-100 mb-4">
           Kies Je Thema's
         </h3>
-        <p className="text-sm text-secondary-600 dark:text-secondary-400 mb-6">
-          Selecteer verschillende kleurenschema's voor lichte en donkere modus. Je kunt bijvoorbeeld paars voor donkere modus en blauw voor lichte modus kiezen. [Updated v2]
-        </p>
       </div>
 
       {/* Light Mode Selection */}
@@ -241,13 +238,6 @@ const ThemeSelector = ({ compact = false }) => {
         </div>
       </div>
 
-      {/* Info */}
-      <div className="mt-8 p-4 bg-secondary-100 dark:bg-secondary-800/50 rounded-lg">
-        <p className="text-sm text-secondary-600 dark:text-secondary-400">
-          <strong>Tip:</strong> Nu kun je verschillende thema's kiezen voor lichte en donkere modus. 
-          Gebruik de zon/maan toggle in de zoekbalk om te wisselen tussen de modi en je verschillende thema's te zien.
-        </p>
-      </div>
     </div>
   );
 };

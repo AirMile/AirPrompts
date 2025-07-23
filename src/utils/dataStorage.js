@@ -222,7 +222,12 @@ export const saveWorkflowWithFallback = async (workflow, action = 'create') => {
         console.log('📋 Extracted template ID:', templateId);
         return templateId;
       }).filter(Boolean) : [],
-      favorite: workflow.favorite || false
+      favorite: workflow.favorite || false,
+      // Support both folderIds (new) and folder_id (legacy)
+      folderIds: workflow.folderIds || [],
+      folder_id: workflow.folder_id || workflow.folderIds?.[0] || null,
+      // Include folderFavorites for complete data
+      folderFavorites: workflow.folderFavorites || {}
     };
     
     const response = await fetch(url, {
@@ -271,7 +276,12 @@ export const saveTemplateWithFallback = async (template, action = 'create') => {
       content: template.content,
       category: template.category,
       variables: template.variables,
-      favorite: template.favorite || false
+      favorite: template.favorite || false,
+      // Support both folderIds (new) and folder_id (legacy)
+      folderIds: template.folderIds || [],
+      folder_id: template.folder_id || template.folderIds?.[0] || null,
+      // Include folderFavorites for complete data
+      folderFavorites: template.folderFavorites || {}
     };
     
     const response = await fetch(url, {
@@ -361,7 +371,11 @@ export const saveSnippetWithFallback = async (snippet, action = 'create') => {
       content: snippet.content,
       tags: snippet.tags || [],
       favorite: snippet.favorite || false,
-      folder_id: snippet.folder_id || null // API uses folder_id
+      // Support both folderIds (new) and folder_id (legacy)
+      folderIds: snippet.folderIds || [],
+      folder_id: snippet.folder_id || snippet.folderIds?.[0] || null,
+      // Include folderFavorites for complete data
+      folderFavorites: snippet.folderFavorites || {}
     };
     
     const response = await fetch(url, {

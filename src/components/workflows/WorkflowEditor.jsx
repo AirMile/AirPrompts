@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { ArrowRight, Workflow, Trash2, Plus, X, FileText, Info, Tag, Layers, Search, Filter } from 'lucide-react';
 import { createWorkflowStep } from '../../types/template.types.js';
-import FolderSelector from '../shared/form/FolderSelector.jsx';
+import MultiSelectFolderSelector from '../shared/form/MultiSelectFolderSelector.jsx';
 import { useItemColors } from '../../hooks/useItemColors.js';
 
 // Separate SearchAndFilter component to prevent re-renders
@@ -144,7 +144,8 @@ const WorkflowEditor = ({ workflow, templates, snippets = [], workflows = [], fo
     return {
       name: workflow?.name || '',
       description: workflow?.description || '',
-      folderId: workflow?.folderId || 'workflows',
+      // Support both old folderId and new folderIds
+      folderIds: workflow?.folderIds || (workflow?.folderId ? [workflow.folderId] : ['workflows']),
       steps: processedSteps
     };
   });
@@ -260,11 +261,13 @@ const WorkflowEditor = ({ workflow, templates, snippets = [], workflows = [], fo
       // API-compatible fields only
       name: formData.name,
       description: formData.description,
-      category: workflow?.category || formData.folderId || 'general',
+      category: workflow?.category || formData.folderIds?.[0] || 'general',
       steps: processedSteps,
       favorite: workflow?.favorite || false,
       // Keep UI-specific fields separate for localStorage fallback
-      folderId: formData.folderId,
+      folderIds: formData.folderIds,
+      // Keep backward compatibility
+      folderId: formData.folderIds?.[0] || 'workflows',
       lastUsed: workflow?.lastUsed || new Date().toISOString()
     };
     onSave(newWorkflow);
@@ -460,7 +463,7 @@ const WorkflowEditor = ({ workflow, templates, snippets = [], workflows = [], fo
       <div className="bg-white dark:bg-secondary-900 rounded-xl shadow-lg p-6">
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-2xl font-bold text-secondary-900 dark:text-secondary-100">
-            {workflow ? 'Edit Workflow' : 'Create New Workflow'}
+            {workflow?.id ? 'Edit Workflow' : 'Create New Workflow'}
           </h2>
           <div className="flex gap-2">
             <button
@@ -471,7 +474,7 @@ const WorkflowEditor = ({ workflow, templates, snippets = [], workflows = [], fo
             </button>
             <button
               onClick={handleSave}
-              className="px-4 py-2 bg-success-600 text-white rounded-lg hover:bg-success-700 transition-all duration-200"
+              className={`px-4 py-2 ${getColorClasses('workflow', 'button')} rounded-lg transition-all duration-200`}
             >
               Save Workflow
             </button>
@@ -512,15 +515,13 @@ const WorkflowEditor = ({ workflow, templates, snippets = [], workflows = [], fo
 
             <div>
               <label htmlFor="workflowFolder" className="block text-sm font-medium text-secondary-700 dark:text-secondary-300 mb-2">
-                Folder
+                Folders
               </label>
-              <FolderSelector
-                id="workflowFolder"
-                name="workflowFolder"
+              <MultiSelectFolderSelector
                 folders={folders}
-                selectedFolderId={formData.folderId}
-                onFolderSelect={(folderId) => setFormData({...formData, folderId})}
-                focusRingColor="green"
+                selectedFolderIds={formData.folderIds}
+                onFoldersSelect={(folderIds) => setFormData({...formData, folderIds})}
+                placeholder="Selecteer folders..."
               />
             </div>
 
@@ -576,7 +577,7 @@ const WorkflowEditor = ({ workflow, templates, snippets = [], workflows = [], fo
                   <div key={step.id} className="bg-secondary-100 dark:bg-secondary-800 rounded-lg p-4 border border-secondary-300 dark:border-secondary-700">
                     <div className="flex items-center justify-between mb-3">
                       <div className="flex items-center gap-3">
-                        <span className="w-8 h-8 bg-success-600 text-white rounded-full flex items-center justify-center text-sm font-bold">
+                        <span className={`w-8 h-8 ${getColorClasses('workflow', 'button')} rounded-full flex items-center justify-center text-sm font-bold`}>
                           {index + 1}
                         </span>
                         <div>
@@ -919,7 +920,7 @@ const WorkflowEditor = ({ workflow, templates, snippets = [], workflows = [], fo
                             />
                             <button
                               onClick={() => handleAddTag(step.id)}
-                              className="px-3 py-2 bg-primary-600 text-white rounded hover:bg-primary-700"
+                              className={`px-3 py-2 ${getColorClasses('workflow', 'button')} rounded`}
                             >
                               <Plus className="w-4 h-4" />
                             </button>
@@ -1076,7 +1077,7 @@ const WorkflowEditor = ({ workflow, templates, snippets = [], workflows = [], fo
                                     )
                                   });
                                 }}
-                                className="px-3 py-2 bg-success-600 text-white rounded hover:bg-success-700 flex items-center gap-2"
+                                className={`px-3 py-2 ${getColorClasses('workflow', 'button')} rounded flex items-center gap-2`}
                               >
                                 <Info className="w-4 h-4" />
                                 Add Info
