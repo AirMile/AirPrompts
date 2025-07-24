@@ -23,30 +23,8 @@ import {
   GripVertical,
   Search
 } from 'lucide-react';
-import { 
-  DndContext, 
-  DragOverlay, 
-  closestCenter, 
-  KeyboardSensor, 
-  PointerSensor, 
-  useSensor, 
-  useSensors,
-  useDndMonitor
-} from '@dnd-kit/core';
-// Custom vertical axis modifier
-const restrictToVerticalAxis = ({transform}) => {
-  return {
-    ...transform,
-    x: 0,
-  };
-};
-import { 
-  SortableContext, 
-  verticalListSortingStrategy, 
-  useSortable 
-} from '@dnd-kit/sortable';
-import { useDroppable } from '@dnd-kit/core';
-import { CSS } from '@dnd-kit/utilities';
+
+
 import FolderModal from './FolderModal';
 import { AVAILABLE_ICONS } from '../../constants/folderIcons';
 import { useFolderUIState } from '../../hooks/queries/useUIStateQuery';
@@ -54,93 +32,6 @@ import { useUserPreferences } from '../../hooks/domain/useUserPreferences';
 import ThemeToggle from '../common/ThemeToggle';
 import AdvancedSearch from '../search/AdvancedSearch';
 
-// DndMonitor component for enhanced drag monitoring and feedback
-const DndMonitor = () => {
-  useDndMonitor({
-    onDragStart(event) {
-      console.log('🎯 Drag monitor: Drag started', {
-        id: event.active.id,
-        type: event.active.data.current?.type,
-        name: event.active.data.current?.name
-      });
-      
-      // Add visual feedback to body
-      document.body.style.cursor = 'grabbing';
-      document.body.classList.add('dragging-folder');
-    },
-    onDragMove(event) {
-      // Could add proximity detection or other visual feedback here
-    },
-    onDragOver(event) {
-      if (event.over && event.active) {
-        const overId = event.over.id;
-        const activeId = event.active.id;
-        
-        // Skip if dragging over self
-        if (overId === activeId) return;
-        
-        // Calculate current drop position
-        const currentDropPosition = getDropPosition(event, overId);
-        
-        // Check if we're hovering over a new target or position
-        if (hoverTarget !== overId || dropPosition !== currentDropPosition) {
-          // Clear existing timer
-          if (hoverDelayRef.current) {
-            clearTimeout(hoverDelayRef.current);
-          }
-          
-          // Set new hover target and position
-          setHoverTarget(overId);
-          setDropPosition(currentDropPosition);
-          setHoverStartTime(Date.now());
-          
-          console.log('🎯 Hover started:', {
-            target: overId,
-            position: currentDropPosition,
-            delay: HOVER_DELAY + 'ms'
-          });
-          
-          // Start hover delay timer
-          hoverDelayRef.current = setTimeout(() => {
-            console.log('🎯 Hover delay completed - showing drop indicators');
-            setActiveDropZone(overId);
-          }, HOVER_DELAY);
-        }
-      }
-    },
-    onDragEnd(event) {
-      console.log('🎯 Drag monitor: Drag ended', {
-        active: event.active.id,
-        over: event.over?.id,
-        success: !!event.over
-      });
-      
-      // Clear hover delay timer
-      if (hoverDelayRef.current) {
-        clearTimeout(hoverDelayRef.current);
-        hoverDelayRef.current = null;
-      }
-      
-      // Reset hover state
-      setHoverTarget(null);
-      setHoverStartTime(null);
-      setDropPosition(null);
-      
-      // Clean up visual feedback
-      document.body.style.cursor = '';
-      document.body.classList.remove('dragging-folder');
-    },
-    onDragCancel(event) {
-      console.log('🎯 Drag monitor: Drag cancelled', event.active.id);
-      
-      // Clean up visual feedback
-      document.body.style.cursor = '';
-      document.body.classList.remove('dragging-folder');
-    },
-  });
-
-  return null; // This component only monitors, doesn't render
-};
 
 const CollapsibleFolderTree = ({ 
   folders = [], 
@@ -188,43 +79,6 @@ const CollapsibleFolderTree = ({
   const [contextMenuPosition, setContextMenuPosition] = useState({ x: 0, y: 0 });
   const [showOnlyFavorites, setShowOnlyFavorites] = useState(false);
   const [sortBy, setSortBy] = useState('name'); // 'name', 'date', 'type'
-  const [draggedFolder, setDraggedFolder] = useState(null);
-  const [isDragModeEnabled, setIsDragModeEnabled] = useState(false);
-  const [isDragging, setIsDragging] = useState(false);
-  const [pendingUpdate, setPendingUpdate] = useState(null);
-  const [activeDropZone, setActiveDropZone] = useState(null);
-  
-  // Hover delay system - like iPhone/Samsung
-  const [hoverTarget, setHoverTarget] = useState(null);
-  const [hoverStartTime, setHoverStartTime] = useState(null);
-  const [dropPosition, setDropPosition] = useState(null);
-  const hoverDelayRef = useRef(null);
-  const HOVER_DELAY = 800; // 800ms delay like mobile phones
-  
-  // Refs for debouncing and preventing race conditions
-  const updateTimeoutRef = useRef(null);
-  const lastUpdateRef = useRef(null);
-  const isUpdatingRef = useRef(false);
-
-  // Detect drop position based on mouse position relative to target element
-  const getDropPosition = (event, targetId) => {
-    const targetElement = document.querySelector(`[data-folder-id="${targetId}"]`);
-    if (!targetElement) return 'center';
-
-    const rect = targetElement.getBoundingClientRect();
-    const mouseY = event.activatorEvent?.clientY || event.delta?.y + rect.top + rect.height / 2;
-    
-    const topThreshold = rect.top + rect.height * 0.25;
-    const bottomThreshold = rect.bottom - rect.height * 0.25;
-
-    if (mouseY < topThreshold) {
-      return 'above';
-    } else if (mouseY > bottomThreshold) {
-      return 'below';
-    } else {
-      return 'center';
-    }
-  };
 
   // Initialize favorite folders from props
   useEffect(() => {
@@ -236,6 +90,7 @@ const CollapsibleFolderTree = ({
     });
     setFavoriteFolders(initialFavorites);
   }, [folders]);
+
 
   // Sync expanded folders with persistent UI state when it loads
   useEffect(() => {
@@ -277,458 +132,16 @@ const CollapsibleFolderTree = ({
     );
   };
 
-  // Helper function to check if folder is part of active drop zone (parent or all children)
-  const isPartOfActiveDropZone = (folderId) => {
-    if (!activeDropZone) return false;
-    
-    // If this folder is the active drop zone
-    if (folderId === activeDropZone) return true;
-    
-    // If this folder is a child of the active drop zone (recursively)
-    const isChildOfActiveDropZone = (childId, targetParentId) => {
-      const child = folders.find(f => f.id === childId);
-      if (!child) return false;
-      if (child.parentId === targetParentId) return true;
-      if (child.parentId) return isChildOfActiveDropZone(child.parentId, targetParentId);
-      return false;
-    };
-    
-    if (isChildOfActiveDropZone(folderId, activeDropZone)) return true;
-    
-    // If this folder is the parent of the active drop zone
-    const activeFolder = folders.find(f => f.id === activeDropZone);
-    if (activeFolder && activeFolder.parentId === folderId) return true;
-    
-    return false;
-  };
 
-  // Custom collision detection optimized for nested folder structures
-  const customCollisionDetection = useCallback((args) => {
-    const { active } = args;
-    
-    // Use closestCenter as base but with some optimizations for nested items
-    const centerCollisions = closestCenter(args);
-    
-    if (!centerCollisions || centerCollisions.length === 0) {
-      return centerCollisions;
-    }
-    
-    // Filter out invalid drop targets for nested folders
-    const validCollisions = centerCollisions.filter(collision => {
-      const targetFolder = folders.find(f => f.id === collision.id);
-      const activeFolder = folders.find(f => f.id === active.id);
-      
-      if (!targetFolder || !activeFolder) return false;
-      
-      // Don't allow dropping on self or descendants
-      if (checkIfDescendant(activeFolder.id, targetFolder.id, folders)) {
-        return false;
-      }
-      
-      return true;
-    });
-    
-    return validCollisions.length > 0 ? validCollisions : centerCollisions;
-  }, [folders]);
 
-  // Setup drag and drop sensors with improved constraints for nested folders
-  const sensors = useSensors(
-    useSensor(PointerSensor, {
-      activationConstraint: {
-        distance: { y: 10 }, // Only require vertical movement to start drag
-        tolerance: { x: 8 }, // Allow horizontal tolerance but prevent accidental activation
-      },
-      // Bypass drag activation if clicking on expand/collapse or favorite buttons
-      bypassActivationConstraint({event, activeNode}) {
-        const target = event.target;
-        const isExpandButton = target.closest('[data-folder-expand]');
-        const isFavoriteButton = target.closest('[data-folder-favorite]');
-        const isContextButton = target.closest('[data-folder-context]');
-        
-        // Also check if the activator node contains the target for better accuracy
-        const isActivatorNode = activeNode?.activatorNode?.current?.contains?.(target);
-        
-        return isExpandButton || isFavoriteButton || isContextButton || !isActivatorNode;
-      },
-      // Enhanced activation feedback
-      onActivation: (event) => {
-        // Prevent default to avoid text selection during drag
-        if (event.type === 'pointerdown') {
-          event.preventDefault();
-        }
-      },
-    }),
-    useSensor(KeyboardSensor, {
-      coordinateGetter: () => ({ x: 0, y: 10 }), // Improve keyboard navigation for nested items
-    })
-  );
 
-  // Debounced update function to prevent multiple simultaneous API calls
-  const debouncedUpdateFolderSortOrder = useCallback(async (updatedFolders) => {
-    // Clear any pending timeout
-    if (updateTimeoutRef.current) {
-      clearTimeout(updateTimeoutRef.current);
-      updateTimeoutRef.current = null;
-    }
 
-    // If we're already updating, store this as a pending update
-    if (isUpdatingRef.current) {
-      setPendingUpdate(updatedFolders);
-      return;
-    }
 
-    // Set timeout for debouncing
-    updateTimeoutRef.current = setTimeout(async () => {
-      await performFolderSortOrderUpdate(updatedFolders);
-      
-      // Check if there's a pending update
-      if (pendingUpdate) {
-        const pending = pendingUpdate;
-        setPendingUpdate(null);
-        // Perform the pending update after a short delay
-        setTimeout(() => {
-          debouncedUpdateFolderSortOrder(pending);
-        }, 100);
-      }
-    }, 300); // 300ms debounce delay
-  }, [pendingUpdate]);
 
-  // Actual API call function
-  const performFolderSortOrderUpdate = async (updatedFolders) => {
-    if (isUpdatingRef.current) {
-      return;
-    }
 
-    try {
-      isUpdatingRef.current = true;
-      
-      const updates = updatedFolders.map(folder => ({
-        id: folder.id,
-        sort_order: folder.sortOrder
-      }));
 
-      // Prevent duplicate calls with same data
-      const updateKey = JSON.stringify(updates.sort((a, b) => a.id.localeCompare(b.id)));
-      if (lastUpdateRef.current === updateKey) {
-        console.log('🔄 Skipping duplicate update');
-        return;
-      }
-      lastUpdateRef.current = updateKey;
 
-      console.log('🔄 Updating folder sort order:', updates);
 
-      const response = await fetch(`${window.location.protocol}//${window.location.hostname}:3001/api/folders/batch-sort-order`, {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ updates })
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error?.message || 'Failed to update folder sort order');
-      }
-
-      console.log('✅ Successfully updated folder sort order');
-      
-      // Invalidate the folders query to ensure fresh data on refresh
-      queryClient.invalidateQueries({ queryKey: ['folders'] });
-      
-    } catch (error) {
-      console.error('❌ Error updating folder sort order:', error);
-      // Reset the last update ref on error so it can be retried
-      lastUpdateRef.current = null;
-    } finally {
-      isUpdatingRef.current = false;
-    }
-  };
-
-  // Handle drag start
-  const handleDragStart = (event) => {
-    // Prevent multiple simultaneous drags
-    if (isDragging) {
-      return;
-    }
-    
-    setIsDragging(true);
-    setActiveDropZone(null);
-    
-    // Reset hover state
-    setHoverTarget(null);
-    setHoverStartTime(null);
-    setDropPosition(null);
-    if (hoverDelayRef.current) {
-      clearTimeout(hoverDelayRef.current);
-      hoverDelayRef.current = null;
-    }
-    
-    const { active } = event;
-    const folder = folders.find(f => f.id === active.id);
-    
-    // Calculate folder depth for visual feedback
-    const calculateDepth = (folderId) => {
-      let depth = 0;
-      let currentFolder = folders.find(f => f.id === folderId);
-      while (currentFolder && currentFolder.parentId && currentFolder.parentId !== 'root') {
-        depth++;
-        currentFolder = folders.find(f => f.id === currentFolder.parentId);
-      }
-      return depth;
-    };
-    
-    const folderWithDepth = {
-      ...folder,
-      depth: calculateDepth(folder.id)
-    };
-    
-    setDraggedFolder(folderWithDepth);
-    console.log('🎯 Drag started for folder:', folder?.name, 'at depth:', folderWithDepth.depth);
-  };
-
-  // Handle drag end
-  const handleDragEnd = async (event) => {
-    const { active, over } = event;
-    
-    // Always reset drag state
-    setDraggedFolder(null);
-    setIsDragging(false);
-    setActiveDropZone(null);
-    
-    // Clear hover delay timer and state
-    if (hoverDelayRef.current) {
-      clearTimeout(hoverDelayRef.current);
-      hoverDelayRef.current = null;
-    }
-    setHoverTarget(null);
-    setHoverStartTime(null);
-    setDropPosition(null);
-
-    if (!over || active.id === over.id) {
-      console.log('🎯 Drag ended - no valid drop target');
-      return;
-    }
-
-    // Get fresh folder data to avoid stale state issues
-    const currentFolders = folders;
-    
-    // Find the folders being moved
-    const activeFolder = currentFolders.find(f => f.id === active.id);
-    const overFolder = currentFolders.find(f => f.id === over.id);
-
-    if (!activeFolder || !overFolder) {
-      console.log('🎯 Drag ended - folder not found');
-      return;
-    }
-
-    console.log('🎯 Drag ended - moving', activeFolder.name, 'relative to', overFolder.name);
-
-    // Check if we're trying to move a folder into itself or its descendants
-    const isDescendant = checkIfDescendant(activeFolder.id, overFolder.id, currentFolders);
-    if (isDescendant) {
-      console.log('🎯 Drag ended - cannot move folder into its own descendant');
-      return;
-    }
-
-    // Use the stored drop position from hover delay system
-    const finalDropPosition = dropPosition || 'below'; // fallback to 'below' if no position stored
-    console.log('🎯 Using stored drop position:', finalDropPosition);
-
-    // Handle different scenarios based on drop position:
-    if (finalDropPosition === 'center') {
-      // Scenario 1: Drop ON folder - make it a subfolder
-      handleMakeSubfolder(activeFolder, overFolder, currentFolders);
-    } else if (activeFolder.parentId === overFolder.parentId) {
-      // Scenario 2: Drop above/below sibling - reorder within same parent
-      handleSameParentReorder(activeFolder, overFolder, currentFolders, finalDropPosition);
-    } else {
-      // Scenario 3: Drop above/below different parent - move as sibling
-      handleCrossParentMove(activeFolder, overFolder, currentFolders, finalDropPosition);
-    }
-  };
-
-  // Check if targetId is a descendant of sourceId
-  const checkIfDescendant = (sourceId, targetId, allFolders) => {
-    const findDescendants = (parentId) => {
-      const children = allFolders.filter(f => f.parentId === parentId);
-      let descendants = [...children];
-      children.forEach(child => {
-        descendants = [...descendants, ...findDescendants(child.id)];
-      });
-      return descendants;
-    };
-    
-    const descendants = findDescendants(sourceId);
-    return descendants.some(desc => desc.id === targetId);
-  };
-
-  // Handle making a folder a subfolder of another folder
-  const handleMakeSubfolder = async (activeFolder, targetFolder, currentFolders) => {
-    console.log('🎯 Making', activeFolder.name, 'a subfolder of', targetFolder.name);
-    
-    // Find existing subfolders to determine sort order
-    const existingSubfolders = currentFolders.filter(f => f.parentId === targetFolder.id);
-    const newSortOrder = existingSubfolders.length; // Add at end of subfolders
-    
-    // Update the active folder to have the target as parent
-    const updatedFolder = {
-      ...activeFolder,
-      parentId: targetFolder.id,
-      parent_id: targetFolder.id, // For API compatibility
-      sortOrder: newSortOrder,
-      sort_order: newSortOrder
-    };
-    
-    console.log('🎯 Updating folder parent relationship:', updatedFolder);
-    
-    try {
-      await onUpdateFolder(updatedFolder);
-      console.log('✅ Successfully made subfolder');
-    } catch (error) {
-      console.error('❌ Failed to make subfolder:', error);
-    }
-  };
-
-  // Handle reordering within the same parent
-  const handleSameParentReorder = (activeFolder, overFolder, currentFolders, dropPosition = 'below') => {
-    const parentId = activeFolder.parentId;
-    const siblingFolders = currentFolders
-      .filter(f => f.parentId === parentId)
-      .sort((a, b) => {
-        const sortOrderA = a.sortOrder !== undefined ? a.sortOrder : 999;
-        const sortOrderB = b.sortOrder !== undefined ? b.sortOrder : 999;
-        if (sortOrderA !== sortOrderB) {
-          return sortOrderA - sortOrderB;
-        }
-        return a.name.localeCompare(b.name);
-      });
-    
-    const activeIndex = siblingFolders.findIndex(f => f.id === activeFolder.id);
-    const overIndex = siblingFolders.findIndex(f => f.id === overFolder.id);
-    
-    console.log('🎯 Same parent reorder - active:', activeIndex, 'over:', overIndex);
-    
-    if (activeIndex !== overIndex && activeIndex !== -1 && overIndex !== -1) {
-      const reorderedSiblings = [...siblingFolders];
-      const [movedFolder] = reorderedSiblings.splice(activeIndex, 1);
-      
-      // Adjust insertion index based on drop position
-      let insertIndex = overIndex;
-      if (dropPosition === 'above') {
-        insertIndex = overIndex;
-      } else if (dropPosition === 'below') {
-        insertIndex = overIndex + 1;
-      }
-      
-      // Adjust for removal affecting index
-      if (activeIndex < insertIndex) {
-        insertIndex--;
-      }
-      
-      reorderedSiblings.splice(insertIndex, 0, movedFolder);
-      
-      // Update sort orders
-      const updatedFolders = reorderedSiblings.map((folder, index) => ({
-        ...folder,
-        sortOrder: index
-      }));
-      
-      console.log('🎯 Same parent new order:', updatedFolders.map(f => ({ id: f.id, name: f.name, sortOrder: f.sortOrder })));
-      
-      // Update state and database
-      updateFoldersAfterReorder(updatedFolders);
-    }
-  };
-
-  // Handle moving to different parent
-  const handleCrossParentMove = (activeFolder, overFolder, currentFolders, dropPosition = 'below') => {
-    console.log('🎯 Cross parent move - moving', activeFolder.name, 'to be child of', overFolder.name);
-    
-    // Get the target parent (the folder we dropped ON becomes the new parent)
-    const newParentId = overFolder.id;
-    
-    // Get all current children of the target folder
-    const targetChildren = currentFolders
-      .filter(f => f.parentId === newParentId && f.id !== activeFolder.id)
-      .sort((a, b) => {
-        const sortOrderA = a.sortOrder !== undefined ? a.sortOrder : 999;
-        const sortOrderB = b.sortOrder !== undefined ? b.sortOrder : 999;
-        if (sortOrderA !== sortOrderB) {
-          return sortOrderA - sortOrderB;
-        }
-        return a.name.localeCompare(b.name);
-      });
-    
-    // Create updated folder with new parent
-    const updatedActiveFolder = {
-      ...activeFolder,
-      parentId: newParentId,
-      sortOrder: 0 // Insert as first child
-    };
-    
-    // Insert the moved folder as first child and reorder existing children
-    const newChildren = [updatedActiveFolder, ...targetChildren];
-    
-    // Update sort orders for all children in target parent
-    const updatedTargetChildren = newChildren.map((folder, index) => ({
-      ...folder,
-      sortOrder: index
-    }));
-    
-    // Also need to update sort orders for remaining siblings in original parent
-    const originalParentSiblings = currentFolders
-      .filter(f => f.parentId === activeFolder.parentId && f.id !== activeFolder.id)
-      .sort((a, b) => {
-        const sortOrderA = a.sortOrder !== undefined ? a.sortOrder : 999;
-        const sortOrderB = b.sortOrder !== undefined ? b.sortOrder : 999;
-        if (sortOrderA !== sortOrderB) {
-          return sortOrderA - sortOrderB;
-        }
-        return a.name.localeCompare(b.name);
-      })
-      .map((folder, index) => ({
-        ...folder,
-        sortOrder: index
-      }));
-    
-    // Combine all updated folders
-    const allUpdatedFolders = [...updatedTargetChildren, ...originalParentSiblings];
-    
-    console.log('🎯 Cross parent new arrangement:', {
-      moved: updatedActiveFolder.name,
-      newParent: newParentId,
-      targetChildren: updatedTargetChildren.map(f => ({ id: f.id, name: f.name, sortOrder: f.sortOrder })),
-      originalSiblings: originalParentSiblings.map(f => ({ id: f.id, name: f.name, sortOrder: f.sortOrder }))
-    });
-    
-    // Update state and database
-    updateFoldersAfterReorder(allUpdatedFolders, updatedActiveFolder);
-  };
-
-  // Common function to update folders after reorder
-  const updateFoldersAfterReorder = (updatedFolders, folderWithNewParent = null) => {
-    // For cross-parent moves, handle parent change first, then batch update
-    if (folderWithNewParent && onUpdateFolder) {
-      console.log('🔄 Updating folder parent first:', folderWithNewParent.name, 'to parent', folderWithNewParent.parentId);
-      onUpdateFolder(folderWithNewParent);
-      
-      // Delay the sort order update to avoid conflicts
-      setTimeout(() => {
-        if (onReorderFolders) {
-          onReorderFolders(updatedFolders);
-        } else {
-          debouncedUpdateFolderSortOrder(updatedFolders);
-        }
-      }, 200);
-    } else {
-      // For same-parent reorder, just update sort orders
-      if (onReorderFolders) {
-        onReorderFolders(updatedFolders);
-      } else {
-        debouncedUpdateFolderSortOrder(updatedFolders);
-      }
-    }
-  };
 
   // Build folder hierarchy (moved before getAllDraggableFolderIds to fix hoisting issue)
   const buildFolderTree = useCallback((parentId = null) => {
@@ -770,27 +183,6 @@ const CollapsibleFolderTree = ({
     return filteredFolders;
   }, [folders, expandedFolders, showOnlyFavorites, favoriteFolders, sortBy]);
 
-  // Get all draggable folder IDs for SortableContext
-  const getAllDraggableFolderIds = useCallback(() => {
-    if (!isDragModeEnabled) return [];
-    
-    const collectVisibleFolderIds = (parentId = 'root') => {
-      const childrenFolders = buildFolderTree(parentId);
-      let ids = [];
-      
-      childrenFolders.forEach(folder => {
-        ids.push(folder.id);
-        // If folder is expanded, also include its children
-        if (expandedFolders.has(folder.id)) {
-          ids.push(...collectVisibleFolderIds(folder.id));
-        }
-      });
-      
-      return ids;
-    };
-    
-    return collectVisibleFolderIds();
-  }, [folders, expandedFolders, isDragModeEnabled, buildFolderTree]);
 
   const toggleFolder = async (folderId) => {
     const newExpanded = new Set(expandedFolders);
@@ -964,122 +356,33 @@ const CollapsibleFolderTree = ({
     );
   };
 
-  // Separate sortable folder component to avoid conditional hook usage
-  const SortableFolderItem = ({ folder, depth }) => {
-    const {
-      attributes,
-      listeners,
-      setNodeRef: setSortableRef,
-      transform,
-      transition,
-      isDragging,
-    } = useSortable({ 
-      id: folder.id,
-      data: {
-        type: 'folder',
-        name: folder.name,
-        parentId: folder.parentId,
-        depth: depth,
-        sortOrder: folder.sortOrder,
-        canAcceptChildren: true
-      }
-    });
-
-    const {
-      setNodeRef: setDroppableRef,
-      isOver,
-    } = useDroppable({ 
-      id: `drop-${folder.id}`,
-      data: {
-        type: 'folder-drop-zone',
-        parentId: folder.id,
-        accepts: ['folder'],
-        depth: depth + 1
-      }
-    });
-
-    // Update active drop zone when isOver changes
-    useEffect(() => {
-      if (isOver) {
-        setActiveDropZone(folder.id);
-      } else if (activeDropZone === folder.id) {
-        setActiveDropZone(null);
-      }
-    }, [isOver, folder.id]);
-
-    // Combine refs
-    const setNodeRef = (node) => {
-      setSortableRef(node);
-      setDroppableRef(node);
-    };
-
-    const style = {
-      transform: CSS.Transform.toString(transform),
-      transition,
-      opacity: isDragging ? 0.5 : 1,
-    };
-
-    return (
-      <div 
-        ref={setNodeRef} 
-        style={style}
-        className={isOver ? 'drop-zone-active' : ''}
-      >
-        {renderFolderContent(folder, depth, true, attributes, listeners, isOver)}
-      </div>
-    );
-  };
-
-  // Regular folder component without sortable hooks
-  const RegularFolderItem = ({ folder, depth }) => {
-    return (
-      <div>
-        {renderFolderContent(folder, depth, false)}
-      </div>
-    );
+  // Simple folder component without drag functionality
+  const FolderItem = ({ folder, depth }) => {
+    return renderFolderContent(folder, depth);
   };
 
   // Common folder content renderer
-  const renderFolderContent = (folder, depth, isDragable, attributes = {}, listeners = {}, isOver = false) => {
+  const renderFolderContent = (folder, depth) => {
     const children = buildFolderTree(folder.id);
     const isExpanded = expandedFolders.has(folder.id);
     const isSelected = selectedFolderId === folder.id;
     const isFavorite = favoriteFolders.has(folder.id);
     const folderHasChildren = children.length > 0;
-    const isInActiveDropZone = isPartOfActiveDropZone(folder.id);
-    
-    // Check if this folder is the active hover target after delay
-    const isHoverTarget = hoverTarget === folder.id && activeDropZone === folder.id;
-    const showDropIndicator = isHoverTarget && dropPosition;
 
     return (
       <>
-        {/* Drop indicator - ABOVE */}
-        {showDropIndicator && dropPosition === 'above' && (
-          <div 
-            className="h-0.5 bg-primary-500 mx-2 mb-1 rounded-full animate-pulse"
-            style={{ marginLeft: `${8 + depth * 16}px` }}
-          />
-        )}
-        
         <div
           data-folder-id={folder.id}
           className={`
-            group flex items-center px-2 py-1.5 rounded-md mb-0.5 relative
-            ${isDragable && isDragModeEnabled ? 'cursor-grab active:cursor-grabbing' : 'cursor-pointer'}
+            group flex items-center px-2 py-1.5 rounded-md mb-0.5 relative cursor-pointer
             ${isSelected 
               ? 'text-primary-600 dark:text-primary-400 bg-primary-50/50 dark:bg-primary-900/10' 
               : 'hover:bg-secondary-100 dark:hover:bg-secondary-700 text-secondary-700 dark:text-secondary-300'
             }
-            ${isDragable && isDragModeEnabled ? 'border-2 border-dashed border-transparent hover:border-primary-300 dark:hover:border-primary-600' : ''}
-            ${isOver ? 'bg-primary-100 dark:bg-primary-800/30 border-primary-400 dark:border-primary-500 shadow-md scale-105 transition-all duration-200' : ''}
-            ${isInActiveDropZone && !isOver ? 'bg-primary-50 dark:bg-primary-900/20 border-2 border-primary-300 dark:border-primary-600 shadow-sm transition-all duration-200' : ''}
-            ${showDropIndicator && dropPosition === 'center' ? 'ring-2 ring-primary-500 ring-opacity-50 bg-primary-100 dark:bg-primary-800/30' : ''}
           `}
           style={{ paddingLeft: `${8 + depth * 16}px` }}
-          onClick={(!isDragable || !isDragModeEnabled) ? () => onFolderSelect(folder.id) : undefined}
-          onContextMenu={(!isDragable || !isDragModeEnabled) ? (e) => handleContextMenu(e, folder) : undefined}
-          {...(isDragable && isDragModeEnabled ? { ...attributes, ...listeners } : {})}
+          onClick={() => onFolderSelect(folder.id)}
+          onContextMenu={(e) => handleContextMenu(e, folder)}
         >
           {folderHasChildren && (
             <button
@@ -1107,21 +410,16 @@ const CollapsibleFolderTree = ({
           
           {renderFolderIcon(folder, isSelected)}
           
-          <span className="truncate flex-1">{folder.name}</span>
+          <div className="flex-1 min-w-0">
+            <span className="truncate block">{folder.name}</span>
+            {folder.description && (
+              <span className="text-xs text-secondary-500 dark:text-secondary-400 truncate block opacity-75">
+                {folder.description}
+              </span>
+            )}
+          </div>
           
-          {/* Obsidian-style "Move into" indicator */}
-          {isOver && (
-            <div className="flex items-center gap-1 ml-2 px-2 py-1 bg-primary-200 dark:bg-primary-700 text-primary-800 dark:text-primary-200 text-xs rounded-full font-medium animate-pulse">
-              <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
-                <path fillRule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clipRule="evenodd" />
-              </svg>
-              <span>Move into</span>
-            </div>
-          )}
-          
-          {/* Actions - only show when not in drag mode */}
-          {(!isDragable || !isDragModeEnabled) && (
-            <>
+          {/* Actions */}
               <button
                 data-folder-favorite
                 onClick={(e) => {
@@ -1152,8 +450,6 @@ const CollapsibleFolderTree = ({
                   <MoreVertical className="w-4 h-4" />
                 </button>
               )}
-            </>
-          )}
         </div>
 
         <div 
@@ -1166,31 +462,16 @@ const CollapsibleFolderTree = ({
         >
           {children.length > 0 && (
             <div style={{ paddingTop: '2px' }}>
-              {children.map((child, index) => renderFolder(child, depth + 1, index === 0))}
+              {children.map((child) => renderFolder(child, depth + 1))}
             </div>
           )}
         </div>
-        
-        {/* Drop indicator - BELOW */}
-        {showDropIndicator && dropPosition === 'below' && (
-          <div 
-            className="h-0.5 bg-primary-500 mx-2 mt-1 rounded-full animate-pulse"
-            style={{ marginLeft: `${8 + depth * 16}px` }}
-          />
-        )}
       </>
     );
   };
 
-  const renderFolder = (folder, depth = 0, isFirst = false) => {
-    // Enable drag for all folders when drag mode is enabled (not just root-level)
-    const isDragable = isDragModeEnabled;
-
-    if (isDragable) {
-      return <SortableFolderItem key={folder.id} folder={folder} depth={depth} />;
-    }
-
-    return <RegularFolderItem key={folder.id} folder={folder} depth={depth} />;
+  const renderFolder = (folder, depth = 0) => {
+    return <FolderItem key={folder.id} folder={folder} depth={depth} />;
   };
 
   const renderCollapsedView = () => {
@@ -1206,7 +487,7 @@ const CollapsibleFolderTree = ({
             className="w-full p-2 hover:bg-secondary-200 dark:hover:bg-secondary-800 rounded-lg transition-colors"
             title="Expand sidebar"
           >
-            <ChevronRight className="w-5 h-5 text-secondary-400" />
+            <ChevronRight className="w-5 h-5 text-secondary-600 dark:text-secondary-400" />
           </button>
         </div>
 
@@ -1347,12 +628,6 @@ const CollapsibleFolderTree = ({
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <h2 className="text-lg font-semibold text-secondary-900 dark:text-secondary-100">Folders</h2>
-                {isDragModeEnabled && (
-                  <div className="flex items-center gap-1 px-2 py-1 rounded-full bg-primary-100 dark:bg-primary-900/30 text-primary-700 dark:text-primary-400 text-xs font-medium">
-                    <Move className="w-3 h-3" />
-                    <span>Drag Mode</span>
-                  </div>
-                )}
               </div>
               <div className="flex items-center gap-2">
                 <button
@@ -1363,7 +638,6 @@ const CollapsibleFolderTree = ({
                   }}
                   className="p-2 hover:bg-secondary-100 dark:hover:bg-secondary-800 rounded-lg text-secondary-600 dark:text-secondary-400"
                   title="Create new folder"
-                  disabled={isDragModeEnabled}
                 >
                   <FolderPlus className="w-4 h-4" />
                 </button>
@@ -1372,7 +646,7 @@ const CollapsibleFolderTree = ({
                   className="p-2 hover:bg-secondary-100 dark:hover:bg-secondary-800 rounded-lg text-secondary-600 dark:text-secondary-400"
                   title="Collapse sidebar"
                 >
-                  <ChevronLeft className="w-4 h-4" />
+                  <ChevronLeft className="w-5 h-5 text-secondary-600 dark:text-secondary-400" />
                 </button>
               </div>
             </div>
@@ -1395,18 +669,6 @@ const CollapsibleFolderTree = ({
           {/* Toolbar */}
           <div className="px-4 pb-3 flex items-center justify-between">
             <div className="flex items-center gap-1">
-              {/* Drag mode toggle */}
-              <button
-                onClick={() => setIsDragModeEnabled(!isDragModeEnabled)}
-                className={`p-1.5 rounded transition-colors ${
-                  isDragModeEnabled 
-                    ? 'bg-primary-100 dark:bg-primary-900/30 text-primary-700 dark:text-primary-400' 
-                    : 'hover:bg-secondary-100 dark:hover:bg-secondary-800 text-secondary-600 dark:text-secondary-400'
-                }`}
-                title={isDragModeEnabled ? "Disable drag to reorder" : "Enable drag to reorder"}
-              >
-                <Move className="w-4 h-4" />
-              </button>
               
               {/* Favorites filter */}
               <button
@@ -1484,91 +746,10 @@ const CollapsibleFolderTree = ({
             <span className="font-medium">Home</span>
           </div>
 
-          {/* Root folders with conditional drag and drop */}
-          {isDragModeEnabled ? (
-            <DndContext
-              sensors={sensors}
-              collisionDetection={customCollisionDetection}
-              onDragStart={handleDragStart}
-              onDragEnd={handleDragEnd}
-              modifiers={[restrictToVerticalAxis]}
-              autoScroll={{
-                layoutShiftCompensation: false, // Disable for better performance with nested items
-                threshold: {
-                  x: 0.15,
-                  y: 0.15,
-                },
-                acceleration: 8, // Slightly faster scroll for better UX
-                interval: 8, // More frequent updates for smoother scrolling
-              }}
-              accessibility={{
-                restoreFocus: false, // Let React handle focus management
-              }}
-              // Prevent new drags while one is already in progress
-              disabled={isDragging}
-            >
-              <DndMonitor />
-              <SortableContext items={getAllDraggableFolderIds()} strategy={verticalListSortingStrategy}>
-                {rootFolders.map((folder) => renderFolder(folder, 0))}
-              </SortableContext>
-              
-              <DragOverlay>
-                {draggedFolder ? (
-                  <div className="bg-white dark:bg-secondary-800 border border-primary-300 dark:border-primary-600 rounded-lg shadow-xl opacity-95 backdrop-blur-sm">
-                    <div 
-                      className="flex items-center py-2 px-3 relative"
-                      style={{
-                        paddingLeft: `${12 + (draggedFolder.depth || 0) * 16}px`
-                      }}
-                    >
-                      {/* Depth indicator lines */}
-                      {draggedFolder.depth > 0 && (
-                        <div className="absolute left-0 top-0 bottom-0 flex">
-                          {Array.from({ length: draggedFolder.depth }).map((_, index) => (
-                            <div 
-                              key={index}
-                              className="w-4 border-l border-secondary-300 dark:border-secondary-600 opacity-50"
-                              style={{ marginLeft: `${12 + index * 16}px` }}
-                            />
-                          ))}
-                        </div>
-                      )}
-                      
-                      {/* Folder icon */}
-                      {(() => {
-                        const IconComponent = AVAILABLE_ICONS[draggedFolder.icon || 'Folder'] || AVAILABLE_ICONS.Folder;
-                        return <IconComponent className="w-4 h-4 mr-3 text-primary-600 dark:text-primary-400 flex-shrink-0" />;
-                      })()}
-                      
-                      {/* Folder name */}
-                      <span className="font-medium text-secondary-800 dark:text-secondary-100 truncate">
-                        {draggedFolder.name}
-                      </span>
-                      
-                      {/* Status indicator */}
-                      <div className="ml-3 flex items-center gap-1 px-2 py-1 bg-primary-50 dark:bg-primary-900/40 text-primary-700 dark:text-primary-300 text-xs rounded-full font-medium flex-shrink-0">
-                        <div className="w-1.5 h-1.5 bg-primary-500 dark:bg-primary-400 rounded-full animate-pulse"></div>
-                      </div>
-                    </div>
-                    
-                    {/* Subtle gradient overlay for depth */}
-                    {draggedFolder.depth > 0 && (
-                      <div 
-                        className="absolute inset-0 pointer-events-none rounded-lg"
-                        style={{
-                          background: `linear-gradient(90deg, rgba(59, 130, 246, 0.05) 0%, transparent ${Math.min(draggedFolder.depth * 20, 60)}%)`
-                        }}
-                      />
-                    )}
-                  </div>
-                ) : null}
-              </DragOverlay>
-            </DndContext>
-          ) : (
-            <div>
-              {rootFolders.map((folder) => renderFolder(folder, 0))}
-            </div>
-          )}
+          {/* Root folders */}
+          <div>
+            {rootFolders.map((folder) => renderFolder(folder, 0))}
+          </div>
         </div>
 
         {/* Bottom buttons */}
@@ -1634,14 +815,6 @@ const CollapsibleFolderTree = ({
     }
   }, [showContextMenu]);
 
-  // Cleanup timeouts and refs on unmount
-  useEffect(() => {
-    return () => {
-      if (updateTimeoutRef.current) {
-        clearTimeout(updateTimeoutRef.current);
-      }
-    };
-  }, []);
 
   return (
     <>

@@ -34,17 +34,17 @@ const CollapsibleTodoSidebar = ({ currentFolderId }) => {
     showGlobal: true
   });
 
-  // Debug logging
-  React.useEffect(() => {
-    console.log('[DEBUG] CollapsibleTodoSidebar - State update:', {
-      currentFolderId,
-      filterStatus,
-      filterPriority,
-      todosCount: todos.length,
-      isLoading,
-      error: error?.message
-    });
-  }, [currentFolderId, filterStatus, filterPriority, todos.length, isLoading, error]);
+  // Debug logging commented out
+  // React.useEffect(() => {
+  //   console.log('[DEBUG] CollapsibleTodoSidebar - State update:', {
+  //     currentFolderId,
+  //     filterStatus,
+  //     filterPriority,
+  //     todosCount: todos.length,
+  //     isLoading,
+  //     error: error?.message
+  //   });
+  // }, [currentFolderId, filterStatus, filterPriority, todos.length, isLoading, error]);
   
   const updateStatusMutation = useUpdateTodoStatusMutation();
   
@@ -131,7 +131,7 @@ const CollapsibleTodoSidebar = ({ currentFolderId }) => {
                 className="p-1.5 hover:bg-secondary-200 dark:hover:bg-secondary-700 rounded-md transition-colors mr-2"
                 title="Sidebar inklappen"
               >
-                <ChevronLeft className="w-4 h-4" />
+                <ChevronRight className="w-5 h-5" />
               </button>
               
               {/* Titel in het midden */}
@@ -159,7 +159,7 @@ const CollapsibleTodoSidebar = ({ currentFolderId }) => {
               className="p-1.5 hover:bg-secondary-200 dark:hover:bg-secondary-700 rounded-md transition-colors mx-auto"
               title="Sidebar uitklappen"
             >
-              <ChevronRight className="w-4 h-4" />
+              <ChevronLeft className="w-5 h-5" />
             </button>
           )}
         </div>

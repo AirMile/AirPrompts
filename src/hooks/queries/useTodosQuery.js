@@ -6,9 +6,9 @@ export const useTodosQuery = ({ folderId, status, priority, showGlobal = true } 
   return useQuery({
     queryKey: ['todos', { folderId, status, priority, showGlobal }],
     queryFn: async () => {
-      console.log('[DEBUG] useTodosQuery - Fetching todos with params:', {
-        folderId, status, priority, showGlobal
-      });
+      // console.log('[DEBUG] useTodosQuery - Fetching todos with params:', {
+      //   folderId, status, priority, showGlobal
+      // });
       
       // Get all todos from localStorage
       const allTodos = localStorage.getTodos();
@@ -38,11 +38,11 @@ export const useTodosQuery = ({ folderId, status, priority, showGlobal = true } 
       // Sort by sort_order
       filteredTodos.sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0));
       
-      console.log('[DEBUG] useTodosQuery - Filtered todos:', {
-        totalCount: allTodos.length,
-        filteredCount: filteredTodos.length,
-        data: filteredTodos
-      });
+      // console.log('[DEBUG] useTodosQuery - Filtered todos:', {
+      //   totalCount: allTodos.length,
+      //   filteredCount: filteredTodos.length,
+      //   data: filteredTodos
+      // });
       
       return filteredTodos;
     },
@@ -72,7 +72,7 @@ export const useCreateTodoMutation = () => {
   
   return useMutation({
     mutationFn: async (todoData) => {
-      console.log('[DEBUG] useCreateTodoMutation - Creating todo:', todoData);
+      // console.log('[DEBUG] useCreateTodoMutation - Creating todo:', todoData);
       
       const newTodo = localStorage.createTodo({
         ...todoData,

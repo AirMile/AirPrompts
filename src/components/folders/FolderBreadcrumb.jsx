@@ -3,6 +3,19 @@ import React, { useState, useRef, useEffect } from 'react';
 const FolderBreadcrumb = ({ folders = [], currentFolderId, onFolderSelect, className = '' }) => {
   const [showDropdown, setShowDropdown] = useState(false);
   const dropdownRef = useRef(null);
+  
+  // ALTIJD eerst alle hooks aanroepen voordat er conditionele logic komt
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setShowDropdown(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
   // Build path from root to current folder
   const buildPath = (folderId) => {
     const path = [];
@@ -17,21 +30,16 @@ const FolderBreadcrumb = ({ folders = [], currentFolderId, onFolderSelect, class
   };
 
   const fullPath = currentFolderId ? buildPath(currentFolderId) : [];
-  // Filter out root folder from breadcrumb
-  const path = fullPath.filter(folder => folder.id !== 'root');
-
-  useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
-        setShowDropdown(false);
-      }
-    };
-
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
-
-  if (path.length === 0) return null;
+  
+  // Handle root folder specially - show "Home" instead of filtering it out
+  let path;
+  if (currentFolderId === 'root' || !currentFolderId) {
+    path = [{ id: 'root', name: 'Home' }];
+  } else {
+    // Filter out root folder from breadcrumb for non-root paths
+    path = fullPath.filter(folder => folder.id !== 'root');
+    if (path.length === 0) return null; // Nu is dit veilig omdat alle hooks al zijn aangeroepen
+  }
 
   const shouldTruncate = path.length > 3;
   const displayPath = shouldTruncate ? [path[0], '...', ...path.slice(-2)] : path;

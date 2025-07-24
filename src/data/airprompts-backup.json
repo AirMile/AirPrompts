@@ -1,0 +1,61 @@
+{
+  "airprompts_templates": [],
+  "airprompts_workflows": [],
+  "airprompts_snippets": [
+    
+    {
+      "tags": [
+        "style"
+      ],
+      "favorite": false,
+      "description": "test",
+      "folderIds": [
+        "snippets",
+        "folder-1753367744590-tp2i9n7e6"
+      ],
+      "name": "test",
+      "content": "tset",
+      "updated_at": "2025-07-24T15:38:40.821Z",
+      "folderId": "snippets",
+      "id": "5d3a44c6-9ceb-4c09-a78c-d36892b3a106",
+      "createdAt": "2025-07-24T15:38:40.827Z",
+      "updatedAt": "2025-07-24T15:39:15.024Z",
+      "folderFavorites": {
+        "folder-1753367744590-tp2i9n7e6": {
+          "isFavorite": true,
+          "favoriteOrder": 0
+        }
+      }
+    }
+  ],
+  "airprompts_folders": [
+    {
+      "id": "folder-1753367717060-o23d25578",
+      "name": "Projects",
+      "icon": "Hammer",
+      "type": "folder",
+      "favorite": false,
+      "createdAt": "2025-07-24T14:35:17.065Z",
+      "updatedAt": "2025-07-24T15:22:16.785Z",
+      "parent_id": null,
+      "sortOrder": 11,
+      "description": ""
+    },
+    {
+      "id": "folder-1753367744590-tp2i9n7e6",
+      "name": "Unity Game",
+      "icon": "Gamepad2",
+      "type": "folder",
+      "favorite": false,
+      "createdAt": "2025-07-24T14:35:44.595Z",
+      "updatedAt": "2025-07-24T14:35:44.595Z",
+      "parent_id": null,
+      "sortOrder": 12
+    }
+  ],
+  "airprompts_root_folder": {
+    "description": "test",
+    "updatedAt": "2025-07-24T15:25:35.848Z"
+  },
+  "airprompts_todos": []
+}

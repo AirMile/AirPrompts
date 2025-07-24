@@ -170,13 +170,13 @@ const PromptTemplateSystemInner = () => {
   const isInitialLoading = templatesPending || workflowsPending || snippetsPending || foldersPending;
   const isFetching = templatesLoading || workflowsLoading || snippetsLoading || foldersLoading;
   
-  // Minimal debug logging
-  console.log('📊 PromptTemplateSystem render - Data counts:', {
-    templates: templates?.length || 0,
-    workflows: workflows?.length || 0,
-    snippets: snippets?.length || 0,
-    folders: folders?.length || 0
-  });
+  // Debug logging commented out to reduce console noise
+  // console.log('📊 PromptTemplateSystem render - Data counts:', {
+  //   templates: templates?.length || 0,
+  //   workflows: workflows?.length || 0,
+  //   snippets: snippets?.length || 0,
+  //   folders: folders?.length || 0
+  // });
   
   // Monitor online status
   const { isOnline, hasBeenOffline } = useOnlineStatus();
@@ -202,7 +202,7 @@ const PromptTemplateSystemInner = () => {
       console.log('🔄 Refreshing folders from localStorage...');
     };
     
-    console.log('🛠️ Debug: Run window.clearFoldersData() to clear placeholder folders');
+    // console.log('🛠️ Debug: Run window.clearFoldersData() to clear placeholder folders');
     
     return () => {
       delete window.clearFoldersData;

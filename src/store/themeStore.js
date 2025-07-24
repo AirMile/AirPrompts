@@ -53,6 +53,42 @@ const themeStore = create(
           icon: '⚪',
           light: 'theme-grey-light',
           dark: 'theme-grey-dark'
+        },
+        charcoal: {
+          name: 'Charcoal',
+          icon: '◯',
+          light: 'theme-charcoal-light',
+          dark: 'theme-charcoal-dark'
+        },
+        dracula: {
+          name: 'Dracula',
+          icon: '🧛',
+          light: 'theme-dracula-light',
+          dark: 'theme-dracula-dark'
+        },
+        onedark: {
+          name: 'One Dark Pro',
+          icon: '🌑',
+          light: 'theme-onedark-light',
+          dark: 'theme-onedark-dark'
+        },
+        tokyo: {
+          name: 'Tokyo Night',
+          icon: '🌃',
+          light: 'theme-tokyo-light',
+          dark: 'theme-tokyo-dark'
+        },
+        catppuccin: {
+          name: 'Catppuccin',
+          icon: '🐱',
+          light: 'theme-catppuccin-light',
+          dark: 'theme-catppuccin-dark'
+        },
+        ayu: {
+          name: 'Ayu',
+          icon: '🎨',
+          light: 'theme-ayu-light',
+          dark: 'theme-ayu-dark'
         }
       },
       
@@ -293,7 +329,7 @@ const themeStore = create(
       }
     }),
     {
-      name: 'theme-storage',
+      name: 'theme-storage-v2', // Updated version to force reload with new themes
       onRehydrateStorage: () => (state) => {
         // Initialize theme when store is rehydrated
         state?.initializeTheme();

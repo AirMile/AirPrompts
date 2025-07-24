@@ -15,6 +15,7 @@ const FolderModal = ({
   folders = [] 
 }) => {
   const [name, setName] = useState('');
+  const [description, setDescription] = useState('');
   const [selectedIcon, setSelectedIcon] = useState('Folder');
   const [errors, setErrors] = useState({});
   const [iconSearchQuery, setIconSearchQuery] = useState('');
@@ -41,9 +42,11 @@ const FolderModal = ({
   useEffect(() => {
     if (folder) {
       setName(folder.name);
+      setDescription(folder.description || '');
       setSelectedIcon(folder.icon || 'Folder');
     } else {
       setName('');
+      setDescription('');
       setSelectedIcon('Folder');
     }
     setErrors({});
@@ -86,6 +89,7 @@ const FolderModal = ({
     
     const folderData = {
       name: name.trim(),
+      description: description.trim(),
       icon: selectedIcon,
       parentId,
       type: 'folder',
@@ -168,6 +172,25 @@ const FolderModal = ({
             )}
           </div>
 
+          {/* Description input */}
+          <div className="mb-6">
+            <label htmlFor="folder-description" className="block text-sm font-medium text-secondary-700 dark:text-secondary-300 mb-2">
+              Beschrijving <span className="text-secondary-500 font-normal">(optioneel)</span>
+            </label>
+            <textarea
+              id="folder-description"
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              className="w-full px-3 py-2 border rounded-lg focus:ring-1 focus:ring-primary-500 focus:border-primary-500 focus:outline-none dark:bg-secondary-700 dark:text-secondary-100 border-secondary-300 dark:border-secondary-600 resize-none"
+              placeholder="Voer een korte beschrijving van deze map in..."
+              rows={3}
+              maxLength={200}
+            />
+            <p className="mt-1 text-xs text-secondary-500 dark:text-secondary-400">
+              {description.length}/200 karakters
+            </p>
+          </div>
+
           {/* Icon selector */}
           <div className="mb-6">
             <label className="block text-sm font-medium text-secondary-700 dark:text-secondary-300 mb-2">
@@ -175,14 +198,19 @@ const FolderModal = ({
             </label>
             
             {/* Selected icon preview */}
-            <div className="mb-4 p-4 bg-secondary-100 dark:bg-secondary-700 rounded-lg flex items-center gap-3">
-              <SelectedIconComponent className="w-8 h-8 text-primary-600 dark:text-primary-400" />
-              <div>
+            <div className="mb-4 p-4 bg-secondary-100 dark:bg-secondary-700 rounded-lg flex items-start gap-3">
+              <SelectedIconComponent className="w-8 h-8 text-primary-600 dark:text-primary-400 flex-shrink-0 mt-0.5" />
+              <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium text-secondary-900 dark:text-secondary-100">
                   {name || 'Nieuwe map'}
                 </p>
-                <p className="text-xs text-secondary-500 dark:text-secondary-400">
-                  Geselecteerd icoon: {selectedIcon}
+                {description && (
+                  <p className="text-xs text-secondary-600 dark:text-secondary-400 mt-1 line-clamp-2">
+                    {description}
+                  </p>
+                )}
+                <p className="text-xs text-secondary-500 dark:text-secondary-400 mt-1">
+                  Icoon: {selectedIcon}
                 </p>
               </div>
             </div>

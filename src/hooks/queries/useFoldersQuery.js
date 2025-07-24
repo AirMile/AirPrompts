@@ -15,13 +15,13 @@ export const useFolders = () => {
       if (!response.success) {
         throw new Error(response.error || 'Failed to fetch folders');
       }
-      console.log('🔍 Raw API response for folders:', response.data);
+      // console.log('🔍 Raw API response for folders:', response.data);
       
       // Filter out placeholder folders based on known placeholder IDs
       const placeholderIds = ['root', 'projects', 'writing', 'school', 'development', 'workshop', 'moods', 'blocks', 'ai-character-story', 'prompt-website', 'rogue-lite-game'];
       const filteredFolders = response.data.filter(folder => !placeholderIds.includes(folder.id));
       
-      console.log('🧹 Filtered out placeholder folders, remaining:', filteredFolders.length);
+      // console.log('🧹 Filtered out placeholder folders, remaining:', filteredFolders.length);
       
       // Transform API data to match UI expectations
       const transformedFolders = filteredFolders.map(folder => ({
@@ -35,7 +35,7 @@ export const useFolders = () => {
         sort_order: folder.sort_order
       }));
       
-      console.log('🔍 Transformed folders:', transformedFolders);
+      // console.log('🔍 Transformed folders:', transformedFolders);
       return transformedFolders;
     },
     staleTime: 0, // Always fresh to ensure we get latest data
@@ -106,7 +106,7 @@ export const useUpdateFolder = () => {
         delete apiData.parentId;
       }
       
-      console.log('🔍 Updating folder with API data:', apiData);
+      // console.log('🔍 Updating folder with API data:', apiData);
       const response = await foldersAPI.update(id, apiData);
       if (!response.success) {
         throw new Error(response.error || 'Failed to update folder');

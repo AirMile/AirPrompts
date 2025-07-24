@@ -32,6 +32,7 @@ import { performAdvancedSearch } from '../../utils/searchUtils.js';
 import { useUserPreferences } from '../../hooks/domain/useUserPreferences.js';
 import { useItemColors } from '../../hooks/useItemColors.js';
 import { useFoldersQuery } from '../../hooks/queries/useFoldersQuery.js';
+import { getRootFolder } from '../../utils/localStorageManager.js';
 import { 
   getFolderFavorites, 
   getFolderItems,
@@ -112,13 +113,35 @@ const Homepage = ({
   // Initialize folders hook
   const { updateFolder } = useFoldersQuery();
   
+  // State to trigger re-render when root folder changes
+  const [rootFolderVersion, setRootFolderVersion] = useState(0);
+
   // Handler for updating folder description
   const handleUpdateFolderDescription = useCallback(async (folderId, description) => {
+    console.log('Homepage: handleUpdateFolderDescription called', {
+      folderId,
+      description: description?.substring(0, 50) + '...'
+    });
+    
     try {
-      await updateFolder.mutateAsync({
+      // Special handling for root folder - update localStorage
+      if (folderId === 'root') {
+        console.log('Homepage: Updating root folder in localStorage');
+        const { updateRootFolder } = await import('../../utils/localStorageManager');
+        updateRootFolder({ description });
+        console.log('Homepage: Root folder localStorage updated successfully');
+        // Trigger re-render of currentFolder
+        setRootFolderVersion(prev => prev + 1);
+        return { description };
+      }
+      
+      // For regular folders - use React Query mutation
+      const result = await updateFolder.mutateAsync({
         id: folderId,
         description: description
       });
+      console.log('Homepage: Update successful, result:', result);
+      return result;
     } catch (error) {
       console.error('Failed to update folder description:', error);
       throw error;
@@ -136,9 +159,28 @@ const Homepage = ({
   
   // Get current folder
   const currentFolder = useMemo(() => {
-    if (!folders || !selectedFolderId) return null;
+    if (!selectedFolderId) return null;
+    
+    // For root folder, create a virtual folder object with data from localStorage
+    if (selectedFolderId === 'root') {
+      const rootData = getRootFolder();
+      console.log('Homepage: Loading root folder from localStorage:', {
+        description: rootData.description?.substring(0, 50) + '...',
+        version: rootFolderVersion
+      });
+      return {
+        id: 'root',
+        name: 'Home',
+        description: rootData.description || '',
+        parentId: null,
+        createdAt: new Date().toISOString(),
+        updatedAt: rootData.updatedAt || new Date().toISOString()
+      };
+    }
+    
+    if (!folders) return null;
     return folders.find(f => f.id === selectedFolderId);
-  }, [folders, selectedFolderId]);
+  }, [folders, selectedFolderId, rootFolderVersion]);
 
   // Validate selected folder exists, fallback to root if invalid
   useEffect(() => {
@@ -239,16 +281,16 @@ const Homepage = ({
   const getFilteredItems = useCallback((items, itemType) => {
     if (!items || items.length === 0) return [];
     
-    console.log(`Filtering ${itemType} items:`, { 
-      totalItems: items.length, 
-      selectedFolderId,
-      sampleItem: items[0],
-      itemFolders: items.slice(0, 3).map(item => ({ 
-        id: item.id, 
-        folderId: item.folderId, 
-        folderIds: item.folderIds 
-      }))
-    });
+    // console.log(`Filtering ${itemType} items:`, { 
+    //   totalItems: items.length, 
+    //   selectedFolderId,
+    //   sampleItem: items[0],
+    //   itemFolders: items.slice(0, 3).map(item => ({ 
+    //     id: item.id, 
+    //     folderId: item.folderId, 
+    //     folderIds: item.folderIds 
+    //   }))
+    // });
     
     // Apply folder filtering first
     const folderFiltered = items.filter(item => {
@@ -289,10 +331,10 @@ const Homepage = ({
       return folderMatch;
     });
     
-    console.log(`After folder filtering ${itemType}:`, { 
-      filteredCount: folderFiltered.length,
-      selectedFolderId 
-    });
+    // console.log(`After folder filtering ${itemType}:`, { 
+    //   filteredCount: folderFiltered.length,
+    //   selectedFolderId 
+    // });
     
     // Apply filter system (includes tag filtering, category, favorites, etc.)
     const filterSystemFiltered = filterSystem.applyFilters(folderFiltered, itemType);
@@ -1304,6 +1346,7 @@ const Homepage = ({
             title="Workflows"
             itemCount={fullData ? fullData.length : data.length}
             externalVisible={workflowsVisibility.isVisible}
+            onCreateNew={() => onEditWorkflow({})}
             actionButton={
               <button
                 onClick={() => onEditWorkflow({})}
@@ -1366,6 +1409,7 @@ const Homepage = ({
             title="Templates"
             itemCount={fullData ? fullData.length : data.length}
             externalVisible={templatesVisibility.isVisible}
+            onCreateNew={() => onEditTemplate({})}
             actionButton={
               <button
                 onClick={() => onEditTemplate({})}
@@ -1428,6 +1472,7 @@ const Homepage = ({
             title="Snippets"
             itemCount={fullData ? fullData.length : data.length}
             externalVisible={snippetsVisibility.isVisible}
+            onCreateNew={() => onEditSnippet({})}
             actionButton={
               <button
                 onClick={() => onEditSnippet({})}

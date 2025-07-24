@@ -17,6 +17,7 @@ const STORAGE_KEYS = {
   WORKFLOWS: 'airprompts_workflows', 
   SNIPPETS: 'airprompts_snippets',
   FOLDERS: 'airprompts_folders',
+  ROOT_FOLDER: 'airprompts_root_folder',
   TODOS: 'airprompts_todos',
   FOLDER_UI_STATE: 'airprompts_folder_ui_state',
   HEADER_UI_STATE: 'airprompts_header_ui_state',
@@ -44,6 +45,27 @@ const saveToStorage = (key, data) => {
   } catch (error) {
     console.error(`Error saving ${key}:`, error);
     return false;
+  }
+};
+
+// Root folder management (special case)
+export const getRootFolder = () => {
+  return loadFromStorage(STORAGE_KEYS.ROOT_FOLDER, { description: '' });
+};
+
+export const updateRootFolder = (data) => {
+  try {
+    const currentData = getRootFolder();
+    const updatedData = { 
+      ...currentData, 
+      ...data, 
+      updatedAt: new Date().toISOString() 
+    };
+    saveToStorage(STORAGE_KEYS.ROOT_FOLDER, updatedData);
+    return updatedData;
+  } catch (error) {
+    console.error('Error updating root folder:', error);
+    throw error;
   }
 };
 
@@ -240,6 +262,11 @@ export const createFolder = (folder) => {
 };
 
 export const updateFolder = (id, updates) => {
+  // Special handling for root folder
+  if (id === 'root') {
+    return updateRootFolder(updates);
+  }
+  
   const folders = getFolders();
   const index = folders.findIndex(f => f.id === id);
   if (index !== -1) {

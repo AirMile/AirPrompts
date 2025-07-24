@@ -32,6 +32,7 @@ const CollapsibleSection = ({
   onVisibilityChange = null,
   externalVisible = null,
   isInitialLoad = false,
+  onCreateNew = null, // Function to call when creating new item (extracted from actionButton)
   ...restProps // Pass through any additional props
 }) => {
   const { isVisible: internalVisible, toggle } = useSectionVisibility(sectionId, defaultVisible);
@@ -67,8 +68,15 @@ const CollapsibleSection = ({
   };
 
   const handleToggle = () => {
-    // Only allow toggle if there are items
     const totalCount = count || itemCount || 0;
+    
+    // If no items and onCreateNew is provided, create new item
+    if (totalCount === 0 && onCreateNew) {
+      onCreateNew();
+      return;
+    }
+    
+    // Only allow toggle if there are items
     if (totalCount === 0) return;
     
     if (externalVisible !== null && onVisibilityChange) {
@@ -117,11 +125,11 @@ const CollapsibleSection = ({
           onClick={handleToggle}
           onKeyDown={handleKeyDown}
           className={`flex-1 flex items-center justify-between p-3 focus:outline-none ${
-            (count || itemCount || 0) === 0 ? 'cursor-default' : ''
+            (count || itemCount || 0) === 0 && !onCreateNew ? 'cursor-default' : 'cursor-pointer'
           }`}
           aria-expanded={isVisible}
           aria-controls={`section-content-${sectionId}`}
-          disabled={(count || itemCount || 0) === 0}
+          disabled={(count || itemCount || 0) === 0 && !onCreateNew}
           {...headerProps}
         >
           <div className="flex items-center space-x-2">

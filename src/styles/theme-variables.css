@@ -113,10 +113,10 @@
   --opacity-95: 0.95;
   --opacity-100: 1;
   
-  /* Scrollbar Colors - Using existing color variables */
-  --scrollbar-track: 31 41 55;
-  --scrollbar-thumb: 75 85 99;
-  --scrollbar-thumb-hover: 107 114 128;
+  /* Scrollbar Colors - Light mode */
+  --scrollbar-track: var(--color-secondary-100);
+  --scrollbar-thumb: var(--color-secondary-300);
+  --scrollbar-thumb-hover: var(--color-secondary-400);
 }
 
 /* Theme-specific overrides */
@@ -139,6 +139,14 @@
     --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.3), 0 10px 10px -5px rgba(0, 0, 0, 0.2);
     --shadow-2xl: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
   }
+}
+
+/* Dark mode class overrides */
+:root.dark {
+  /* Scrollbar Colors - Dark mode */
+  --scrollbar-track: var(--color-secondary-800);
+  --scrollbar-thumb: var(--color-secondary-600);
+  --scrollbar-thumb-hover: var(--color-secondary-500);
 }
 
 /* Custom theme class for easy switching */

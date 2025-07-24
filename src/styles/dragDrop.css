@@ -211,32 +211,89 @@ body.dragging-folder * {
   cursor: grabbing !important;
 }
 
-/* Folder drag feedback */
+/* Folder drag feedback - Mobile style */
 .folder-item.dragging {
-  opacity: 0.7;
-  transform: rotate(2deg);
-  box-shadow: 0 8px 25px rgba(0,0,0,0.15);
-  z-index: 1000;
+  /* Don't move the original item - mobile behavior */
+  opacity: 0.3;
+  transform: none !important;
+  transition: opacity 0.2s ease;
+  pointer-events: none;
+  z-index: 1;
 }
 
-/* Folder drop zones */
+/* Dragging placeholder - keeps space */
+.dragging-placeholder {
+  /* Maintain the space */
+  position: relative;
+  opacity: 0.4;
+  filter: grayscale(50%);
+  transition: opacity 0.2s ease, filter 0.2s ease;
+}
+
+.dragging-placeholder::before {
+  content: '';
+  position: absolute;
+  inset: -2px;
+  background: rgba(var(--color-primary-500), 0.03);
+  border: 2px dashed rgba(var(--color-primary-500), 0.3);
+  border-radius: 8px;
+  pointer-events: none;
+  z-index: -1;
+}
+
+/* Folder drop zones - Mobile style */
 .folder-drop-zone {
   transition: all 0.2s ease;
   border-radius: 6px;
+  position: relative;
 }
 
-.folder-drop-zone.drag-over {
-  background: rgb(var(--color-primary-500) / 0.08);
-  border: 2px dashed rgb(var(--color-primary-500));
+/* Visual feedback for subfolder creation */
+.folder-drop-zone.drop-center {
+  background: linear-gradient(135deg, 
+    rgb(var(--color-primary-500) / 0.15) 0%,
+    rgb(var(--color-primary-400) / 0.1) 100%);
+  box-shadow: inset 0 0 0 3px rgb(var(--color-primary-500) / 0.5);
   transform: scale(1.02);
 }
 
-/* Enhanced folder drag overlay */
+/* Drop position indicators */
+.folder-drop-indicator {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, 
+    rgb(var(--color-primary-400)),
+    rgb(var(--color-primary-600)));
+  border-radius: 3px;
+  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.5);
+  animation: indicator-pulse 0.8s ease-in-out infinite;
+}
+
+@keyframes indicator-pulse {
+  0%, 100% { opacity: 0.7; transform: scaleX(0.95); }
+  50% { opacity: 1; transform: scaleX(1); }
+}
+
+/* Enhanced folder drag overlay - Mobile style */
 .folder-drag-overlay {
-  backdrop-filter: blur(8px);
-  transform: rotate(3deg) scale(1.05);
-  box-shadow: 0 12px 30px rgba(0,0,0,0.2);
+  backdrop-filter: blur(12px);
+  transform: scale(1.08);
+  box-shadow: 0 16px 40px rgba(0,0,0,0.25);
   border: 2px solid rgb(var(--color-primary-500));
+  animation: drag-lift 0.3s ease-out;
+}
+
+@keyframes drag-lift {
+  from {
+    transform: scale(1) translateY(0);
+    box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+  }
+  to {
+    transform: scale(1.08) translateY(-2px);
+    box-shadow: 0 16px 40px rgba(0,0,0,0.25);
+  }
 }
 
 /* High contrast mode support */
