@@ -35,6 +35,7 @@ import { loadAllData } from '../utils/dataStorage.js';
 import { createSaveHandler } from '../utils/entityHelpers.js';
 import { useOnlineStatus } from '../hooks/domain/useOnlineStatus';
 import { useSyncStatus } from '../hooks/domain/useSyncStatus';
+import { clearFoldersData } from '../utils/localStorageManager';
 import defaultTemplates from '../data/defaultTemplates.json';
 import defaultWorkflows from '../data/defaultWorkflows.json';
 import defaultSnippets from '../data/defaultSnippets.json';
@@ -143,16 +144,11 @@ const PromptTemplateSystemInner = () => {
         });
       });
       
-      // Call the batch sort-order API endpoint
-      const response = await fetch('http://localhost:3001/api/folders/batch-sort-order', {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ updates })
-      });
+      // Use localStorage instead of API
+      const foldersAPI = (await import('../hooks/useAPI.js')).useFoldersAPI();
+      const result = await foldersAPI.updateSortOrders(updates);
       
-      if (!response.ok) {
+      if (!result.success) {
         throw new Error('Failed to update folder sort order');
       }
       
@@ -197,6 +193,22 @@ const PromptTemplateSystemInner = () => {
     }
   }, [isOnline, hasBeenOffline]);
   
+  // Debug helper - Make clearFoldersData available globally
+  useEffect(() => {
+    window.clearFoldersData = () => {
+      clearFoldersData();
+      // Invalidate folders query to reload from localStorage
+      queryClient.invalidateQueries({ queryKey: ['folders'] });
+      console.log('🔄 Refreshing folders from localStorage...');
+    };
+    
+    console.log('🛠️ Debug: Run window.clearFoldersData() to clear placeholder folders');
+    
+    return () => {
+      delete window.clearFoldersData;
+    };
+  }, [queryClient]);
+
   // Log sync queue status
   useEffect(() => {
     if (pendingCount > 0) {

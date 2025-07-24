@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Search, X, Clock, Sun, Moon } from 'lucide-react';
+import { Search, X, Clock } from 'lucide-react';
 import { searchHistory, generateSearchSuggestions, debounceSearch } from '../../utils/searchUtils.js';
-import themeStore from '../../store/themeStore.js';
 
 /**
  * Advanced Search Component
@@ -22,9 +21,6 @@ const AdvancedSearch = ({
   
   const searchInputRef = useRef(null);
   const suggestionsRef = useRef(null);
-  
-  // Theme store
-  const { isDarkMode, toggleDarkMode } = themeStore();
   
   // Load search history on component mount
   useEffect(() => {
@@ -158,32 +154,18 @@ const AdvancedSearch = ({
             // Delay hiding suggestions to allow for clicks
             setTimeout(() => setShowSuggestions(false), 200);
           }}
-          className="w-full pl-10 pr-20 py-3 border border-secondary-300 dark:border-secondary-600 bg-white dark:bg-secondary-800 text-secondary-900 dark:text-secondary-100 rounded-lg focus:outline-none focus:border-primary-500 placeholder-secondary-400 dark:placeholder-secondary-500"
+          className="w-full pl-10 pr-20 py-3 border border-secondary-300 dark:border-secondary-600 bg-white dark:bg-secondary-800 text-secondary-900 dark:text-secondary-100 rounded-lg focus:outline-none focus:border-primary-300 focus:ring-1 focus:ring-primary-200 dark:focus:border-primary-500 dark:focus:ring-primary-400/30 placeholder-secondary-400 dark:placeholder-secondary-500"
         />
         
         {/* Clear Button */}
         {searchQuery && (
           <button
             onClick={clearSearch}
-            className="absolute right-12 top-1/2 transform -translate-y-1/2 text-secondary-400 hover:text-secondary-600 dark:hover:text-secondary-300"
+            className="absolute right-3 top-1/2 transform -translate-y-1/2 text-secondary-400 hover:text-secondary-600 dark:hover:text-secondary-300"
           >
             <X className="w-4 h-4" />
           </button>
         )}
-        
-        
-        {/* Dark Mode Toggle */}
-        <button
-          onClick={toggleDarkMode}
-          className="absolute right-3 top-1/2 transform -translate-y-1/2 text-secondary-400 hover:text-secondary-600 dark:hover:text-secondary-300 p-1 rounded-lg"
-          title={isDarkMode ? "Switch to light mode" : "Switch to dark mode"}
-        >
-          {isDarkMode ? (
-            <Sun className="w-4 h-4" />
-          ) : (
-            <Moon className="w-4 h-4" />
-          )}
-        </button>
         
       </div>
       

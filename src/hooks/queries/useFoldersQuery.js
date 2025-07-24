@@ -1,21 +1,30 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { useAPI } from '../useAPI';
+import { useFoldersAPI } from '../useAPI';
 import { useOfflineMutation } from './useOfflineMutation';
 
 /**
  * Hook to fetch all folders
  */
 export const useFolders = () => {
-  const api = useAPI();
+  const foldersAPI = useFoldersAPI();
   
   return useQuery({
     queryKey: ['folders'],
     queryFn: async () => {
-      const response = await api.get('/folders');
-      console.log('🔍 Raw API response for folders:', response);
+      const response = await foldersAPI.getAll();
+      if (!response.success) {
+        throw new Error(response.error || 'Failed to fetch folders');
+      }
+      console.log('🔍 Raw API response for folders:', response.data);
+      
+      // Filter out placeholder folders based on known placeholder IDs
+      const placeholderIds = ['root', 'projects', 'writing', 'school', 'development', 'workshop', 'moods', 'blocks', 'ai-character-story', 'prompt-website', 'rogue-lite-game'];
+      const filteredFolders = response.data.filter(folder => !placeholderIds.includes(folder.id));
+      
+      console.log('🧹 Filtered out placeholder folders, remaining:', filteredFolders.length);
       
       // Transform API data to match UI expectations
-      const transformedFolders = response.map(folder => ({
+      const transformedFolders = filteredFolders.map(folder => ({
         ...folder,
         // Convert snake_case to camelCase and null to 'root'
         parentId: folder.parent_id === null ? 'root' : folder.parent_id,
@@ -38,7 +47,7 @@ export const useFolders = () => {
  * Hook to create a new folder
  */
 export const useCreateFolder = () => {
-  const api = useAPI();
+  const foldersAPI = useFoldersAPI();
   const queryClient = useQueryClient();
   
   return useOfflineMutation({
@@ -55,8 +64,11 @@ export const useCreateFolder = () => {
       }
       
       console.log('🔍 Creating folder with API data:', apiData);
-      const response = await api.post('/folders', apiData);
-      return response;
+      const response = await foldersAPI.create(apiData);
+      if (!response.success) {
+        throw new Error(response.error || 'Failed to create folder');
+      }
+      return response.data;
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['folders'] });
@@ -71,7 +83,7 @@ export const useCreateFolder = () => {
  * Hook to update a folder
  */
 export const useUpdateFolder = () => {
-  const api = useAPI();
+  const foldersAPI = useFoldersAPI();
   const queryClient = useQueryClient();
   
   return useOfflineMutation({
@@ -95,8 +107,11 @@ export const useUpdateFolder = () => {
       }
       
       console.log('🔍 Updating folder with API data:', apiData);
-      const response = await api.put(`/folders/${id}`, apiData);
-      return response;
+      const response = await foldersAPI.update(id, apiData);
+      if (!response.success) {
+        throw new Error(response.error || 'Failed to update folder');
+      }
+      return response.data;
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['folders'] });
@@ -111,14 +126,17 @@ export const useUpdateFolder = () => {
  * Hook to delete a folder
  */
 export const useDeleteFolder = () => {
-  const api = useAPI();
+  const foldersAPI = useFoldersAPI();
   const queryClient = useQueryClient();
   
   return useOfflineMutation({
     mutationFn: async (folderId) => {
       // Always send force=true to allow deletion of folders with content
       // since we removed the confirmation dialog from the UI
-      const response = await api.delete(`/folders/${folderId}?force=true`);
+      const response = await foldersAPI.remove(folderId);
+      if (!response.success) {
+        throw new Error(response.error || 'Failed to delete folder');
+      }
       return response;
     },
     onSuccess: () => {

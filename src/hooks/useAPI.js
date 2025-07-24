@@ -1,246 +1,449 @@
 /**
- * useAPI Hook - API Integration with localStorage fallback
- * Provides seamless integration between backend API and localStorage
+ * useAPI Hook - LocalStorage Only Version
+ * Tijdelijke vervanging voor database-gebaseerde API
  */
 
 import { useState, useCallback } from 'react';
+import * as localStorage from '../utils/localStorageManager.js';
 
-// API Configuration
-const API_BASE_URL = 'http://localhost:3001/api';
-const REQUEST_TIMEOUT = 10000; // 10 seconds
-
-/**
- * API Response format validation
- * Backend returns: { success: boolean, data: any, meta: object }
- */
-const validateAPIResponse = (response) => {
-  return response && typeof response.success === 'boolean';
-};
+// Initialize localStorage on first load
+localStorage.initializeLocalStorage();
 
 /**
- * Main useAPI hook
- * @param {Object} options - Configuration options
- * @returns {Object} API methods and state
+ * Templates API
  */
-export const useAPI = (options = {}) => {
+export const useTemplatesAPI = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-  const [lastRequestTime, setLastRequestTime] = useState(null);
 
-  // Clear error state
-  const clearError = useCallback(() => {
-    setError(null);
-  }, []);
-
-  // Generic API request method
-  const request = useCallback(async (endpoint, options = {}) => {
-    const {
-      method = 'GET',
-      data = null,
-      headers = {},
-      timeout = REQUEST_TIMEOUT,
-      fallbackData = null
-    } = options;
-
+  const getAll = useCallback(async () => {
     setLoading(true);
-    setError(null);
-    setLastRequestTime(Date.now());
-
     try {
-      // Construct request options
-      const requestOptions = {
-        method,
-        headers: {
-          'Content-Type': 'application/json',
-          ...headers
-        },
-        signal: AbortSignal.timeout(timeout)
-      };
-
-      // Add body for non-GET requests
-      if (data && method !== 'GET') {
-        requestOptions.body = JSON.stringify(data);
-      }
-
-      // Make API request
-      const url = `${API_BASE_URL}${endpoint}`;
-      console.log(`🌐 API Request: ${method} ${url}`, data ? { data } : '');
-      
-      const response = await fetch(url, requestOptions);
-      
-      // Handle HTTP errors
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-      }
-
-      // Handle responses with no content (e.g., 204 DELETE responses)
-      if (response.status === 204 || response.headers.get('content-length') === '0') {
-        console.log(`✅ API Success: ${method} ${endpoint} (No Content)`);
-        return null;
-      }
-
-      const result = await response.json();
-
-      // Validate response format
-      if (!validateAPIResponse(result)) {
-        throw new Error('Invalid API response format');
-      }
-
-      // Handle API-level errors
-      if (!result.success) {
-        throw new Error(result.error?.message || 'API request failed');
-      }
-
-      console.log(`✅ API Success: ${method} ${endpoint}`, result.data);
-      return result.data;
-
-    } catch (err) {
-      console.warn(`⚠️ API Error: ${method} ${endpoint}`, err.message);
-      
-      // Categorize errors for better handling
-      let errorType = 'UNKNOWN';
-      let errorMessage = err.message;
-
-      if (err.name === 'AbortError' || err.message.includes('timeout')) {
-        errorType = 'TIMEOUT';
-        errorMessage = 'Request timeout - check your connection';
-      } else if (err.message.includes('Failed to fetch') || err.message.includes('NetworkError')) {
-        errorType = 'NETWORK';
-        errorMessage = 'Network error - API server may be down';
-      } else if (err.message.includes('HTTP 4')) {
-        errorType = 'CLIENT_ERROR';
-      } else if (err.message.includes('HTTP 5')) {
-        errorType = 'SERVER_ERROR';
-      }
-
-      const apiError = {
-        type: errorType,
-        message: errorMessage,
-        originalError: err,
-        timestamp: Date.now(),
-        endpoint,
-        method
-      };
-
-      setError(apiError);
-
-      // Return fallback data if provided
-      if (fallbackData !== null) {
-        console.log(`🔄 Using fallback data for ${endpoint}`);
-        return fallbackData;
-      }
-
-      // Re-throw error if no fallback
-      throw apiError;
-
-    } finally {
+      const templates = localStorage.getTemplates();
       setLoading(false);
+      return { success: true, data: templates };
+    } catch (err) {
+      setError(err);
+      setLoading(false);
+      return { success: false, error: err.message };
     }
   }, []);
 
-  // Convenience methods for different HTTP verbs
-  const get = useCallback((endpoint, options = {}) => {
-    return request(endpoint, { ...options, method: 'GET' });
-  }, [request]);
-
-  const post = useCallback((endpoint, data, options = {}) => {
-    return request(endpoint, { ...options, method: 'POST', data });
-  }, [request]);
-
-  const put = useCallback((endpoint, data, options = {}) => {
-    return request(endpoint, { ...options, method: 'PUT', data });
-  }, [request]);
-
-  const del = useCallback((endpoint, options = {}) => {
-    return request(endpoint, { ...options, method: 'DELETE' });
-  }, [request]);
-
-  // Health check method
-  const checkHealth = useCallback(async () => {
+  const getById = useCallback(async (id) => {
+    setLoading(true);
     try {
-      const result = await get('/health');
-      return result?.status === 'ok';
+      const template = localStorage.getTemplate(id);
+      setLoading(false);
+      return { success: true, data: template };
     } catch (err) {
-      return false;
+      setError(err);
+      setLoading(false);
+      return { success: false, error: err.message };
     }
-  }, [get]);
+  }, []);
+
+  const create = useCallback(async (data) => {
+    setLoading(true);
+    try {
+      const template = localStorage.createTemplate(data);
+      setLoading(false);
+      return { success: true, data: template };
+    } catch (err) {
+      setError(err);
+      setLoading(false);
+      return { success: false, error: err.message };
+    }
+  }, []);
+
+  const update = useCallback(async (id, data) => {
+    setLoading(true);
+    try {
+      const template = localStorage.updateTemplate(id, data);
+      setLoading(false);
+      return { success: true, data: template };
+    } catch (err) {
+      setError(err);
+      setLoading(false);
+      return { success: false, error: err.message };
+    }
+  }, []);
+
+  const remove = useCallback(async (id) => {
+    setLoading(true);
+    try {
+      localStorage.deleteTemplate(id);
+      setLoading(false);
+      return { success: true };
+    } catch (err) {
+      setError(err);
+      setLoading(false);
+      return { success: false, error: err.message };
+    }
+  }, []);
+
+  return { getAll, getById, create, update, remove, loading, error };
+};
+
+/**
+ * Workflows API
+ */
+export const useWorkflowsAPI = () => {
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+
+  const getAll = useCallback(async () => {
+    setLoading(true);
+    try {
+      const workflows = localStorage.getWorkflows();
+      setLoading(false);
+      return { success: true, data: workflows };
+    } catch (err) {
+      setError(err);
+      setLoading(false);
+      return { success: false, error: err.message };
+    }
+  }, []);
+
+  const getById = useCallback(async (id) => {
+    setLoading(true);
+    try {
+      const workflow = localStorage.getWorkflow(id);
+      setLoading(false);
+      return { success: true, data: workflow };
+    } catch (err) {
+      setError(err);
+      setLoading(false);
+      return { success: false, error: err.message };
+    }
+  }, []);
+
+  const create = useCallback(async (data) => {
+    setLoading(true);
+    try {
+      const workflow = localStorage.createWorkflow(data);
+      setLoading(false);
+      return { success: true, data: workflow };
+    } catch (err) {
+      setError(err);
+      setLoading(false);
+      return { success: false, error: err.message };
+    }
+  }, []);
+
+  const update = useCallback(async (id, data) => {
+    setLoading(true);
+    try {
+      const workflow = localStorage.updateWorkflow(id, data);
+      setLoading(false);
+      return { success: true, data: workflow };
+    } catch (err) {
+      setError(err);
+      setLoading(false);
+      return { success: false, error: err.message };
+    }
+  }, []);
+
+  const remove = useCallback(async (id) => {
+    setLoading(true);
+    try {
+      localStorage.deleteWorkflow(id);
+      setLoading(false);
+      return { success: true };
+    } catch (err) {
+      setError(err);
+      setLoading(false);
+      return { success: false, error: err.message };
+    }
+  }, []);
+
+  return { getAll, getById, create, update, remove, loading, error };
+};
+
+/**
+ * Snippets API
+ */
+export const useSnippetsAPI = () => {
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+
+  const getAll = useCallback(async () => {
+    setLoading(true);
+    try {
+      const snippets = localStorage.getSnippets();
+      setLoading(false);
+      return { success: true, data: snippets };
+    } catch (err) {
+      setError(err);
+      setLoading(false);
+      return { success: false, error: err.message };
+    }
+  }, []);
+
+  const getById = useCallback(async (id) => {
+    setLoading(true);
+    try {
+      const snippet = localStorage.getSnippet(id);
+      setLoading(false);
+      return { success: true, data: snippet };
+    } catch (err) {
+      setError(err);
+      setLoading(false);
+      return { success: false, error: err.message };
+    }
+  }, []);
+
+  const create = useCallback(async (data) => {
+    setLoading(true);
+    try {
+      const snippet = localStorage.createSnippet(data);
+      setLoading(false);
+      return { success: true, data: snippet };
+    } catch (err) {
+      setError(err);
+      setLoading(false);
+      return { success: false, error: err.message };
+    }
+  }, []);
+
+  const update = useCallback(async (id, data) => {
+    setLoading(true);
+    try {
+      const snippet = localStorage.updateSnippet(id, data);
+      setLoading(false);
+      return { success: true, data: snippet };
+    } catch (err) {
+      setError(err);
+      setLoading(false);
+      return { success: false, error: err.message };
+    }
+  }, []);
+
+  const remove = useCallback(async (id) => {
+    setLoading(true);
+    try {
+      localStorage.deleteSnippet(id);
+      setLoading(false);
+      return { success: true };
+    } catch (err) {
+      setError(err);
+      setLoading(false);
+      return { success: false, error: err.message };
+    }
+  }, []);
+
+  return { getAll, getById, create, update, remove, loading, error };
+};
+
+/**
+ * Folders API
+ */
+export const useFoldersAPI = () => {
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+
+  const getAll = useCallback(async () => {
+    setLoading(true);
+    try {
+      const folders = localStorage.getFolders();
+      setLoading(false);
+      return { success: true, data: folders };
+    } catch (err) {
+      setError(err);
+      setLoading(false);
+      return { success: false, error: err.message };
+    }
+  }, []);
+
+  const getById = useCallback(async (id) => {
+    setLoading(true);
+    try {
+      const folder = localStorage.getFolder(id);
+      setLoading(false);
+      return { success: true, data: folder };
+    } catch (err) {
+      setError(err);
+      setLoading(false);
+      return { success: false, error: err.message };
+    }
+  }, []);
+
+  const create = useCallback(async (data) => {
+    setLoading(true);
+    try {
+      const folder = localStorage.createFolder(data);
+      setLoading(false);
+      return { success: true, data: folder };
+    } catch (err) {
+      setError(err);
+      setLoading(false);
+      return { success: false, error: err.message };
+    }
+  }, []);
+
+  const update = useCallback(async (id, data) => {
+    setLoading(true);
+    try {
+      const folder = localStorage.updateFolder(id, data);
+      setLoading(false);
+      return { success: true, data: folder };
+    } catch (err) {
+      setError(err);
+      setLoading(false);
+      return { success: false, error: err.message };
+    }
+  }, []);
+
+  const remove = useCallback(async (id) => {
+    setLoading(true);
+    try {
+      localStorage.deleteFolder(id);
+      setLoading(false);
+      return { success: true };
+    } catch (err) {
+      setError(err);
+      setLoading(false);
+      return { success: false, error: err.message };
+    }
+  }, []);
+
+  const updateSortOrders = useCallback(async (updates) => {
+    setLoading(true);
+    try {
+      const folders = localStorage.updateFolderSortOrders(updates);
+      setLoading(false);
+      return { success: true, data: folders };
+    } catch (err) {
+      setError(err);
+      setLoading(false);
+      return { success: false, error: err.message };
+    }
+  }, []);
+
+  return { getAll, getById, create, update, remove, updateSortOrders, loading, error };
+};
+
+/**
+ * Todos API
+ */
+export const useTodosAPI = () => {
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+
+  const getAll = useCallback(async () => {
+    setLoading(true);
+    try {
+      const todos = localStorage.getTodos();
+      setLoading(false);
+      return { success: true, data: todos };
+    } catch (err) {
+      setError(err);
+      setLoading(false);
+      return { success: false, error: err.message };
+    }
+  }, []);
+
+  const create = useCallback(async (data) => {
+    setLoading(true);
+    try {
+      const todo = localStorage.createTodo(data);
+      setLoading(false);
+      return { success: true, data: todo };
+    } catch (err) {
+      setError(err);
+      setLoading(false);
+      return { success: false, error: err.message };
+    }
+  }, []);
+
+  const update = useCallback(async (id, data) => {
+    setLoading(true);
+    try {
+      const todo = localStorage.updateTodo(id, data);
+      setLoading(false);
+      return { success: true, data: todo };
+    } catch (err) {
+      setError(err);
+      setLoading(false);
+      return { success: false, error: err.message };
+    }
+  }, []);
+
+  const remove = useCallback(async (id) => {
+    setLoading(true);
+    try {
+      localStorage.deleteTodo(id);
+      setLoading(false);
+      return { success: true };
+    } catch (err) {
+      setError(err);
+      setLoading(false);
+      return { success: false, error: err.message };
+    }
+  }, []);
+
+  return { getAll, create, update, remove, loading, error };
+};
+
+/**
+ * UI State APIs
+ */
+export const useUIStateAPI = () => {
+  const toggleFolderExpansion = useCallback(async (folderId, isExpanded) => {
+    try {
+      const state = localStorage.updateFolderUIState(folderId, isExpanded);
+      return { success: true, data: state };
+    } catch (err) {
+      return { success: false, error: err.message };
+    }
+  }, []);
+
+  const toggleHeaderExpansion = useCallback(async (folderId, headerType, isExpanded) => {
+    try {
+      const state = localStorage.updateHeaderUIState(folderId, headerType, isExpanded);
+      return { success: true, data: state };
+    } catch (err) {
+      return { success: false, error: err.message };
+    }
+  }, []);
+
+  const getFolderUIState = useCallback(async () => {
+    try {
+      const state = localStorage.getFolderUIState();
+      return { success: true, data: state };
+    } catch (err) {
+      return { success: false, error: err.message };
+    }
+  }, []);
+
+  const getHeaderUIState = useCallback(async () => {
+    try {
+      const state = localStorage.getHeaderUIState();
+      return { success: true, data: state };
+    } catch (err) {
+      return { success: false, error: err.message };
+    }
+  }, []);
 
   return {
-    // State
-    loading,
-    error,
-    lastRequestTime,
-    
-    // Actions
-    request,
-    get,
-    post,
-    put,
-    delete: del,
-    checkHealth,
-    clearError,
-    
-    // Utils
-    isOnline: !error || error.type !== 'NETWORK'
+    toggleFolderExpansion,
+    toggleHeaderExpansion,
+    getFolderUIState,
+    getHeaderUIState
   };
 };
 
 /**
- * Specific API hooks for different data types
+ * Folder Favorites API
  */
-
-// Templates API hook
-export const useTemplatesAPI = () => {
-  const api = useAPI();
-  
-  return {
-    ...api,
-    getTemplates: () => api.get('/templates'),
-    getTemplate: (id) => api.get(`/templates/${id}`),
-    createTemplate: (template) => api.post('/templates', template),
-    updateTemplate: (id, template) => api.put(`/templates/${id}`, template),
-    deleteTemplate: (id) => api.delete(`/templates/${id}`)
-  };
-};
-
-// Workflows API hook  
-export const useWorkflowsAPI = () => {
-  const api = useAPI();
-  
-  return {
-    ...api,
-    getWorkflows: () => api.get('/workflows'),
-    getWorkflow: (id) => api.get(`/workflows/${id}`),
-    createWorkflow: (workflow) => api.post('/workflows', workflow),
-    updateWorkflow: (id, workflow) => api.put(`/workflows/${id}`, workflow),
-    deleteWorkflow: (id) => api.delete(`/workflows/${id}`)
-  };
-};
-
-// Folders API hook
-export const useFoldersAPI = () => {
-  const api = useAPI();
-  
-  return {
-    ...api,
-    getFolders: () => api.get('/folders'),
-    getFolder: (id) => api.get(`/folders/${id}`),
-    createFolder: (folder) => api.post('/folders', folder),
-    updateFolder: (id, folder) => api.put(`/folders/${id}`, folder),
-    deleteFolder: (id) => api.delete(`/folders/${id}`)
-  };
-};
-
-// Folder Favorites API hook
 export const useFolderFavoritesAPI = () => {
-  const api = useAPI();
-  
-  return {
-    ...api,
-    getFolderFavorites: (folderId) => api.get(`/folder-favorites/${folderId}`),
-    addFolderFavorite: (data) => api.post('/folder-favorites', data),
-    removeFolderFavorite: (data) => api.delete('/folder-favorites', data)
-  };
-};
+  const toggleFavorite = useCallback(async ({ entityType, entityId, folderId, isFavorite }) => {
+    try {
+      const item = localStorage.toggleFolderFavorite(entityType, entityId, folderId, isFavorite);
+      return { success: true, data: item };
+    } catch (err) {
+      return { success: false, error: err.message };
+    }
+  }, []);
 
-export default useAPI;
+  return { toggleFavorite };
+};

@@ -20,7 +20,8 @@ import {
   Minimize2,
   Maximize2,
   Move,
-  GripVertical
+  GripVertical,
+  Search
 } from 'lucide-react';
 import { 
   DndContext, 
@@ -51,6 +52,7 @@ import { AVAILABLE_ICONS } from '../../constants/folderIcons';
 import { useFolderUIState } from '../../hooks/queries/useUIStateQuery';
 import { useUserPreferences } from '../../hooks/domain/useUserPreferences';
 import ThemeToggle from '../common/ThemeToggle';
+import AdvancedSearch from '../search/AdvancedSearch';
 
 // DndMonitor component for enhanced drag monitoring and feedback
 const DndMonitor = () => {
@@ -70,11 +72,40 @@ const DndMonitor = () => {
       // Could add proximity detection or other visual feedback here
     },
     onDragOver(event) {
-      if (event.over) {
-        console.log('🎯 Drag monitor: Over target', {
-          over: event.over.id,
-          active: event.active.id
-        });
+      if (event.over && event.active) {
+        const overId = event.over.id;
+        const activeId = event.active.id;
+        
+        // Skip if dragging over self
+        if (overId === activeId) return;
+        
+        // Calculate current drop position
+        const currentDropPosition = getDropPosition(event, overId);
+        
+        // Check if we're hovering over a new target or position
+        if (hoverTarget !== overId || dropPosition !== currentDropPosition) {
+          // Clear existing timer
+          if (hoverDelayRef.current) {
+            clearTimeout(hoverDelayRef.current);
+          }
+          
+          // Set new hover target and position
+          setHoverTarget(overId);
+          setDropPosition(currentDropPosition);
+          setHoverStartTime(Date.now());
+          
+          console.log('🎯 Hover started:', {
+            target: overId,
+            position: currentDropPosition,
+            delay: HOVER_DELAY + 'ms'
+          });
+          
+          // Start hover delay timer
+          hoverDelayRef.current = setTimeout(() => {
+            console.log('🎯 Hover delay completed - showing drop indicators');
+            setActiveDropZone(overId);
+          }, HOVER_DELAY);
+        }
       }
     },
     onDragEnd(event) {
@@ -83,6 +114,17 @@ const DndMonitor = () => {
         over: event.over?.id,
         success: !!event.over
       });
+      
+      // Clear hover delay timer
+      if (hoverDelayRef.current) {
+        clearTimeout(hoverDelayRef.current);
+        hoverDelayRef.current = null;
+      }
+      
+      // Reset hover state
+      setHoverTarget(null);
+      setHoverStartTime(null);
+      setDropPosition(null);
       
       // Clean up visual feedback
       document.body.style.cursor = '';
@@ -110,11 +152,17 @@ const CollapsibleFolderTree = ({
   onReorderFolders,
   className = '',
   onSettingsClick,
-  onAccountClick
+  onAccountClick,
+  // Search props
+  searchQuery = '',
+  setSearchQuery,
+  allItems = [],
+  onAdvancedFilter
 }) => {
   const queryClient = useQueryClient();
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [favoriteFolders, setFavoriteFolders] = useState(new Set());
+  const [isSearchVisible, setIsSearchVisible] = useState(false);
   
   // Use persistent UI state hook
   const { getFolderState, setFolderState, setBatchFolderStates, loading: uiStateLoading } = useFolderUIState();
@@ -146,10 +194,37 @@ const CollapsibleFolderTree = ({
   const [pendingUpdate, setPendingUpdate] = useState(null);
   const [activeDropZone, setActiveDropZone] = useState(null);
   
+  // Hover delay system - like iPhone/Samsung
+  const [hoverTarget, setHoverTarget] = useState(null);
+  const [hoverStartTime, setHoverStartTime] = useState(null);
+  const [dropPosition, setDropPosition] = useState(null);
+  const hoverDelayRef = useRef(null);
+  const HOVER_DELAY = 800; // 800ms delay like mobile phones
+  
   // Refs for debouncing and preventing race conditions
   const updateTimeoutRef = useRef(null);
   const lastUpdateRef = useRef(null);
   const isUpdatingRef = useRef(false);
+
+  // Detect drop position based on mouse position relative to target element
+  const getDropPosition = (event, targetId) => {
+    const targetElement = document.querySelector(`[data-folder-id="${targetId}"]`);
+    if (!targetElement) return 'center';
+
+    const rect = targetElement.getBoundingClientRect();
+    const mouseY = event.activatorEvent?.clientY || event.delta?.y + rect.top + rect.height / 2;
+    
+    const topThreshold = rect.top + rect.height * 0.25;
+    const bottomThreshold = rect.bottom - rect.height * 0.25;
+
+    if (mouseY < topThreshold) {
+      return 'above';
+    } else if (mouseY > bottomThreshold) {
+      return 'below';
+    } else {
+      return 'center';
+    }
+  };
 
   // Initialize favorite folders from props
   useEffect(() => {
@@ -378,6 +453,16 @@ const CollapsibleFolderTree = ({
     
     setIsDragging(true);
     setActiveDropZone(null);
+    
+    // Reset hover state
+    setHoverTarget(null);
+    setHoverStartTime(null);
+    setDropPosition(null);
+    if (hoverDelayRef.current) {
+      clearTimeout(hoverDelayRef.current);
+      hoverDelayRef.current = null;
+    }
+    
     const { active } = event;
     const folder = folders.find(f => f.id === active.id);
     
@@ -409,6 +494,15 @@ const CollapsibleFolderTree = ({
     setDraggedFolder(null);
     setIsDragging(false);
     setActiveDropZone(null);
+    
+    // Clear hover delay timer and state
+    if (hoverDelayRef.current) {
+      clearTimeout(hoverDelayRef.current);
+      hoverDelayRef.current = null;
+    }
+    setHoverTarget(null);
+    setHoverStartTime(null);
+    setDropPosition(null);
 
     if (!over || active.id === over.id) {
       console.log('🎯 Drag ended - no valid drop target');
@@ -436,16 +530,20 @@ const CollapsibleFolderTree = ({
       return;
     }
 
-    // Handle different scenarios:
-    // 1. Reordering within the same parent
-    // 2. Moving to a different parent (change parent relationship)
-    
-    if (activeFolder.parentId === overFolder.parentId) {
-      // Scenario 1: Reordering within same parent
-      handleSameParentReorder(activeFolder, overFolder, currentFolders);
+    // Use the stored drop position from hover delay system
+    const finalDropPosition = dropPosition || 'below'; // fallback to 'below' if no position stored
+    console.log('🎯 Using stored drop position:', finalDropPosition);
+
+    // Handle different scenarios based on drop position:
+    if (finalDropPosition === 'center') {
+      // Scenario 1: Drop ON folder - make it a subfolder
+      handleMakeSubfolder(activeFolder, overFolder, currentFolders);
+    } else if (activeFolder.parentId === overFolder.parentId) {
+      // Scenario 2: Drop above/below sibling - reorder within same parent
+      handleSameParentReorder(activeFolder, overFolder, currentFolders, finalDropPosition);
     } else {
-      // Scenario 2: Moving to different parent - insert as sibling of overFolder
-      handleCrossParentMove(activeFolder, overFolder, currentFolders);
+      // Scenario 3: Drop above/below different parent - move as sibling
+      handleCrossParentMove(activeFolder, overFolder, currentFolders, finalDropPosition);
     }
   };
 
@@ -464,8 +562,35 @@ const CollapsibleFolderTree = ({
     return descendants.some(desc => desc.id === targetId);
   };
 
+  // Handle making a folder a subfolder of another folder
+  const handleMakeSubfolder = async (activeFolder, targetFolder, currentFolders) => {
+    console.log('🎯 Making', activeFolder.name, 'a subfolder of', targetFolder.name);
+    
+    // Find existing subfolders to determine sort order
+    const existingSubfolders = currentFolders.filter(f => f.parentId === targetFolder.id);
+    const newSortOrder = existingSubfolders.length; // Add at end of subfolders
+    
+    // Update the active folder to have the target as parent
+    const updatedFolder = {
+      ...activeFolder,
+      parentId: targetFolder.id,
+      parent_id: targetFolder.id, // For API compatibility
+      sortOrder: newSortOrder,
+      sort_order: newSortOrder
+    };
+    
+    console.log('🎯 Updating folder parent relationship:', updatedFolder);
+    
+    try {
+      await onUpdateFolder(updatedFolder);
+      console.log('✅ Successfully made subfolder');
+    } catch (error) {
+      console.error('❌ Failed to make subfolder:', error);
+    }
+  };
+
   // Handle reordering within the same parent
-  const handleSameParentReorder = (activeFolder, overFolder, currentFolders) => {
+  const handleSameParentReorder = (activeFolder, overFolder, currentFolders, dropPosition = 'below') => {
     const parentId = activeFolder.parentId;
     const siblingFolders = currentFolders
       .filter(f => f.parentId === parentId)
@@ -486,7 +611,21 @@ const CollapsibleFolderTree = ({
     if (activeIndex !== overIndex && activeIndex !== -1 && overIndex !== -1) {
       const reorderedSiblings = [...siblingFolders];
       const [movedFolder] = reorderedSiblings.splice(activeIndex, 1);
-      reorderedSiblings.splice(overIndex, 0, movedFolder);
+      
+      // Adjust insertion index based on drop position
+      let insertIndex = overIndex;
+      if (dropPosition === 'above') {
+        insertIndex = overIndex;
+      } else if (dropPosition === 'below') {
+        insertIndex = overIndex + 1;
+      }
+      
+      // Adjust for removal affecting index
+      if (activeIndex < insertIndex) {
+        insertIndex--;
+      }
+      
+      reorderedSiblings.splice(insertIndex, 0, movedFolder);
       
       // Update sort orders
       const updatedFolders = reorderedSiblings.map((folder, index) => ({
@@ -502,7 +641,7 @@ const CollapsibleFolderTree = ({
   };
 
   // Handle moving to different parent
-  const handleCrossParentMove = (activeFolder, overFolder, currentFolders) => {
+  const handleCrossParentMove = (activeFolder, overFolder, currentFolders, dropPosition = 'below') => {
     console.log('🎯 Cross parent move - moving', activeFolder.name, 'to be child of', overFolder.name);
     
     // Get the target parent (the folder we dropped ON becomes the new parent)
@@ -709,6 +848,14 @@ const CollapsibleFolderTree = ({
     setShowContextMenu(null);
   };
 
+  const handleCreateNewFolder = (parentId) => {
+    const parent = folders.find(f => f.id === parentId) || { id: 'root', name: 'Root' };
+    setParentFolderForNew(parent);
+    setEditingFolder(null);
+    setShowFolderModal(true);
+    setShowContextMenu(null);
+  };
+
   const handleFavoriteToggle = (folderId) => {
     const newFavorites = new Set(favoriteFolders);
     if (newFavorites.has(folderId)) {
@@ -900,10 +1047,23 @@ const CollapsibleFolderTree = ({
     const isFavorite = favoriteFolders.has(folder.id);
     const folderHasChildren = children.length > 0;
     const isInActiveDropZone = isPartOfActiveDropZone(folder.id);
+    
+    // Check if this folder is the active hover target after delay
+    const isHoverTarget = hoverTarget === folder.id && activeDropZone === folder.id;
+    const showDropIndicator = isHoverTarget && dropPosition;
 
     return (
       <>
+        {/* Drop indicator - ABOVE */}
+        {showDropIndicator && dropPosition === 'above' && (
+          <div 
+            className="h-0.5 bg-primary-500 mx-2 mb-1 rounded-full animate-pulse"
+            style={{ marginLeft: `${8 + depth * 16}px` }}
+          />
+        )}
+        
         <div
+          data-folder-id={folder.id}
           className={`
             group flex items-center px-2 py-1.5 rounded-md mb-0.5 relative
             ${isDragable && isDragModeEnabled ? 'cursor-grab active:cursor-grabbing' : 'cursor-pointer'}
@@ -914,6 +1074,7 @@ const CollapsibleFolderTree = ({
             ${isDragable && isDragModeEnabled ? 'border-2 border-dashed border-transparent hover:border-primary-300 dark:hover:border-primary-600' : ''}
             ${isOver ? 'bg-primary-100 dark:bg-primary-800/30 border-primary-400 dark:border-primary-500 shadow-md scale-105 transition-all duration-200' : ''}
             ${isInActiveDropZone && !isOver ? 'bg-primary-50 dark:bg-primary-900/20 border-2 border-primary-300 dark:border-primary-600 shadow-sm transition-all duration-200' : ''}
+            ${showDropIndicator && dropPosition === 'center' ? 'ring-2 ring-primary-500 ring-opacity-50 bg-primary-100 dark:bg-primary-800/30' : ''}
           `}
           style={{ paddingLeft: `${8 + depth * 16}px` }}
           onClick={(!isDragable || !isDragModeEnabled) ? () => onFolderSelect(folder.id) : undefined}
@@ -1009,6 +1170,14 @@ const CollapsibleFolderTree = ({
             </div>
           )}
         </div>
+        
+        {/* Drop indicator - BELOW */}
+        {showDropIndicator && dropPosition === 'below' && (
+          <div 
+            className="h-0.5 bg-primary-500 mx-2 mt-1 rounded-full animate-pulse"
+            style={{ marginLeft: `${8 + depth * 16}px` }}
+          />
+        )}
       </>
     );
   };
@@ -1117,6 +1286,32 @@ const CollapsibleFolderTree = ({
 
         {/* Bottom icons */}
         <div className="px-2 pb-2 space-y-2 border-t border-secondary-300 dark:border-secondary-700 pt-2">
+          {/* Search Button */}
+          {setSearchQuery && (
+            <button
+              onClick={() => {
+                // Expand sidebar and toggle search visibility
+                setIsCollapsed(false);
+                setIsSearchVisible(!isSearchVisible);
+                
+                // Focus search input after expansion and visibility toggle
+                setTimeout(() => {
+                  if (!isSearchVisible) {
+                    const searchInput = document.querySelector('input[placeholder*="Search"]');
+                    if (searchInput) searchInput.focus();
+                  }
+                }, 150);
+              }}
+              className={`w-full p-3 hover:bg-secondary-200 dark:hover:bg-secondary-800 rounded-lg transition-colors ${
+                isSearchVisible 
+                  ? 'bg-primary-100 dark:bg-primary-900/30 text-primary-700 dark:text-primary-400' 
+                  : 'text-secondary-600 dark:text-secondary-400'
+              }`}
+              title={isSearchVisible ? "Hide Search" : "Show Search"}
+            >
+              <Search className="w-5 h-5 mx-auto" />
+            </button>
+          )}
           {onAccountClick && (
             <button
               onClick={onAccountClick}
@@ -1182,6 +1377,20 @@ const CollapsibleFolderTree = ({
               </div>
             </div>
           </div>
+          
+          {/* Search Bar */}
+          {setSearchQuery && isSearchVisible && (
+            <div className="px-4 pb-3">
+              <AdvancedSearch
+                searchQuery={searchQuery}
+                setSearchQuery={setSearchQuery}
+                allItems={allItems}
+                onFilter={onAdvancedFilter}
+                placeholder="Search"
+                className="w-full"
+              />
+            </div>
+          )}
           
           {/* Toolbar */}
           <div className="px-4 pb-3 flex items-center justify-between">
@@ -1363,7 +1572,32 @@ const CollapsibleFolderTree = ({
         </div>
 
         {/* Bottom buttons */}
-        <div className="p-3 border-t border-secondary-200 dark:border-secondary-700 flex justify-between">
+        <div className="p-3 border-t border-secondary-200 dark:border-secondary-700 flex justify-between items-center">
+          {/* Search Button */}
+          {setSearchQuery && (
+            <button
+              onClick={() => {
+                setIsSearchVisible(!isSearchVisible);
+                
+                // Focus search input after visibility toggle
+                setTimeout(() => {
+                  if (!isSearchVisible) {
+                    const searchInput = document.querySelector('input[placeholder*="Search"]');
+                    if (searchInput) searchInput.focus();
+                  }
+                }, 100);
+              }}
+              className={`p-2 hover:bg-secondary-100 dark:hover:bg-secondary-800 rounded-lg transition-colors ${
+                isSearchVisible 
+                  ? 'bg-primary-100 dark:bg-primary-900/30 text-primary-700 dark:text-primary-400' 
+                  : 'text-secondary-600 dark:text-secondary-400'
+              }`}
+              title={isSearchVisible ? "Hide Search" : "Show Search"}
+            >
+              <Search className="w-4 h-4" />
+            </button>
+          )}
+          
           {onAccountClick ? (
             <button
               onClick={onAccountClick}
@@ -1372,9 +1606,12 @@ const CollapsibleFolderTree = ({
             >
               <User className="w-4 h-4" />
             </button>
+          ) : setSearchQuery ? (
+            <div className="w-8" />
           ) : (
             <div className="w-8" />
           )}
+          
           <button
             onClick={onSettingsClick}
             className="p-2 hover:bg-secondary-100 dark:hover:bg-secondary-800 rounded-lg text-secondary-600 dark:text-secondary-400 transition-colors"
@@ -1449,6 +1686,13 @@ const CollapsibleFolderTree = ({
           className="fixed bg-white dark:bg-secondary-800 border border-secondary-300 dark:border-secondary-600 rounded-lg shadow-lg py-1 z-50"
           style={{ left: contextMenuPosition.x, top: contextMenuPosition.y }}
         >
+          <button
+            onClick={() => handleCreateNewFolder(showContextMenu)}
+            className="w-full px-4 py-2 text-left hover:bg-secondary-100 dark:hover:bg-secondary-700 flex items-center gap-2"
+          >
+            <FolderPlus className="w-4 h-4" />
+            <span>Nieuwe submap</span>
+          </button>
           <button
             onClick={() => {
               const folder = folders.find(f => f.id === showContextMenu);

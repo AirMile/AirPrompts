@@ -1,33 +1,50 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import axios from 'axios';
-
-const API_BASE_URL = 'http://localhost:3001/api';
+import * as localStorage from '../../utils/localStorageManager';
 
 // Fetch todos with optional filters
 export const useTodosQuery = ({ folderId, status, priority, showGlobal = true } = {}) => {
   return useQuery({
     queryKey: ['todos', { folderId, status, priority, showGlobal }],
     queryFn: async () => {
-      const params = new URLSearchParams();
-      if (folderId) params.append('folder_id', folderId);
-      if (status) params.append('status', status);
-      if (priority) params.append('priority', priority);
-      params.append('show_global', showGlobal);
-      
       console.log('[DEBUG] useTodosQuery - Fetching todos with params:', {
-        folderId, status, priority, showGlobal,
-        url: `${API_BASE_URL}/todos?${params}`
+        folderId, status, priority, showGlobal
       });
       
-      const response = await axios.get(`${API_BASE_URL}/todos?${params}`);
+      // Get all todos from localStorage
+      const allTodos = localStorage.getTodos();
       
-      console.log('[DEBUG] useTodosQuery - Response received:', {
-        status: response.status,
-        dataLength: response.data?.length || 0,
-        data: response.data
+      // Filter todos based on criteria
+      let filteredTodos = allTodos;
+      
+      // Filter by folder
+      if (folderId) {
+        filteredTodos = filteredTodos.filter(todo => {
+          if (showGlobal && todo.is_global) return true;
+          return todo.folder_id === folderId || 
+                 (todo.folderIds && todo.folderIds.includes(folderId));
+        });
+      }
+      
+      // Filter by status
+      if (status && status !== 'all') {
+        filteredTodos = filteredTodos.filter(todo => todo.status === status);
+      }
+      
+      // Filter by priority
+      if (priority && priority !== 'all') {
+        filteredTodos = filteredTodos.filter(todo => todo.priority === priority);
+      }
+      
+      // Sort by sort_order
+      filteredTodos.sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0));
+      
+      console.log('[DEBUG] useTodosQuery - Filtered todos:', {
+        totalCount: allTodos.length,
+        filteredCount: filteredTodos.length,
+        data: filteredTodos
       });
       
-      return response.data;
+      return filteredTodos;
     },
     staleTime: 30000, // 30 seconds
     onError: (error) => {
@@ -41,8 +58,9 @@ export const useTodoQuery = (todoId) => {
   return useQuery({
     queryKey: ['todos', todoId],
     queryFn: async () => {
-      const response = await axios.get(`${API_BASE_URL}/todos/${todoId}`);
-      return response.data;
+      const todo = localStorage.getTodo(todoId);
+      if (!todo) throw new Error('Todo not found');
+      return todo;
     },
     enabled: !!todoId,
   });
@@ -56,14 +74,17 @@ export const useCreateTodoMutation = () => {
     mutationFn: async (todoData) => {
       console.log('[DEBUG] useCreateTodoMutation - Creating todo:', todoData);
       
-      const response = await axios.post(`${API_BASE_URL}/todos`, todoData);
-      
-      console.log('[DEBUG] useCreateTodoMutation - Todo created:', {
-        status: response.status,
-        data: response.data
+      const newTodo = localStorage.createTodo({
+        ...todoData,
+        status: todoData.status || 'to_do',
+        priority: todoData.priority || 'could',
+        is_global: todoData.is_global || false,
+        sort_order: todoData.sort_order || Date.now()
       });
       
-      return response.data;
+      console.log('[DEBUG] useCreateTodoMutation - Todo created:', newTodo);
+      
+      return newTodo;
     },
     onSuccess: (data) => {
       console.log('[DEBUG] useCreateTodoMutation - onSuccess called:', data);
@@ -88,8 +109,9 @@ export const useUpdateTodoMutation = () => {
   
   return useMutation({
     mutationFn: async ({ id, ...todoData }) => {
-      const response = await axios.put(`${API_BASE_URL}/todos/${id}`, todoData);
-      return response.data;
+      const updatedTodo = localStorage.updateTodo(id, todoData);
+      if (!updatedTodo) throw new Error('Failed to update todo');
+      return updatedTodo;
     },
     onSuccess: (data, variables) => {
       // Update specific todo cache
@@ -120,14 +142,12 @@ export const useUpdateTodoStatusMutation = () => {
     mutationFn: async ({ id, status }) => {
       console.log('[DEBUG] useUpdateTodoStatusMutation - Updating status:', { id, status });
       
-      const response = await axios.patch(`${API_BASE_URL}/todos/${id}/status`, { status });
+      const updatedTodo = localStorage.updateTodo(id, { status });
+      if (!updatedTodo) throw new Error('Failed to update todo status');
       
-      console.log('[DEBUG] useUpdateTodoStatusMutation - Status updated:', {
-        status: response.status,
-        data: response.data
-      });
+      console.log('[DEBUG] useUpdateTodoStatusMutation - Status updated:', updatedTodo);
       
-      return response.data;
+      return updatedTodo;
     },
     onSuccess: (data, variables) => {
       console.log('[DEBUG] useUpdateTodoStatusMutation - onSuccess:', { data, variables });
@@ -157,7 +177,8 @@ export const useDeleteTodoMutation = () => {
     mutationFn: async (id) => {
       console.log('[DEBUG] useDeleteTodoMutation - Deleting todo:', id);
       
-      await axios.delete(`${API_BASE_URL}/todos/${id}`);
+      const success = localStorage.deleteTodo(id);
+      if (!success) throw new Error('Failed to delete todo');
       
       console.log('[DEBUG] useDeleteTodoMutation - Todo deleted:', id);
       
@@ -184,7 +205,11 @@ export const useBatchUpdateTodoSortOrderMutation = () => {
   
   return useMutation({
     mutationFn: async (updates) => {
-      await axios.patch(`${API_BASE_URL}/todos/batch-sort-order`, { updates });
+      // Update each todo's sort_order
+      updates.forEach(update => {
+        localStorage.updateTodo(update.id, { sort_order: update.sort_order });
+      });
+      return true;
     },
     onSuccess: () => {
       // Invalidate all todo list queries
@@ -203,8 +228,33 @@ export const useTodoStatsQuery = (folderId) => {
   return useQuery({
     queryKey: ['todoStats', folderId],
     queryFn: async () => {
-      const response = await axios.get(`${API_BASE_URL}/todos/stats/${folderId}`);
-      return response.data;
+      const allTodos = localStorage.getTodos();
+      
+      // Filter todos for this folder
+      const folderTodos = allTodos.filter(todo => 
+        todo.folder_id === folderId || 
+        (todo.folderIds && todo.folderIds.includes(folderId)) ||
+        todo.is_global
+      );
+      
+      // Calculate stats
+      const stats = {
+        total: folderTodos.length,
+        by_status: {
+          to_do: folderTodos.filter(t => t.status === 'to_do').length,
+          doing: folderTodos.filter(t => t.status === 'doing').length,
+          done: folderTodos.filter(t => t.status === 'done').length
+        },
+        by_priority: {
+          critical: folderTodos.filter(t => t.priority === 'critical').length,
+          important: folderTodos.filter(t => t.priority === 'important').length,
+          should: folderTodos.filter(t => t.priority === 'should').length,
+          could: folderTodos.filter(t => t.priority === 'could').length,
+          nice_to_have: folderTodos.filter(t => t.priority === 'nice_to_have').length
+        }
+      };
+      
+      return stats;
     },
     enabled: !!folderId,
     staleTime: 60000, // 1 minute

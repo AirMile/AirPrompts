@@ -1,7 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { StorageService } from '../../services/storage/StorageService';
 import { useOfflineMutation } from './useOfflineMutation';
-import { loadSnippetsWithFallback, saveSnippetWithFallback } from '../../utils/dataStorage';
+import * as localStorage from '../../utils/localStorageManager';
 import defaultSnippets from '../../data/defaultSnippets.json';
 
 // Keys voor query invalidation
@@ -18,8 +18,8 @@ export function useSnippets(filters = {}) {
   return useQuery({
     queryKey: snippetKeys.list(filters),
     queryFn: async () => {
-      // Gebruik API-first strategy
-      const snippets = await loadSnippetsWithFallback(defaultSnippets);
+      // Direct localStorage access
+      const snippets = localStorage.getSnippets();
       
       // Apply filters if any
       if (Object.keys(filters).length === 0) {
@@ -61,8 +61,8 @@ export function useCreateSnippet() {
   
   return useOfflineMutation({
     mutationFn: async (snippetData) => {
-      // Try API-first approach
-      return await saveSnippetWithFallback(snippetData, 'create');
+      // Direct localStorage create
+      return localStorage.createSnippet(snippetData);
     },
     queueOperation: (snippetData) => ({
       type: 'createSnippet',
@@ -102,8 +102,8 @@ export function useUpdateSnippet() {
   
   return useOfflineMutation({
     mutationFn: async ({ id, ...updates }) => {
-      // Try API-first approach
-      return await saveSnippetWithFallback({ id, ...updates }, 'update');
+      // Direct localStorage update
+      return localStorage.updateSnippet(id, updates);
     },
     queueOperation: ({ id, ...updates }) => ({
       type: 'updateSnippet',
@@ -164,25 +164,14 @@ export function useDeleteSnippet() {
   
   return useOfflineMutation({
     mutationFn: async (id) => {
-      // Try API-first approach for delete
-      try {
-        const response = await fetch(`http://localhost:3001/api/snippets/${id}`, {
-          method: 'DELETE'
-        });
-        
-        if (response.ok) {
-          const result = await response.json();
-          if (result.success) {
-            console.log('✅ Snippet deleted via API:', id);
-            return result.data;
-          }
-        }
-        throw new Error('API request failed');
-      } catch (error) {
-        console.warn('⚠️ API failed, snippet delete queued for sync:', error.message);
-        // Voor delete operations, we kunnen fallback naar localStorage
+      // Direct localStorage delete
+      console.log('🗑️ Deleting snippet with id:', id);
+      const result = localStorage.deleteSnippet(id);
+      if (result) {
+        console.log('✅ Snippet deleted successfully');
         return { id, deleted: true };
       }
+      throw new Error('Failed to delete snippet');
     },
     queueOperation: (id) => ({
       type: 'deleteSnippet',
@@ -200,6 +189,7 @@ export function useDeleteSnippet() {
       return { previousSnippets };
     },
     onError: (err, id, context) => {
+      console.error('❌ Failed to delete snippet:', err);
       queryClient.setQueryData(
         snippetKeys.list({}),
         context.previousSnippets

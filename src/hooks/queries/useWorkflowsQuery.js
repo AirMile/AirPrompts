@@ -1,7 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { StorageService } from '../../services/storage/StorageService';
 import { useOfflineMutation } from './useOfflineMutation';
-import { loadWorkflowsWithFallback, saveWorkflowWithFallback } from '../../utils/dataStorage';
+import * as localStorage from '../../utils/localStorageManager';
 import defaultWorkflows from '../../data/defaultWorkflows.json';
 
 // Keys voor query invalidation
@@ -18,8 +18,8 @@ export function useWorkflows(filters = {}) {
   return useQuery({
     queryKey: workflowKeys.list(filters),
     queryFn: async () => {
-      // Gebruik API-first strategy
-      const workflows = await loadWorkflowsWithFallback(defaultWorkflows);
+      // Direct localStorage access
+      const workflows = localStorage.getWorkflows();
       
       // Apply filters if any
       if (Object.keys(filters).length === 0) {
@@ -55,8 +55,8 @@ export function useCreateWorkflow() {
   
   return useOfflineMutation({
     mutationFn: async (workflowData) => {
-      // Try API-first approach
-      return await saveWorkflowWithFallback(workflowData, 'create');
+      // Direct localStorage create
+      return localStorage.createWorkflow(workflowData);
     },
     queueOperation: (workflowData) => ({
       type: 'createWorkflow',
@@ -96,8 +96,8 @@ export function useUpdateWorkflow() {
   
   return useOfflineMutation({
     mutationFn: async ({ id, ...updates }) => {
-      // Try API-first approach
-      return await saveWorkflowWithFallback({ id, ...updates }, 'update');
+      // Direct localStorage update
+      return localStorage.updateWorkflow(id, updates);
     },
     queueOperation: ({ id, ...updates }) => ({
       type: 'updateWorkflow',
@@ -158,25 +158,14 @@ export function useDeleteWorkflow() {
   
   return useOfflineMutation({
     mutationFn: async (id) => {
-      // Try API-first approach for delete
-      try {
-        const response = await fetch(`http://localhost:3001/api/workflows/${id}`, {
-          method: 'DELETE'
-        });
-        
-        if (response.ok) {
-          const result = await response.json();
-          if (result.success) {
-            console.log('✅ Workflow deleted via API:', id);
-            return result.data;
-          }
-        }
-        throw new Error('API request failed');
-      } catch (error) {
-        console.warn('⚠️ API failed, workflow delete queued for sync:', error.message);
-        // Voor delete operations, we kunnen fallback naar localStorage
+      // Direct localStorage delete
+      console.log('🗑️ Deleting workflow with id:', id);
+      const result = localStorage.deleteWorkflow(id);
+      if (result) {
+        console.log('✅ Workflow deleted successfully');
         return { id, deleted: true };
       }
+      throw new Error('Failed to delete workflow');
     },
     queueOperation: (id) => ({
       type: 'deleteWorkflow',

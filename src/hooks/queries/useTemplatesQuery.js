@@ -1,7 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { StorageService } from '../../services/storage/StorageService';
 import { useOfflineMutation } from './useOfflineMutation';
-import { loadTemplatesWithFallback, saveTemplateWithFallback } from '../../utils/dataStorage';
+import * as localStorage from '../../utils/localStorageManager';
 import defaultTemplates from '../../data/defaultTemplates.json';
 
 // Keys voor query invalidation
@@ -18,8 +18,8 @@ export function useTemplates(filters = {}) {
   return useQuery({
     queryKey: templateKeys.list(filters),
     queryFn: async () => {
-      // Gebruik API-first strategy
-      const templates = await loadTemplatesWithFallback(defaultTemplates);
+      // Direct localStorage access
+      const templates = localStorage.getTemplates();
       
       // Apply filters if any
       if (Object.keys(filters).length === 0) {
@@ -55,8 +55,8 @@ export function useCreateTemplate() {
   
   return useOfflineMutation({
     mutationFn: async (templateData) => {
-      // Try API-first approach
-      return await saveTemplateWithFallback(templateData, 'create');
+      // Direct localStorage create
+      return localStorage.createTemplate(templateData);
     },
     queueOperation: (templateData) => ({
       type: 'createTemplate',
@@ -99,8 +99,8 @@ export function useUpdateTemplate() {
   
   return useOfflineMutation({
     mutationFn: async ({ id, ...updates }) => {
-      // Try API-first approach
-      return await saveTemplateWithFallback({ id, ...updates }, 'update');
+      // Direct localStorage update
+      return localStorage.updateTemplate(id, updates);
     },
     queueOperation: ({ id, ...updates }) => ({
       type: 'updateTemplate',
@@ -162,25 +162,14 @@ export function useDeleteTemplate() {
   
   return useOfflineMutation({
     mutationFn: async (id) => {
-      // Try API-first approach for delete
-      try {
-        const response = await fetch(`http://localhost:3001/api/templates/${id}`, {
-          method: 'DELETE'
-        });
-        
-        if (response.ok) {
-          const result = await response.json();
-          if (result.success) {
-            console.log('✅ Template deleted via API:', id);
-            return result.data;
-          }
-        }
-        throw new Error('API request failed');
-      } catch (error) {
-        console.warn('⚠️ API failed, template delete queued for sync:', error.message);
-        // Voor delete operations, we kunnen fallback naar localStorage
+      // Direct localStorage delete
+      console.log('🗑️ Deleting template with id:', id);
+      const result = localStorage.deleteTemplate(id);
+      if (result) {
+        console.log('✅ Template deleted successfully');
         return { id, deleted: true };
       }
+      throw new Error('Failed to delete template');
     },
     queueOperation: (id) => ({
       type: 'deleteTemplate',
@@ -199,6 +188,7 @@ export function useDeleteTemplate() {
       return { previousTemplates };
     },
     onError: (err, id, context) => {
+      console.error('❌ Failed to delete template:', err);
       queryClient.setQueryData(
         templateKeys.list({}),
         context.previousTemplates

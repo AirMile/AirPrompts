@@ -147,10 +147,10 @@ const Homepage = ({
       const folderExists = folders.some(f => f.id === selectedFolderId) || selectedFolderId === 'root';
       if (!folderExists) {
         console.warn(`Selected folder '${selectedFolderId}' does not exist, falling back to 'root'`);
-        setSelectedFolder('root');
+        setSelectedFolderId('root');
       }
     }
-  }, [folders, selectedFolderId, setSelectedFolder]);
+  }, [folders, selectedFolderId, setSelectedFolderId]);
   
   // Section visibility state - use folder-specific or global visibility
   const isInFolder = selectedFolderId && selectedFolderId !== 'home';
@@ -1516,6 +1516,14 @@ const Homepage = ({
           onReorderFolders={onReorderFolders}
           onSettingsClick={() => setIsSettingsOpen(true)}
           onAccountClick={() => console.log('Account clicked')}
+          searchQuery={searchQuery}
+          setSearchQuery={setSearchQuery}
+          allItems={[
+            ...templates.map(t => ({ ...t, type: 'template' })),
+            ...workflows.map(w => ({ ...w, type: 'workflow' })),
+            ...snippets.map(s => ({ ...s, type: 'snippet' }))
+          ]}
+          onAdvancedFilter={handleAdvancedFilter}
         />
       </div>
 
@@ -1566,22 +1574,6 @@ const Homepage = ({
             />
           )}
 
-          {/* Search - Only show if there are items to search */}
-          {totalItemsInCurrentView > 0 && (
-            <div className="mb-6">
-              <AdvancedSearch
-                searchQuery={searchQuery}
-                setSearchQuery={setSearchQuery}
-                allItems={[
-                  ...templates.map(t => ({ ...t, type: 'template' })),
-                  ...workflows.map(w => ({ ...w, type: 'workflow' })),
-                  ...snippets.map(s => ({ ...s, type: 'snippet' }))
-                ]}
-                onFilter={handleAdvancedFilter}
-                placeholder="Search templates, workflows, snippets, and tags..."
-              />
-            </div>
-          )}
 
           {/* Dynamic Sections */}
           {sections.map((section, index) => 

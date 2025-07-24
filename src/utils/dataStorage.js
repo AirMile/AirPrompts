@@ -1,9 +1,7 @@
 /**
  * Data Storage Utilities voor AirPrompts
- * Handles API calls met localStorage fallback voor offline-first operaties
+ * LocalStorage-only implementatie
  */
-
-import { useTemplatesAPI, useWorkflowsAPI, useFoldersAPI } from '../hooks/useAPI.js';
 
 const STORAGE_KEYS = {
   TEMPLATES: 'airprompts_templates',
@@ -13,7 +11,7 @@ const STORAGE_KEYS = {
   VERSION: 'airprompts_data_version'
 };
 
-const CURRENT_VERSION = '1.0';
+const CURRENT_VERSION = '2.0';
 
 /**
  * Check if localStorage is available
@@ -77,8 +75,6 @@ export const saveToStorage = (key, data) => {
   } catch (error) {
     if (error.name === 'QuotaExceededError') {
       console.error('LocalStorage quota overschreden voor', key);
-      // Try to clear some space by removing old data
-      clearOldData();
     } else {
       console.error(`Error bij opslaan van ${key}:`, error);
     }
@@ -87,7 +83,7 @@ export const saveToStorage = (key, data) => {
 };
 
 /**
- * Load all application data with API-first, localStorage fallback strategy
+ * Load all application data
  * @param {Object} defaults - Default data objects
  * @returns {Object} Loaded or default data
  */
@@ -110,307 +106,30 @@ export const loadAllData = (defaults) => {
 };
 
 /**
- * API-first data loading utilities
- * Deze functies proberen eerst API, dan localStorage fallback
- */
-
-/**
- * Load templates with API-first strategy
- * @param {Array} fallbackData - LocalStorage fallback data
- * @returns {Promise<Array>} Templates array
+ * Simple data loading functions - direct localStorage access
  */
 export const loadTemplatesWithFallback = async (fallbackData = []) => {
-  try {
-    // Try API first
-    const response = await fetch('http://localhost:3001/api/templates');
-    if (response.ok) {
-      const result = await response.json();
-      if (result.success) {
-        console.log('📥 Templates loaded from API:', result.data.length);
-        // Save to localStorage for offline access
-        saveToStorage(STORAGE_KEYS.TEMPLATES, result.data);
-        return result.data;
-      }
-    }
-    throw new Error('API request failed');
-  } catch (error) {
-    console.warn('⚠️ API failed, using localStorage fallback:', error.message);
-    const localData = loadFromStorage(STORAGE_KEYS.TEMPLATES, fallbackData);
-    console.log('💾 Templates loaded from localStorage:', localData.length);
-    return localData;
-  }
+  const localData = loadFromStorage(STORAGE_KEYS.TEMPLATES, fallbackData);
+  console.log('💾 Templates loaded from localStorage:', localData.length);
+  return localData;
 };
 
-/**
- * Load workflows with API-first strategy
- * @param {Array} fallbackData - LocalStorage fallback data
- * @returns {Promise<Array>} Workflows array
- */
 export const loadWorkflowsWithFallback = async (fallbackData = []) => {
-  try {
-    const response = await fetch('http://localhost:3001/api/workflows');
-    if (response.ok) {
-      const result = await response.json();
-      if (result.success) {
-        console.log('📥 Workflows loaded from API:', result.data.length);
-        saveToStorage(STORAGE_KEYS.WORKFLOWS, result.data);
-        return result.data;
-      }
-    }
-    throw new Error('API request failed');
-  } catch (error) {
-    console.warn('⚠️ API failed, using localStorage fallback:', error.message);
-    const localData = loadFromStorage(STORAGE_KEYS.WORKFLOWS, fallbackData);
-    console.log('💾 Workflows loaded from localStorage:', localData.length);
-    return localData;
-  }
+  const localData = loadFromStorage(STORAGE_KEYS.WORKFLOWS, fallbackData);
+  console.log('💾 Workflows loaded from localStorage:', localData.length);
+  return localData;
 };
 
-/**
- * Load folders with API-first strategy
- * @param {Array} fallbackData - LocalStorage fallback data
- * @returns {Promise<Array>} Folders array
- */
 export const loadFoldersWithFallback = async (fallbackData = []) => {
-  try {
-    const response = await fetch('http://localhost:3001/api/folders');
-    if (response.ok) {
-      const result = await response.json();
-      if (result.success) {
-        console.log('📥 Folders loaded from API:', result.data.length);
-        saveToStorage(STORAGE_KEYS.FOLDERS, result.data);
-        return result.data;
-      }
-    }
-    throw new Error('API request failed');
-  } catch (error) {
-    console.warn('⚠️ API failed, using localStorage fallback:', error.message);
-    const localData = loadFromStorage(STORAGE_KEYS.FOLDERS, fallbackData);
-    console.log('💾 Folders loaded from localStorage:', localData.length);
-    return localData;
-  }
+  const localData = loadFromStorage(STORAGE_KEYS.FOLDERS, fallbackData);
+  console.log('💾 Folders loaded from localStorage:', localData.length);
+  return localData;
 };
 
-/**
- * Save workflow with API-first strategy
- * @param {Object} workflow - Workflow to save
- * @param {string} action - 'create' or 'update'
- * @returns {Promise<Object>} Saved workflow
- */
-export const saveWorkflowWithFallback = async (workflow, action = 'create') => {
-  try {
-    const url = action === 'update' 
-      ? `http://localhost:3001/api/workflows/${workflow.id}`
-      : 'http://localhost:3001/api/workflows';
-    
-    // Only send API-compatible fields
-    const apiWorkflow = {
-      ...(action === 'update' && workflow.id && { id: workflow.id }),
-      name: workflow.name,
-      description: workflow.description,
-      category: workflow.category,
-      // Convert steps to array of template IDs (API expects strings)
-      steps: workflow.steps ? workflow.steps.map(step => {
-        if (typeof step === 'string') {
-          return step;
-        }
-        console.log('🔍 Processing workflow step:', step);
-        // Try multiple ways to get a valid template ID
-        const templateId = step.selectedTemplateId || step.templateId || 
-                          (step.templateOptions && step.templateOptions[0]?.id) ||
-                          (Array.isArray(step) && step[0]); // Legacy format
-        console.log('📋 Extracted template ID:', templateId);
-        return templateId;
-      }).filter(Boolean) : [],
-      favorite: workflow.favorite || false,
-      // Support both folderIds (new) and folder_id (legacy)
-      folderIds: workflow.folderIds || [],
-      folder_id: workflow.folder_id || workflow.folderIds?.[0] || null,
-      // Include folderFavorites for complete data
-      folderFavorites: workflow.folderFavorites || {}
-    };
-    
-    const response = await fetch(url, {
-      method: action === 'update' ? 'PUT' : 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(apiWorkflow)
-    });
-
-    if (response.ok) {
-      const result = await response.json();
-      if (result.success) {
-        console.log(`✅ Workflow ${action}d via API:`, result.data.name);
-        return result.data;
-      }
-    }
-    
-    // Log error response details for debugging
-    const errorText = await response.text();
-    console.error(`❌ API Error ${response.status}:`, errorText);
-    throw new Error(`HTTP ${response.status}: ${errorText}`);
-  } catch (error) {
-    console.warn(`⚠️ API failed, workflow ${action} queued for sync:`, error.message);
-    // Queue voor later sync wanneer API weer beschikbaar is
-    queueOperation('workflow', action, workflow);
-    return workflow;
-  }
-};
-
-/**
- * Save template with API-first strategy
- * @param {Object} template - Template to save
- * @param {string} action - 'create' or 'update'
- * @returns {Promise<Object>} Saved template
- */
-export const saveTemplateWithFallback = async (template, action = 'create') => {
-  try {
-    const url = action === 'update' 
-      ? `http://localhost:3001/api/templates/${template.id}`
-      : 'http://localhost:3001/api/templates';
-    
-    // Only send API-compatible fields
-    const apiTemplate = {
-      ...(action === 'update' && template.id && { id: template.id }),
-      name: template.name,
-      description: template.description,
-      content: template.content,
-      category: template.category,
-      variables: template.variables,
-      favorite: template.favorite || false,
-      // Support both folderIds (new) and folder_id (legacy)
-      folderIds: template.folderIds || [],
-      folder_id: template.folder_id || template.folderIds?.[0] || null,
-      // Include folderFavorites for complete data
-      folderFavorites: template.folderFavorites || {}
-    };
-    
-    const response = await fetch(url, {
-      method: action === 'update' ? 'PUT' : 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(apiTemplate)
-    });
-
-    if (response.ok) {
-      const result = await response.json();
-      if (result.success) {
-        console.log(`✅ Template ${action}d via API:`, result.data.name);
-        return result.data;
-      }
-    }
-    
-    // Log error response details for debugging
-    const errorText = await response.text();
-    console.error(`❌ API Error ${response.status}:`, errorText);
-    throw new Error(`HTTP ${response.status}: ${errorText}`);
-  } catch (error) {
-    console.warn(`⚠️ API failed, template ${action} queued for sync:`, error.message);
-    // Queue voor later sync wanneer API weer beschikbaar is
-    queueOperation('template', action, template);
-    return template;
-  }
-};
-
-/**
- * Simple operation queue voor offline operaties
- */
-const SYNC_QUEUE_KEY = 'airprompts_sync_queue';
-
-const queueOperation = (type, action, data) => {
-  const queue = loadFromStorage(SYNC_QUEUE_KEY, []);
-  queue.push({
-    id: Date.now(),
-    type,
-    action,
-    data,
-    timestamp: new Date().toISOString()
-  });
-  saveToStorage(SYNC_QUEUE_KEY, queue);
-  console.log(`📋 Operation queued: ${type} ${action}`);
-};
-
-/**
- * Load snippets with API-first strategy
- * @param {Array} fallbackData - LocalStorage fallback data
- * @returns {Promise<Array>} Snippets array
- */
 export const loadSnippetsWithFallback = async (fallbackData = []) => {
-  try {
-    const response = await fetch('http://localhost:3001/api/snippets');
-    if (response.ok) {
-      const result = await response.json();
-      if (result.success) {
-        console.log('📥 Snippets loaded from API:', result.data.length);
-        saveToStorage(STORAGE_KEYS.SNIPPETS, result.data);
-        return result.data;
-      }
-    }
-    throw new Error('API request failed');
-  } catch (error) {
-    console.warn('⚠️ API failed, using localStorage fallback:', error.message);
-    const localData = loadFromStorage(STORAGE_KEYS.SNIPPETS, fallbackData);
-    console.log('💾 Snippets loaded from localStorage:', localData.length);
-    return localData;
-  }
-};
-
-/**
- * Save snippet with API-first strategy
- * @param {Object} snippet - Snippet to save
- * @param {string} action - 'create' or 'update'
- * @returns {Promise<Object>} Saved snippet
- */
-export const saveSnippetWithFallback = async (snippet, action = 'create') => {
-  try {
-    const url = action === 'update' 
-      ? `http://localhost:3001/api/snippets/${snippet.id}`
-      : 'http://localhost:3001/api/snippets';
-    
-    // Only send API-compatible fields (no ID in body as per API validation)
-    const apiSnippet = {
-      name: snippet.name,
-      content: snippet.content,
-      tags: snippet.tags || [],
-      favorite: snippet.favorite || false,
-      // Support both folderIds (new) and folder_id (legacy)
-      folderIds: snippet.folderIds || [],
-      folder_id: snippet.folder_id || snippet.folderIds?.[0] || null,
-      // Include folderFavorites for complete data
-      folderFavorites: snippet.folderFavorites || {}
-    };
-    
-    const response = await fetch(url, {
-      method: action === 'update' ? 'PUT' : 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(apiSnippet)
-    });
-
-    if (response.ok) {
-      const result = await response.json();
-      if (result.success) {
-        console.log(`✅ Snippet ${action}d via API:`, result.data.name);
-        return result.data;
-      }
-    }
-    
-    // Log error response details for debugging
-    const errorText = await response.text();
-    console.error(`❌ API Error ${response.status}:`, errorText);
-    throw new Error(`HTTP ${response.status}: ${errorText}`);
-  } catch (error) {
-    console.warn(`⚠️ API failed, snippet ${action} queued for sync:`, error.message);
-    // Queue voor later sync wanneer API weer beschikbaar is
-    queueOperation('snippet', action, snippet);
-    return snippet;
-  }
-};
-
-/**
- * Get pending sync operations count
- * @returns {number} Number of pending operations
- */
-export const getPendingSyncCount = () => {
-  const queue = loadFromStorage(SYNC_QUEUE_KEY, []);
-  return queue.length;
+  const localData = loadFromStorage(STORAGE_KEYS.SNIPPETS, fallbackData);
+  console.log('💾 Snippets loaded from localStorage:', localData.length);
+  return localData;
 };
 
 /**
@@ -460,31 +179,6 @@ export const saveData = (type, data) => {
 };
 
 /**
- * Clear old or corrupted data
- */
-export const clearOldData = () => {
-  if (!isLocalStorageAvailable()) return;
-
-  try {
-    // Remove non-essential data if storage is full
-    const keysToCheck = Object.values(STORAGE_KEYS);
-    keysToCheck.forEach(key => {
-      try {
-        const item = localStorage.getItem(key);
-        if (item && item.length > 100000) { // > 100KB
-          console.warn(`Grote data gevonden voor ${key}, mogelijk corrupt`);
-        }
-      } catch (e) {
-        console.warn(`Probleem met key ${key}, verwijderen...`);
-        localStorage.removeItem(key);
-      }
-    });
-  } catch (error) {
-    console.error('Error bij opschonen van data:', error);
-  }
-};
-
-/**
  * Clear all application data
  */
 export const clearAllData = () => {
@@ -493,7 +187,6 @@ export const clearAllData = () => {
   Object.values(STORAGE_KEYS).forEach(key => {
     localStorage.removeItem(key);
   });
-  
 };
 
 /**

@@ -1,18 +1,34 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { useAPI } from '../useAPI';
+import { useFolderFavoritesAPI } from '../useAPI';
+import * as localStorage from '../../utils/localStorageManager';
 
 /**
  * Hook to fetch folder favorites
  */
 export const useFolderFavorites = (folderId, entityType = null) => {
-  const api = useAPI();
-  
   return useQuery({
     queryKey: ['folderFavorites', folderId, entityType],
     queryFn: async () => {
-      const params = entityType ? `?entity_type=${entityType}` : '';
-      const response = await api.get(`/folder-favorites/${folderId}${params}`);
-      return response;
+      // Get all items and filter for favorites in this folder
+      const templates = localStorage.getTemplates();
+      const workflows = localStorage.getWorkflows();
+      const snippets = localStorage.getSnippets();
+      
+      const favorites = [];
+      
+      // Filter items with folder favorites
+      [...templates, ...workflows, ...snippets].forEach(item => {
+        if (item.folderFavorites && item.folderFavorites[folderId]) {
+          if (!entityType || item.type === entityType) {
+            favorites.push({
+              ...item,
+              favoriteOrder: item.folderFavorites[folderId].favoriteOrder
+            });
+          }
+        }
+      });
+      
+      return favorites.sort((a, b) => a.favoriteOrder - b.favoriteOrder);
     },
     enabled: !!folderId,
     staleTime: 30000, // 30 seconds
@@ -24,33 +40,22 @@ export const useFolderFavorites = (folderId, entityType = null) => {
  * Hook to add/update folder favorite
  */
 export const useToggleFolderFavorite = () => {
-  const api = useAPI();
+  const favoritesAPI = useFolderFavoritesAPI();
   const queryClient = useQueryClient();
   
   return useMutation({
     mutationFn: async ({ entityType, entityId, folderId, isFavorite, favoriteOrder = 0 }) => {
-      if (isFavorite) {
-        // Add to favorites
-        const response = await api.post('/folder-favorites', {
-          entity_type: entityType,
-          entity_id: entityId,
-          folder_id: folderId,
-          favorite_order: favoriteOrder
-        });
-        return response;
-      } else {
-        // Remove from favorites
-        // Use the custom API method that handles DELETE with body
-        const response = await api.request('/folder-favorites', {
-          method: 'DELETE',
-          data: {
-            entity_type: entityType,
-            entity_id: entityId,
-            folder_id: folderId
-          }
-        });
-        return response;
+      const result = await favoritesAPI.toggleFavorite({
+        entityType,
+        entityId,
+        folderId,
+        isFavorite
+      });
+      
+      if (result.success) {
+        return result.data;
       }
+      throw new Error(result.error || 'Failed to toggle favorite');
     },
     onSuccess: (data, variables) => {
       // Invalidate folder favorites queries
@@ -73,18 +78,23 @@ export const useToggleFolderFavorite = () => {
  * Hook to update folder favorite order
  */
 export const useUpdateFolderFavoriteOrder = () => {
-  const api = useAPI();
+  const favoritesAPI = useFolderFavoritesAPI();
   const queryClient = useQueryClient();
   
   return useMutation({
     mutationFn: async ({ entityType, entityId, folderId, favoriteOrder }) => {
-      const response = await api.post('/folder-favorites', {
-        entity_type: entityType,
-        entity_id: entityId,
-        folder_id: folderId,
-        favorite_order: favoriteOrder
+      const result = await favoritesAPI.toggleFavorite({
+        entityType,
+        entityId,
+        folderId,
+        isFavorite: true,
+        favoriteOrder
       });
-      return response.data;
+      
+      if (result.success) {
+        return result.data;
+      }
+      throw new Error(result.error || 'Failed to update favorite order');
     },
     onSuccess: (data, variables) => {
       // Invalidate folder favorites queries

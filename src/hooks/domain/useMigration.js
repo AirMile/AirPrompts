@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { MigrationHelpers } from '../../utils/migrationHelpers';
-import { useAPI } from '../useAPI';
+// Note: Migration will need proper API integration when server endpoints are available
 
 /**
  * Hook for comprehensive migration management
@@ -17,7 +17,8 @@ export function useMigration() {
     error: null
   });
 
-  const { get, post } = useAPI();
+  // TODO: Replace with actual migration API when available
+  // For now, migration happens through localStorage only
 
   // Auto-check on mount and periodically
   useEffect(() => {
@@ -95,7 +96,8 @@ export function useMigration() {
       } else if (options.useBatches) {
         result = await MigrationHelpers.migrateInBatches(localData.data, options.batchSize);
       } else {
-        result = await post('/api/migrate/from-localstorage', localData.data);
+        // TODO: Replace with actual migration API endpoint
+        throw new Error('Migration API endpoint not yet implemented');
       }
 
       if (!result.success) {
@@ -143,9 +145,14 @@ export function useMigration() {
 
       const validation = MigrationHelpers.validateMigrationData(localData.data);
       
-      const response = await post('/api/migrate-advanced/preview', {
-        localStorageData: localData.data
-      });
+      // TODO: Replace with actual migration preview API endpoint
+      const response = { 
+        success: true, 
+        data: { 
+          preview: 'Migration preview not yet implemented',
+          counts: localData.counts 
+        } 
+      };
 
       return {
         hasData: true,
