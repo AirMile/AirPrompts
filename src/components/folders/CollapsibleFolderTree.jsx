@@ -49,6 +49,8 @@ import { CSS } from '@dnd-kit/utilities';
 import FolderModal from './FolderModal';
 import { AVAILABLE_ICONS } from '../../constants/folderIcons';
 import { useFolderUIState } from '../../hooks/queries/useUIStateQuery';
+import { useUserPreferences } from '../../hooks/domain/useUserPreferences';
+import ThemeToggle from '../common/ThemeToggle';
 
 // DndMonitor component for enhanced drag monitoring and feedback
 const DndMonitor = () => {
@@ -116,6 +118,9 @@ const CollapsibleFolderTree = ({
   
   // Use persistent UI state hook
   const { getFolderState, setFolderState, setBatchFolderStates, loading: uiStateLoading } = useFolderUIState();
+  
+  // Use preferences for confirm actions
+  const { confirmActions } = useUserPreferences();
   
   // Initialize expanded folders from persistent state
   const [expandedFolders, setExpandedFolders] = useState(() => {
@@ -772,12 +777,17 @@ const CollapsibleFolderTree = ({
   };
 
   const handleDeleteFolder = (folderId) => {
-    const hasSubfolders = folders.some(f => f.parentId === folderId);
-    const warningMessage = hasSubfolders 
-      ? 'Deze map bevat submappen. Weet je zeker dat je deze map en alle inhoud wilt verwijderen?'
-      : 'Weet je zeker dat je deze map wilt verwijderen?';
-    
-    if (confirm(warningMessage)) {
+    if (confirmActions.deleteFolder) {
+      const hasSubfolders = folders.some(f => f.parentId === folderId);
+      const warningMessage = hasSubfolders 
+        ? 'Deze map bevat submappen. Weet je zeker dat je deze map en alle inhoud wilt verwijderen?'
+        : 'Weet je zeker dat je deze map wilt verwijderen?';
+      
+      if (confirm(warningMessage)) {
+        onDeleteFolder(folderId);
+      }
+    } else {
+      // Direct delete without confirmation
       onDeleteFolder(folderId);
     }
     setShowContextMenu(null);
@@ -1034,16 +1044,16 @@ const CollapsibleFolderTree = ({
         {/* Home button */}
         <div className="px-2 mb-2">
           <button
-            onClick={() => onFolderSelect('home')}
+            onClick={() => onFolderSelect('root')}
             className={`w-full p-3 rounded-lg transition-colors relative ${
-              selectedFolderId === 'home'
+              selectedFolderId === 'root'
                 ? 'text-primary-400 dark:text-primary-400'
                 : 'hover:bg-secondary-200 dark:hover:bg-secondary-800 text-secondary-600 dark:text-secondary-400'
             }`}
             title="Home"
           >
             <Home className="w-5 h-5 mx-auto" />
-            {selectedFolderId === 'home' && (
+            {selectedFolderId === 'root' && (
               <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-8 bg-primary-500 dark:bg-primary-400 rounded-r" />
             )}
           </button>
@@ -1123,6 +1133,9 @@ const CollapsibleFolderTree = ({
           >
             <Settings className="w-5 h-5 mx-auto" />
           </button>
+          <div className="w-full p-3 flex justify-center">
+            <ThemeToggle size="md" />
+          </div>
         </div>
       </div>
     );
@@ -1251,12 +1264,12 @@ const CollapsibleFolderTree = ({
           <div
             className={`
               flex items-center px-2 py-1.5 cursor-pointer rounded-md mb-0.5 relative
-              ${selectedFolderId === 'home' 
+              ${selectedFolderId === 'root' 
                 ? 'text-primary-600 dark:text-primary-400 bg-primary-50/50 dark:bg-primary-900/10' 
                 : 'hover:bg-secondary-100 dark:hover:bg-secondary-700 text-secondary-700 dark:text-secondary-300'
               }
             `}
-            onClick={() => onFolderSelect('home')}
+            onClick={() => onFolderSelect('root')}
           >
             <Home className="w-4 h-4 mr-2" />
             <span className="font-medium">Home</span>
@@ -1369,6 +1382,7 @@ const CollapsibleFolderTree = ({
           >
             <Settings className="w-4 h-4" />
           </button>
+          <ThemeToggle size="sm" />
         </div>
       </div>
     );

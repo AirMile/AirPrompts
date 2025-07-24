@@ -116,7 +116,9 @@ export const useDeleteFolder = () => {
   
   return useOfflineMutation({
     mutationFn: async (folderId) => {
-      const response = await api.delete(`/folders/${folderId}`);
+      // Always send force=true to allow deletion of folders with content
+      // since we removed the confirmation dialog from the UI
+      const response = await api.delete(`/folders/${folderId}?force=true`);
       return response;
     },
     onSuccess: () => {
@@ -130,4 +132,30 @@ export const useDeleteFolder = () => {
       console.error('Failed to delete folder:', error);
     }
   });
+};
+
+/**
+ * Combined hook for all folder operations
+ * Useful when you need multiple operations in one component
+ */
+export const useFoldersQuery = () => {
+  const foldersQuery = useFolders();
+  const createFolder = useCreateFolder();
+  const updateFolder = useUpdateFolder();
+  const deleteFolder = useDeleteFolder();
+  
+  return {
+    // Query data
+    folders: foldersQuery.data || [],
+    isLoading: foldersQuery.isLoading,
+    error: foldersQuery.error,
+    
+    // Mutations
+    createFolder,
+    updateFolder,
+    deleteFolder,
+    
+    // Refetch function
+    refetch: foldersQuery.refetch
+  };
 };

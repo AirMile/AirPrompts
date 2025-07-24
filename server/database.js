@@ -191,6 +191,49 @@ const createTables = () => {
     )
   `);
   
+  // Todos table
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS todos (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      title TEXT NOT NULL,
+      description TEXT,
+      status TEXT NOT NULL DEFAULT 'to_do' CHECK(status IN ('to_do', 'doing', 'done')),
+      priority TEXT NOT NULL DEFAULT 'could' CHECK(priority IN ('critical', 'important', 'should', 'could', 'nice_to_have')),
+      time_estimate TEXT CHECK(time_estimate IN ('1h', 'few_hours', 'day', 'days', 'week', 'weeks')),
+      deadline DATETIME,
+      deadline_type TEXT CHECK(deadline_type IN ('fixed', 'relative')),
+      is_global BOOLEAN DEFAULT 0,
+      folder_id TEXT,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      sort_order INTEGER DEFAULT 0,
+      FOREIGN KEY (folder_id) REFERENCES folders(id) ON DELETE CASCADE
+    )
+  `);
+  
+  // Todo folders many-to-many table
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS todo_folders (
+      todo_id INTEGER NOT NULL,
+      folder_id TEXT NOT NULL,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      PRIMARY KEY (todo_id, folder_id),
+      FOREIGN KEY (todo_id) REFERENCES todos(id) ON DELETE CASCADE,
+      FOREIGN KEY (folder_id) REFERENCES folders(id) ON DELETE CASCADE
+    )
+  `);
+  
+  // Todo UI state table
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS todo_ui_state (
+      todo_id INTEGER PRIMARY KEY,
+      is_expanded BOOLEAN DEFAULT 0,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (todo_id) REFERENCES todos(id) ON DELETE CASCADE
+    )
+  `);
+  
   console.log('📋 Database tables created successfully');
 };
 
@@ -225,6 +268,19 @@ const createIndexes = () => {
   
   db.exec(`CREATE INDEX IF NOT EXISTS idx_header_ui_state_folder ON header_ui_state(folder_id)`);
   db.exec(`CREATE INDEX IF NOT EXISTS idx_header_ui_state_composite ON header_ui_state(folder_id, header_type)`);
+  
+  // Todo indexes
+  db.exec(`CREATE INDEX IF NOT EXISTS idx_todos_folder ON todos(folder_id)`);
+  db.exec(`CREATE INDEX IF NOT EXISTS idx_todos_status ON todos(status)`);
+  db.exec(`CREATE INDEX IF NOT EXISTS idx_todos_priority ON todos(priority)`);
+  db.exec(`CREATE INDEX IF NOT EXISTS idx_todos_deadline ON todos(deadline)`);
+  db.exec(`CREATE INDEX IF NOT EXISTS idx_todos_global ON todos(is_global)`);
+  db.exec(`CREATE INDEX IF NOT EXISTS idx_todos_updated ON todos(updated_at)`);
+  
+  db.exec(`CREATE INDEX IF NOT EXISTS idx_todo_folders_todo ON todo_folders(todo_id)`);
+  db.exec(`CREATE INDEX IF NOT EXISTS idx_todo_folders_folder ON todo_folders(folder_id)`);
+  
+  db.exec(`CREATE INDEX IF NOT EXISTS idx_todo_ui_state_todo ON todo_ui_state(todo_id)`);
   
   console.log('🔍 Database indexes created successfully');
 };

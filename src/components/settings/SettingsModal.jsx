@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
-import { X, Palette, Settings as SettingsIcon, Brush } from 'lucide-react';
+import { X, Palette, Settings as SettingsIcon, Brush, Shield } from 'lucide-react';
 import ThemeSelector from '../ui/ThemeSelector.jsx';
 import ItemColorSettings from './ItemColorSettings.jsx';
+import ConfirmActionsSettings from './ConfirmActionsSettings.jsx';
 
 const SettingsModal = ({ isOpen, onClose }) => {
   const [activeTab, setActiveTab] = useState('appearance');
@@ -9,7 +10,8 @@ const SettingsModal = ({ isOpen, onClose }) => {
   if (!isOpen) return null;
 
   const tabs = [
-    { id: 'appearance', label: 'Appearance', icon: Palette }
+    { id: 'appearance', label: 'Appearance', icon: Palette },
+    { id: 'actions', label: 'Actions', icon: Shield }
   ];
 
   return (
@@ -76,6 +78,12 @@ const SettingsModal = ({ isOpen, onClose }) => {
                   <div className="border-t border-secondary-200 dark:border-secondary-700 pt-8">
                     <ItemColorSettings />
                   </div>
+                </div>
+              )}
+              
+              {activeTab === 'actions' && (
+                <div className="space-y-8">
+                  <ConfirmActionsSettings />
                 </div>
               )}
             </div>

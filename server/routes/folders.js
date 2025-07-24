@@ -384,6 +384,21 @@ router.put('/:id', (req, res) => {
       });
     }
     
+    // Validate description length if provided
+    if (value.description && value.description.length > 50000) {
+      return res.status(400).json({
+        success: false,
+        error: {
+          code: 'VALIDATION_ERROR',
+          message: 'Description too long (max 50000 characters)'
+        },
+        meta: {
+          timestamp: new Date().toISOString(),
+          version: '1.0'
+        }
+      });
+    }
+    
     const db = getDatabase();
     const { id } = req.params;
     

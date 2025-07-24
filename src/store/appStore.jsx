@@ -11,7 +11,7 @@ const initialState = {
   folders: [],
   ui: {
     searchQuery: '',
-    selectedFolderId: 'home',
+    selectedFolderId: 'root',
     viewMode: 'grid',
     isLoading: false,
     error: null

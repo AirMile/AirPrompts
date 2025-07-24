@@ -52,6 +52,13 @@ export const DEFAULT_PREFERENCES = {
     reducedMotion: false,
     keyboardNavigation: true
   },
+  confirmActions: {
+    deleteFolder: false,
+    deleteTemplate: false,
+    deleteWorkflow: false,
+    deleteSnippet: false,
+    deleteTodo: false
+  },
   search: {
     history: [], // Array of recent search terms
     maxHistory: 10 // Maximum number of search terms to keep

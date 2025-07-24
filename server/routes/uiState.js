@@ -569,5 +569,111 @@ router.post('/headers/reset', (req, res) => {
   }
 });
 
+// GET /api/ui-state/todos - Get all todo UI states
+router.get('/todos', (req, res) => {
+  try {
+    const db = getDatabase();
+    const stmt = db.prepare(`
+      SELECT todo_id, is_expanded, updated_at
+      FROM todo_ui_state
+      ORDER BY updated_at DESC
+    `);
+    const states = stmt.all();
+    
+    res.json({
+      success: true,
+      data: states,
+      meta: {
+        timestamp: new Date().toISOString(),
+        version: '1.0'
+      }
+    });
+    
+  } catch (error) {
+    console.error('Error fetching todo UI states:', error);
+    res.status(500).json({
+      success: false,
+      error: {
+        code: 'FETCH_ERROR',
+        message: 'Failed to fetch todo UI states'
+      },
+      meta: {
+        timestamp: new Date().toISOString(),
+        version: '1.0'
+      }
+    });
+  }
+});
+
+// PATCH /api/ui-state/todos/:todoId - Update todo UI state
+router.patch('/todos/:todoId', (req, res) => {
+  try {
+    const { todoId } = req.params;
+    const { is_expanded } = req.body;
+    
+    if (typeof is_expanded !== 'boolean') {
+      return res.status(400).json({
+        success: false,
+        error: {
+          code: 'VALIDATION_ERROR',
+          message: 'is_expanded must be a boolean'
+        },
+        meta: {
+          timestamp: new Date().toISOString(),
+          version: '1.0'
+        }
+      });
+    }
+    
+    const db = getDatabase();
+    const now = new Date().toISOString();
+    
+    // Upsert todo UI state
+    const stmt = db.prepare(`
+      INSERT INTO todo_ui_state (todo_id, is_expanded, created_at, updated_at)
+      VALUES (?, ?, ?, ?)
+      ON CONFLICT (todo_id) DO UPDATE SET
+        is_expanded = ?,
+        updated_at = ?
+    `);
+    
+    stmt.run(
+      todoId,
+      is_expanded ? 1 : 0,
+      now,
+      now,
+      is_expanded ? 1 : 0,
+      now
+    );
+    
+    res.json({
+      success: true,
+      data: {
+        todo_id: todoId,
+        is_expanded,
+        updated_at: now
+      },
+      meta: {
+        timestamp: new Date().toISOString(),
+        version: '1.0'
+      }
+    });
+    
+  } catch (error) {
+    console.error('Error updating todo UI state:', error);
+    res.status(500).json({
+      success: false,
+      error: {
+        code: 'UPDATE_ERROR',
+        message: 'Failed to update todo UI state'
+      },
+      meta: {
+        timestamp: new Date().toISOString(),
+        version: '1.0'
+      }
+    });
+  }
+});
+
 export default router;
 // Force server restart - added POST reset endpoint

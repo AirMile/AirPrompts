@@ -132,6 +132,19 @@ export const useUserPreferences = () => {
     updateSection('accessibility', updates);
   }, [updateSection]);
 
+  // Confirmation actions preferences
+  const confirmActions = useMemo(() => ({
+    deleteFolder: preferences.confirmActions.deleteFolder,
+    deleteTemplate: preferences.confirmActions.deleteTemplate,
+    deleteWorkflow: preferences.confirmActions.deleteWorkflow,
+    deleteSnippet: preferences.confirmActions.deleteSnippet,
+    deleteTodo: preferences.confirmActions.deleteTodo
+  }), [preferences.confirmActions]);
+
+  const updateConfirmActions = useCallback((updates) => {
+    updateSection('confirmActions', updates);
+  }, [updateSection]);
+
 
   // Search preferences
   const search = useMemo(() => ({
@@ -242,6 +255,7 @@ export const useUserPreferences = () => {
     filtering,
     pagination,
     accessibility,
+    confirmActions,
     search,
     sectionVisibility,
     
@@ -253,6 +267,7 @@ export const useUserPreferences = () => {
     updateFiltering,
     updatePagination,
     updateAccessibility,
+    updateConfirmActions,
     updateSearch,
     updateSectionVisibility,
     

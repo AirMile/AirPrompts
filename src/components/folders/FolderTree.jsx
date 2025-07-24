@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Settings, User, MoreVertical, Edit2, Trash2, Plus, FolderPlus, ChevronDown, ChevronUp } from 'lucide-react';
 import FolderModal from './FolderModal';
 import { AVAILABLE_ICONS } from '../../constants/folderIcons';
+import { useUserPreferences } from '../../hooks/domain/useUserPreferences';
 
 const FolderTree = ({ 
   folders = [], 
@@ -20,6 +21,9 @@ const FolderTree = ({
   const [parentFolderForNew, setParentFolderForNew] = useState(null);
   const [showContextMenu, setShowContextMenu] = useState(null);
   const [contextMenuPosition, setContextMenuPosition] = useState({ x: 0, y: 0 });
+  
+  // Use preferences for confirm actions
+  const { confirmActions } = useUserPreferences();
 
   // Initialize favorite folders from props
   useEffect(() => {
@@ -105,13 +109,18 @@ const FolderTree = ({
   };
 
   const handleDeleteFolder = (folderId) => {
-    // Check if folder has children or items
-    const hasSubfolders = folders.some(f => f.parentId === folderId);
-    const warningMessage = hasSubfolders 
-      ? 'Deze map bevat submappen. Weet je zeker dat je deze map en alle inhoud wilt verwijderen?'
-      : 'Weet je zeker dat je deze map wilt verwijderen?';
-    
-    if (confirm(warningMessage)) {
+    if (confirmActions.deleteFolder) {
+      // Check if folder has children or items
+      const hasSubfolders = folders.some(f => f.parentId === folderId);
+      const warningMessage = hasSubfolders 
+        ? 'Deze map bevat submappen. Weet je zeker dat je deze map en alle inhoud wilt verwijderen?'
+        : 'Weet je zeker dat je deze map wilt verwijderen?';
+      
+      if (confirm(warningMessage)) {
+        onDeleteFolder(folderId);
+      }
+    } else {
+      // Direct delete without confirmation
       onDeleteFolder(folderId);
     }
     setShowContextMenu(null);

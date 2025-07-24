@@ -12,6 +12,7 @@ import snippetsRouter from './routes/snippets.js';
 import foldersRouter from './routes/folders.js';
 import folderFavoritesRouter from './routes/folderFavorites.js';
 import uiStateRouter from './routes/uiState.js';
+import todosRouter from './routes/todos.js';
 import migrationRouter from './routes/migration.js';
 // import migrationAdvancedRouter from './routes/migration-advanced.js';
 import { runFoldersMigration } from './routes/migration-folders.js';
@@ -95,6 +96,7 @@ app.use('/api/snippets', snippetsRouter);
 app.use('/api/folders', foldersRouter);
 app.use('/api/folder-favorites', folderFavoritesRouter);
 app.use('/api/ui-state', uiStateRouter);
+app.use('/api/todos', todosRouter);
 app.use('/api/migrate', migrationRouter);
 // app.use('/api/migrate-advanced', migrationAdvancedRouter);
 

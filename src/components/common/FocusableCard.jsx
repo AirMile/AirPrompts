@@ -14,7 +14,7 @@ const FocusableCard = ({
   isItemFavorite = () => false,
   keyboardNavigation = {}
 }) => {
-  const { getColorClasses } = useItemColors();
+  const { getColorClasses, itemColors } = useItemColors();
 
 
   const getTypeColor = (itemType) => {
@@ -40,16 +40,7 @@ const FocusableCard = ({
 
   const getHoverBorderColor = (itemType) => {
     const normalizedType = normalizeType(itemType);
-    switch (normalizedType) {
-      case 'workflow':
-        return 'hover:border-success-600';
-      case 'template':
-        return 'hover:border-primary-600';
-      case 'snippet':
-        return 'hover:border-purple-600';
-      default:
-        return 'hover:border-primary-600';
-    }
+    return getColorClasses(normalizedType, 'hover-border') || 'hover:border-primary-500';
   };
 
   const getKeyboardFocusColor = (itemType) => {
@@ -122,18 +113,10 @@ const FocusableCard = ({
           const actualItemType = item.type || type;
           const normalizedType = normalizeType(actualItemType);
           
-          // Get border color based on type
+          // Get border color based on type using dynamic colors
           const getBorderColor = () => {
-            switch (normalizedType) {
-              case 'workflow':
-                return 'border-success-600/50';
-              case 'template':
-                return 'border-primary-600/50';
-              case 'snippet':
-                return 'border-purple-600/50';
-              default:
-                return 'border-primary-600/50';
-            }
+            const colorClass = getColorClasses(normalizedType, 'border');
+            return colorClass || 'border-primary-500';
           };
           
           const cardBackground = 'bg-white dark:bg-secondary-800';
@@ -144,9 +127,10 @@ const FocusableCard = ({
           
           return `
             ${cardBackground} rounded-lg ${getShadowClass()} border-2 ${getBorderColor()} p-4 
-            transition-all duration-200 flex flex-col
+            transition-all duration-200 ease-in-out flex flex-col
             focus:outline-none
             ${getHoverBorderColor(normalizedType)}
+            hover:scale-[1.01] hover:-translate-y-0.5
             ${isKeyboardFocused ? getKeyboardFocusColor(normalizedType) : ''}
           `;
         })()}

@@ -4,6 +4,7 @@ import { DndContext, DragOverlay, closestCenter, KeyboardSensor, PointerSensor, 
 import { SortableContext, verticalListSortingStrategy, rectSortingStrategy } from '@dnd-kit/sortable';
 import CollapsibleFolderTree from '../folders/CollapsibleFolderTree.jsx';
 import FolderBreadcrumb from '../folders/FolderBreadcrumb.jsx';
+import FolderDescription from '../folders/FolderDescription.jsx';
 import ListView from '../common/ListView.jsx';
 import FocusableCard from '../common/FocusableCard.jsx';
 import SortableCard from '../common/SortableCard.jsx';
@@ -18,6 +19,7 @@ import VirtualizedGrid from '../common/ui/VirtualizedGrid.jsx';
 import VirtualizedCard from '../common/VirtualizedCard.jsx';
 import OptimizedItemRenderer from '../common/OptimizedItemRenderer.jsx';
 import MobileNavigation from '../navigation/MobileNavigation.jsx';
+import CollapsibleTodoSidebar from '../todos/CollapsibleTodoSidebar.jsx';
 import useKeyboardNavigation from '../../hooks/ui/useKeyboardNavigation.js';
 import usePagination from '../../hooks/ui/usePagination.js';
 import useFilters from '../../hooks/ui/useFilters.js';
@@ -29,6 +31,7 @@ import useFolderSectionVisibility from '../../hooks/ui/useFolderSectionVisibilit
 import { performAdvancedSearch } from '../../utils/searchUtils.js';
 import { useUserPreferences } from '../../hooks/domain/useUserPreferences.js';
 import { useItemColors } from '../../hooks/useItemColors.js';
+import { useFoldersQuery } from '../../hooks/queries/useFoldersQuery.js';
 import { 
   getFolderFavorites, 
   getFolderItems,
@@ -95,6 +98,8 @@ const Homepage = ({
   onReorderFolders,
   onToggleFolderFavorite
 }) => {
+  // Homepage rendering
+  
   // Use preferences system for view mode
   const { layout, updateLayout } = useUserPreferences();
   const { getColorClasses } = useItemColors();
@@ -104,6 +109,22 @@ const Homepage = ({
     updateLayout({ viewMode: mode });
   };
   
+  // Initialize folders hook
+  const { updateFolder } = useFoldersQuery();
+  
+  // Handler for updating folder description
+  const handleUpdateFolderDescription = useCallback(async (folderId, description) => {
+    try {
+      await updateFolder.mutateAsync({
+        id: folderId,
+        description: description
+      });
+    } catch (error) {
+      console.error('Failed to update folder description:', error);
+      throw error;
+    }
+  }, [updateFolder]);
+  
   // Initialize widgets system
   const { activeWidgets, widgetConfigs } = useWidgets();
   
@@ -112,6 +133,24 @@ const Homepage = ({
   
   // Mobile navigation state
   const [isMobileNavOpen, setIsMobileNavOpen] = useState(false);
+  
+  // Get current folder
+  const currentFolder = useMemo(() => {
+    if (!folders || !selectedFolderId) return null;
+    return folders.find(f => f.id === selectedFolderId);
+  }, [folders, selectedFolderId]);
+
+  // Validate selected folder exists, fallback to root if invalid
+  useEffect(() => {
+    if (folders && folders.length > 0 && selectedFolderId) {
+      // Always validate against available folders
+      const folderExists = folders.some(f => f.id === selectedFolderId) || selectedFolderId === 'root';
+      if (!folderExists) {
+        console.warn(`Selected folder '${selectedFolderId}' does not exist, falling back to 'root'`);
+        setSelectedFolder('root');
+      }
+    }
+  }, [folders, selectedFolderId, setSelectedFolder]);
   
   // Section visibility state - use folder-specific or global visibility
   const isInFolder = selectedFolderId && selectedFolderId !== 'home';
@@ -200,6 +239,17 @@ const Homepage = ({
   const getFilteredItems = useCallback((items, itemType) => {
     if (!items || items.length === 0) return [];
     
+    console.log(`Filtering ${itemType} items:`, { 
+      totalItems: items.length, 
+      selectedFolderId,
+      sampleItem: items[0],
+      itemFolders: items.slice(0, 3).map(item => ({ 
+        id: item.id, 
+        folderId: item.folderId, 
+        folderIds: item.folderIds 
+      }))
+    });
+    
     // Apply folder filtering first
     const folderFiltered = items.filter(item => {
       // Support both single folderId and multiple folderIds
@@ -239,6 +289,11 @@ const Homepage = ({
       return folderMatch;
     });
     
+    console.log(`After folder filtering ${itemType}:`, { 
+      filteredCount: folderFiltered.length,
+      selectedFolderId 
+    });
+    
     // Apply filter system (includes tag filtering, category, favorites, etc.)
     const filterSystemFiltered = filterSystem.applyFilters(folderFiltered, itemType);
     
@@ -263,6 +318,15 @@ const Homepage = ({
   const filteredTemplates = useMemo(() => getFilteredItems(templates, 'template'), [templates, getFilteredItems]);
   const filteredWorkflows = useMemo(() => getFilteredItems(workflows, 'workflow'), [workflows, getFilteredItems]);  
   const filteredSnippets = useMemo(() => getFilteredItems(snippets, 'snippet'), [snippets, getFilteredItems]);
+
+  // Calculate total items in current view
+  const totalItemsInCurrentView = useMemo(() => {
+    return (
+      filteredTemplates.length + 
+      filteredWorkflows.length + 
+      filteredSnippets.length
+    );
+  }, [filteredTemplates.length, filteredWorkflows.length, filteredSnippets.length]);
 
   // REMOVED auto-collapse useEffects to prevent infinite loops
   // Empty sections get consistent spacing through CollapsibleSection component
@@ -540,15 +604,25 @@ const Homepage = ({
   }, [sectionIndexMap]);
 
 
-  // Set up keyboard navigation
-  const keyboardNavigation = useKeyboardNavigation(allItems, {
-    layout: viewMode,
-    columns: 4,
-    onExecute: (item) => onExecuteItem({ item, type: item.type }),
-    onSelection: () => {
-      // Optional: could add selection highlight here
-    }
-  });
+  // Temporarily disable keyboard navigation for debugging
+  const keyboardNavigation = {
+    isActive: false,
+    focusedIndex: -1,
+    focusItem: () => {},
+    clearFocus: () => {},
+    handleKeyDown: () => {},
+    getFocusProps: () => ({})
+  };
+  
+  // Set up keyboard navigation (disabled for debugging)
+  // const keyboardNavigation = useKeyboardNavigation(allItems, {
+  //   layout: viewMode,
+  //   columns: 4,
+  //   onExecute: (item) => onExecuteItem({ item, type: item.type }),
+  //   onSelection: () => {
+  //     // Optional: could add selection highlight here
+  //   }
+  // });
 
   // Smart focus preservation when sections visibility changes
   // TEMPORARILY DISABLED to fix infinite loop - will re-enable with proper logic
@@ -915,125 +989,15 @@ const Homepage = ({
     return targetIndex;
   };
 
-  // Add global Tab key listener for immediate card focus
-  useEffect(() => {
-    const handleGlobalKeyDown = (e) => {
-      // Handle Tab key for card navigation
-      if (e.key === 'Tab') {
-        const activeElement = document.activeElement;
-        const isInSearchInput = activeElement?.hasAttribute('data-search-input');
-        const isInCard = activeElement?.closest('[data-focusable-card]');
-        
-        // Skip handling if we're in an input/textarea (except when leaving search)
-        if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') {
-          // Only continue if we're leaving the search input with Tab (not Shift+Tab)
-          if (!isInSearchInput || e.shiftKey) {
-            return;
-          }
-        }
-        
-        // If we have items to navigate
-        if (allItems.length > 0) {
-          e.preventDefault();
-          e.stopPropagation();
-          e.stopImmediatePropagation();
-          
-          // Determine next focus position
-          if (!keyboardNavigation.isActive && !isInCard) {
-            // Not in navigation mode and not in a card - focus first card
-            keyboardNavigation.focusItem(0);
-          } else if (keyboardNavigation.isActive) {
-            // Already navigating - move to next/previous card
-            const currentIndex = keyboardNavigation.focusedIndex;
-            let nextIndex;
-            
-            if (e.shiftKey) {
-              // Shift+Tab: Move backward
-              nextIndex = currentIndex - 1;
-              if (nextIndex < 0) {
-                // At first card, wrap to last or exit to search
-                if (document.querySelector('[data-search-input]')) {
-                  // Exit navigation and focus search
-                  keyboardNavigation.clearFocus();
-                  document.querySelector('[data-search-input]').focus();
-                  return;
-                } else {
-                  // No search, wrap to last card
-                  nextIndex = allItems.length - 1;
-                }
-              }
-            } else {
-              // Tab: Move forward
-              nextIndex = (currentIndex + 1) % allItems.length;
-            }
-            
-            keyboardNavigation.focusItem(nextIndex);
-          } else {
-            keyboardNavigation.focusItem(0);
-          }
-          
-          // Ensure main content has focus for keyboard navigation
-          if (mainContentRef.current && !mainContentRef.current.contains(document.activeElement)) {
-            mainContentRef.current.focus();
-          }
-        }
-      }
-    };
+  // Temporarily disable global keyboard listeners for debugging
+  // useEffect(() => {
+  //   // ... keyboard handling code disabled for debugging
+  // }, []);
 
-    // Add with highest priority capture to intercept before other handlers
-    document.addEventListener('keydown', handleGlobalKeyDown, true);
-    return () => {
-      document.removeEventListener('keydown', handleGlobalKeyDown, true);
-    };
-  }, [allItems.length, keyboardNavigation.isActive, keyboardNavigation.focusedIndex, keyboardNavigation.focusItem, keyboardNavigation.clearFocus]);
-
-  // Add keyboard event listener to main content with throttling for large datasets
-  useEffect(() => {
-    let throttleTimer = null;
-    const isLargeDataset = allItems.length > 100;
-    
-    const handleKeyDown = (e) => {
-      // Only handle keyboard navigation when not in an input field
-      if (e.target.tagName !== 'INPUT' && e.target.tagName !== 'TEXTAREA') {
-        // For large datasets, throttle navigation to improve performance
-        if (isLargeDataset && ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key)) {
-          if (throttleTimer) return;
-          
-          throttleTimer = setTimeout(() => {
-            throttleTimer = null;
-          }, 50); // 50ms throttle for large datasets
-        }
-        
-        // Handle pagination keyboard shortcuts
-        if (e.ctrlKey || e.metaKey) {
-          switch (e.key) {
-            case 'ArrowLeft':
-            case 'ArrowRight':
-            case 'Home':
-            case 'End':
-              // Let pagination hooks handle these
-              templatesPagination.handleKeyDown(e);
-              workflowsPagination.handleKeyDown(e);
-              snippetsPagination.handleKeyDown(e);
-              break;
-            default:
-              keyboardNavigation.handleKeyDown(e);
-          }
-        } else {
-          keyboardNavigation.handleKeyDown(e);
-        }
-      }
-    };
-
-    const mainContent = mainContentRef.current;
-    if (mainContent) {
-      mainContent.addEventListener('keydown', handleKeyDown);
-      return () => {
-        mainContent.removeEventListener('keydown', handleKeyDown);
-        if (throttleTimer) clearTimeout(throttleTimer);
-      };
-    }
-  }, [keyboardNavigation.handleKeyDown, templatesPagination.handleKeyDown, workflowsPagination.handleKeyDown, snippetsPagination.handleKeyDown, allItems.length]);
+  // Temporarily disable keyboard event listeners for debugging
+  // useEffect(() => {
+  //   // ... keyboard event handling disabled for debugging
+  // }, []);
 
 
   // Get the appropriate drag and drop handler for a section
@@ -1583,7 +1547,7 @@ const Homepage = ({
           </div>
         </div>
 
-        <div className="max-w-7xl mx-auto pl-4 sm:pl-6 lg:pl-8 pr-0 py-4 lg:py-6">
+        <div className="max-w-7xl mx-auto pl-4 sm:pl-6 lg:pl-8 pr-4 sm:pr-6 lg:pr-8 py-4 lg:py-6">
           {/* Breadcrumb - Desktop only */}
           <div className="hidden lg:block mb-6">
             <FolderBreadcrumb
@@ -1592,21 +1556,32 @@ const Homepage = ({
               onFolderSelect={setSelectedFolderId}
             />
           </div>
-
-          {/* Search */}
-          <div className="mb-6">
-            <AdvancedSearch
-              searchQuery={searchQuery}
-              setSearchQuery={setSearchQuery}
-              allItems={[
-                ...templates.map(t => ({ ...t, type: 'template' })),
-                ...workflows.map(w => ({ ...w, type: 'workflow' })),
-                ...snippets.map(s => ({ ...s, type: 'snippet' }))
-              ]}
-              onFilter={handleAdvancedFilter}
-              placeholder="Search templates, workflows, snippets, and tags..."
+          
+          {/* Folder Description */}
+          {currentFolder && (
+            <FolderDescription
+              folder={currentFolder}
+              onUpdateDescription={handleUpdateFolderDescription}
+              isUpdating={updateFolder.isLoading}
             />
-          </div>
+          )}
+
+          {/* Search - Only show if there are items to search */}
+          {totalItemsInCurrentView > 0 && (
+            <div className="mb-6">
+              <AdvancedSearch
+                searchQuery={searchQuery}
+                setSearchQuery={setSearchQuery}
+                allItems={[
+                  ...templates.map(t => ({ ...t, type: 'template' })),
+                  ...workflows.map(w => ({ ...w, type: 'workflow' })),
+                  ...snippets.map(s => ({ ...s, type: 'snippet' }))
+                ]}
+                onFilter={handleAdvancedFilter}
+                placeholder="Search templates, workflows, snippets, and tags..."
+              />
+            </div>
+          )}
 
           {/* Dynamic Sections */}
           {sections.map((section, index) => 
@@ -1638,6 +1613,11 @@ const Homepage = ({
           )}
         </div>
       </div>
+      
+      {/* Todo Sidebar */}
+      <CollapsibleTodoSidebar 
+        currentFolderId={selectedFolderId}
+      />
       
       {/* Settings Modal */}
       <SettingsModal 

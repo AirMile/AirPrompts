@@ -1,4 +1,4 @@
-import React, { useState, useEffect, Suspense } from 'react';
+import React, { useState, useEffect } from 'react';
 import { AppProviders } from './app/AppProviders';
 import { useUIStore } from '../store/useUIStore';
 import themeStore from '../store/themeStore.js';
@@ -12,12 +12,19 @@ import { useFolders, useCreateFolder, useUpdateFolder, useDeleteFolder } from '.
 import { useQueryClient } from '@tanstack/react-query';
 import { LoadingSpinner } from './shared/ui';
 
-// Lazy load heavy components
-const TemplateEditor = React.lazy(() => import('./templates/TemplateEditor.jsx'));
-const ItemExecutor = React.lazy(() => import('./features/execution/ItemExecutor.jsx'));
-const Homepage = React.lazy(() => import('./dashboard/Homepage.jsx'));
-const WorkflowEditor = React.lazy(() => import('./workflows/WorkflowEditor.jsx'));
-const SnippetEditor = React.lazy(() => import('./snippets/SnippetEditor.jsx'));
+// Import components directly to troubleshoot loading issue
+import TemplateEditor from './templates/TemplateEditor.jsx';
+import ItemExecutor from './features/execution/ItemExecutor.jsx';
+import Homepage from './dashboard/Homepage.jsx';
+import WorkflowEditor from './workflows/WorkflowEditor.jsx';
+import SnippetEditor from './snippets/SnippetEditor.jsx';
+
+// Lazy load heavy components (disabled for debugging)
+// const TemplateEditor = React.lazy(() => import('./templates/TemplateEditor.jsx'));
+// const ItemExecutor = React.lazy(() => import('./features/execution/ItemExecutor.jsx'));
+// const Homepage = React.lazy(() => import('./dashboard/Homepage.jsx'));
+// const WorkflowEditor = React.lazy(() => import('./workflows/WorkflowEditor.jsx'));
+// const SnippetEditor = React.lazy(() => import('./snippets/SnippetEditor.jsx'));
 
 // Temporary API test component
 import APITestComponent from './test/APITestComponent.jsx';
@@ -41,10 +48,10 @@ const PromptTemplateSystemInner = () => {
   const queryClient = useQueryClient();
   
   // Use TanStack Query for data
-  const { data: templates = [], isLoading: templatesLoading } = useTemplates();
-  const { data: workflows = [], isLoading: workflowsLoading } = useWorkflows();
-  const { data: snippets = [], isLoading: snippetsLoading } = useSnippets();
-  const { data: folders = [], isLoading: foldersLoading } = useFolders();
+  const { data: templates = [], isPending: templatesPending, isLoading: templatesLoading } = useTemplates();
+  const { data: workflows = [], isPending: workflowsPending, isLoading: workflowsLoading } = useWorkflows();
+  const { data: snippets = [], isPending: snippetsPending, isLoading: snippetsLoading } = useSnippets();
+  const { data: folders = [], isPending: foldersPending, isLoading: foldersLoading } = useFolders();
   
   // Mutations
   const createTemplate = useCreateTemplate();
@@ -163,7 +170,17 @@ const PromptTemplateSystemInner = () => {
     }
   };
 
-  const isLoading = templatesLoading || workflowsLoading || snippetsLoading || foldersLoading;
+  // Use isPending for initial loading state (TanStack Query v5)
+  const isInitialLoading = templatesPending || workflowsPending || snippetsPending || foldersPending;
+  const isFetching = templatesLoading || workflowsLoading || snippetsLoading || foldersLoading;
+  
+  // Minimal debug logging
+  console.log('📊 PromptTemplateSystem render - Data counts:', {
+    templates: templates?.length || 0,
+    workflows: workflows?.length || 0,
+    snippets: snippets?.length || 0,
+    folders: folders?.length || 0
+  });
   
   // Monitor online status
   const { isOnline, hasBeenOffline } = useOnlineStatus();
@@ -215,75 +232,59 @@ const PromptTemplateSystemInner = () => {
   // Render current view
   if (editingTemplate) {
     return (
-      <Suspense fallback={<LoadingSpinner />}>
-        <TemplateEditor 
-          template={editingTemplate} 
-          folders={folders}
-          onSave={handleSaveTemplate} 
-          onCancel={() => setEditingTemplate(null)}
-        />
-      </Suspense>
+      <TemplateEditor 
+        template={editingTemplate} 
+        folders={folders}
+        onSave={handleSaveTemplate} 
+        onCancel={() => setEditingTemplate(null)}
+      />
     );
   }
 
   if (editingWorkflow) {
     return (
-      <Suspense fallback={<LoadingSpinner />}>
-        <WorkflowEditor 
-          workflow={editingWorkflow} 
-          templates={templates}
-          snippets={snippets}
-          workflows={workflows}
-          folders={folders}
-          onSave={handleSaveWorkflow} 
-          onCancel={() => setEditingWorkflow(null)}
-        />
-      </Suspense>
+      <WorkflowEditor 
+        workflow={editingWorkflow} 
+        templates={templates}
+        snippets={snippets}
+        workflows={workflows}
+        folders={folders}
+        onSave={handleSaveWorkflow} 
+        onCancel={() => setEditingWorkflow(null)}
+      />
     );
   }
 
   if (editingSnippet) {
     return (
-      <Suspense fallback={<LoadingSpinner />}>
-        <SnippetEditor 
-          snippet={editingSnippet}
-          folders={folders}
-          onSave={handleSaveSnippet} 
-          onCancel={() => setEditingSnippet(null)}
-        />
-      </Suspense>
+      <SnippetEditor 
+        snippet={editingSnippet}
+        folders={folders}
+        onSave={handleSaveSnippet} 
+        onCancel={() => setEditingSnippet(null)}
+      />
     );
   }
 
   if (executingItem) {
     return (
-      <Suspense fallback={<LoadingSpinner />}>
-        <ItemExecutor 
-          item={executingItem.item}
-          type={executingItem.type}
-          templates={templates}
-          workflows={workflows}
-          snippets={snippets}
-          onComplete={() => setExecutingItem(null)}
-          onCancel={() => setExecutingItem(null)}
-        />
-      </Suspense>
+      <ItemExecutor 
+        item={executingItem.item}
+        type={executingItem.type}
+        templates={templates}
+        workflows={workflows}
+        snippets={snippets}
+        onComplete={() => setExecutingItem(null)}
+        onCancel={() => setExecutingItem(null)}
+      />
     );
   }
 
-  // Show loading state while data is being fetched
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center h-screen">
-        <LoadingSpinner size={48} />
-        <span className="ml-4 text-lg">Loading data...</span>
-      </div>
-    );
-  }
+  // Force render Homepage - skip loading screen completely for debugging
+  // TODO: Re-enable proper loading logic later
 
   return (
-    <Suspense fallback={<LoadingSpinner />}>
-      <Homepage
+    <Homepage
         templates={templates}
         workflows={workflows}
         snippets={snippets}
@@ -324,7 +325,6 @@ const PromptTemplateSystemInner = () => {
           });
         }}
       />
-    </Suspense>
   );
 };
 

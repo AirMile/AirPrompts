@@ -97,14 +97,14 @@ export const getItemColorClasses = (itemType, variant = 'base') => {
       
     case 'border':
       return {
-        primary: 'border-primary-500 dark:border-primary-500',
-        success: 'border-success-500 dark:border-success-500',
-        warning: 'border-warning-500 dark:border-warning-500',
-        danger: 'border-danger-500 dark:border-danger-500',
-        orange: 'border-orange-500 dark:border-orange-500',
-        purple: 'border-purple-500 dark:border-purple-500',
-        pink: 'border-pink-500 dark:border-pink-500',
-        indigo: 'border-indigo-500 dark:border-indigo-500'
+        primary: 'border-primary-400 dark:border-primary-400',
+        success: 'border-success-400 dark:border-success-400',
+        warning: 'border-warning-400 dark:border-warning-400',
+        danger: 'border-danger-400 dark:border-danger-400',
+        orange: 'border-orange-400 dark:border-orange-400',
+        purple: 'border-purple-400 dark:border-purple-400',
+        pink: 'border-pink-400 dark:border-pink-400',
+        indigo: 'border-indigo-400 dark:border-indigo-400'
       }[colorScheme];
       
     case 'background':
@@ -129,6 +129,18 @@ export const getItemColorClasses = (itemType, variant = 'base') => {
         purple: 'bg-purple-100 dark:bg-purple-100 text-purple-800 dark:text-purple-800',
         pink: 'bg-pink-100 dark:bg-pink-100 text-pink-800 dark:text-pink-800',
         indigo: 'bg-indigo-100 dark:bg-indigo-100 text-indigo-800 dark:text-indigo-800'
+      }[colorScheme];
+      
+    case 'hover-border':
+      return {
+        primary: 'hover:border-primary-500 dark:hover:border-primary-500',
+        success: 'hover:border-success-500 dark:hover:border-success-500',
+        warning: 'hover:border-warning-500 dark:hover:border-warning-500',
+        danger: 'hover:border-danger-500 dark:hover:border-danger-500',
+        orange: 'hover:border-orange-500 dark:hover:border-orange-500',
+        purple: 'hover:border-purple-500 dark:hover:border-purple-500',
+        pink: 'hover:border-pink-500 dark:hover:border-pink-500',
+        indigo: 'hover:border-indigo-500 dark:hover:border-indigo-500'
       }[colorScheme];
       
     default:

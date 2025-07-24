@@ -153,3 +153,43 @@ html {
 .dark .scrollbar-thumb-secondary-700::-webkit-scrollbar-thumb:hover {
   background: rgb(var(--color-secondary-600));
 }
+
+/* Prose/Markdown styling */
+.prose {
+  /* Override prose defaults voor onze app styling */
+  --tw-prose-links: theme('colors.primary.600');
+  --tw-prose-headings: theme('colors.gray.900');
+}
+
+/* Dark mode prose overrides */
+.dark .prose-invert {
+  --tw-prose-body: theme('colors.gray.300');
+  --tw-prose-headings: theme('colors.gray.100');
+  --tw-prose-links: theme('colors.primary.400');
+  --tw-prose-bold: theme('colors.gray.100');
+  --tw-prose-counters: theme('colors.gray.400');
+  --tw-prose-bullets: theme('colors.gray.400');
+  --tw-prose-hr: theme('colors.gray.700');
+  --tw-prose-quotes: theme('colors.gray.300');
+  --tw-prose-quote-borders: theme('colors.gray.700');
+  --tw-prose-code: theme('colors.gray.100');
+  --tw-prose-pre-code: theme('colors.gray.100');
+  --tw-prose-pre-bg: theme('colors.gray.800');
+}
+
+.prose a {
+  font-weight: 500;
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 2px;
+}
+
+.prose h1, .prose h2, .prose h3 {
+  margin-top: 1em;
+  margin-bottom: 0.5em;
+}
+
+.prose ul, .prose ol {
+  margin-top: 0.5em;
+  margin-bottom: 0.5em;
+}

@@ -9,7 +9,7 @@ export const useUIStore = create(
         // View preferences
         viewMode: 'grid',
         searchQuery: '',
-        selectedFolderId: 'home',
+        selectedFolderId: 'root',
         activeFilters: {},
         
         // UI actions
@@ -22,16 +22,24 @@ export const useUIStore = create(
         resetUI: () => set({
           searchQuery: '',
           activeFilters: {},
-          selectedFolderId: 'home'
+          selectedFolderId: 'root'
         })
       }),
       {
         name: 'airprompts-ui-storage',
+        version: 1,
         // Only persist user preferences
         partialize: (state) => ({ 
           viewMode: state.viewMode,
           selectedFolderId: state.selectedFolderId 
-        })
+        }),
+        // Migrate old 'home' to 'root' 
+        migrate: (persistedState, version) => {
+          if (version === 0 && persistedState?.selectedFolderId === 'home') {
+            persistedState.selectedFolderId = 'root';
+          }
+          return persistedState;
+        }
       }
     )
   )
