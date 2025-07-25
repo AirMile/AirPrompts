@@ -1346,10 +1346,10 @@ const Homepage = ({
             title="Workflows"
             itemCount={fullData ? fullData.length : data.length}
             externalVisible={workflowsVisibility.isVisible}
-            onCreateNew={() => onEditWorkflow({})}
+            onCreateNew={() => onEditWorkflow({ folderIds: selectedFolderId && selectedFolderId !== 'root' ? [selectedFolderId] : [] })}
             actionButton={
               <button
-                onClick={() => onEditWorkflow({})}
+                onClick={() => onEditWorkflow({ folderIds: selectedFolderId && selectedFolderId !== 'root' ? [selectedFolderId] : [] })}
                 className="p-2 text-secondary-600 dark:text-secondary-400 hover:text-secondary-900 dark:hover:text-secondary-100 hover:bg-secondary-100 dark:hover:bg-secondary-800 rounded-lg transition-colors"
                 title="New Workflow"
               >
@@ -1409,10 +1409,10 @@ const Homepage = ({
             title="Templates"
             itemCount={fullData ? fullData.length : data.length}
             externalVisible={templatesVisibility.isVisible}
-            onCreateNew={() => onEditTemplate({})}
+            onCreateNew={() => onEditTemplate({ folderIds: selectedFolderId && selectedFolderId !== 'root' ? [selectedFolderId] : [] })}
             actionButton={
               <button
-                onClick={() => onEditTemplate({})}
+                onClick={() => onEditTemplate({ folderIds: selectedFolderId && selectedFolderId !== 'root' ? [selectedFolderId] : [] })}
                 className="p-2 text-secondary-600 dark:text-secondary-400 hover:text-secondary-900 dark:hover:text-secondary-100 hover:bg-secondary-100 dark:hover:bg-secondary-800 rounded-lg transition-colors"
                 title="New Template"
               >
@@ -1472,10 +1472,10 @@ const Homepage = ({
             title="Snippets"
             itemCount={fullData ? fullData.length : data.length}
             externalVisible={snippetsVisibility.isVisible}
-            onCreateNew={() => onEditSnippet({})}
+            onCreateNew={() => onEditSnippet({ folderIds: selectedFolderId && selectedFolderId !== 'root' ? [selectedFolderId] : [] })}
             actionButton={
               <button
-                onClick={() => onEditSnippet({})}
+                onClick={() => onEditSnippet({ folderIds: selectedFolderId && selectedFolderId !== 'root' ? [selectedFolderId] : [] })}
                 className="p-2 text-secondary-600 dark:text-secondary-400 hover:text-secondary-900 dark:hover:text-secondary-100 hover:bg-secondary-100 dark:hover:bg-secondary-800 rounded-lg transition-colors"
                 title="New Snippet"
               >
@@ -1563,12 +1563,6 @@ const Homepage = ({
           onAccountClick={() => console.log('Account clicked')}
           searchQuery={searchQuery}
           setSearchQuery={setSearchQuery}
-          allItems={[
-            ...templates.map(t => ({ ...t, type: 'template' })),
-            ...workflows.map(w => ({ ...w, type: 'workflow' })),
-            ...snippets.map(s => ({ ...s, type: 'snippet' }))
-          ]}
-          onAdvancedFilter={handleAdvancedFilter}
         />
       </div>
 
@@ -1602,7 +1596,7 @@ const Homepage = ({
 
         <div className="max-w-7xl mx-auto pl-4 sm:pl-6 lg:pl-8 pr-4 sm:pr-6 lg:pr-8 py-4 lg:py-6">
           {/* Breadcrumb - Desktop only */}
-          <div className="hidden lg:block mb-6">
+          <div className="hidden lg:block mb-4">
             <FolderBreadcrumb
               folders={folders || []}
               currentFolderId={selectedFolderId}

@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { ChevronDownIcon, ChevronRightIcon, PencilIcon, PlusIcon, EyeIcon } from '@heroicons/react/24/outline';
 import MDEditor from '@uiw/react-md-editor';
 import MarkdownRenderer from '../common/MarkdownRenderer';
+import useFolderSectionVisibility from '../../hooks/ui/useFolderSectionVisibility';
 import './FolderDescription.css';
 
 const FolderDescription = ({ 
@@ -9,7 +10,8 @@ const FolderDescription = ({
   onUpdateDescription,
   isUpdating = false 
 }) => {
-  const [isExpanded, setIsExpanded] = useState(false);
+  // Use folder-specific visibility state that persists across folder changes
+  const contextVisibility = useFolderSectionVisibility(folder?.id || 'home', 'context', false);
   const [isEditing, setIsEditing] = useState(false);
   const [editValue, setEditValue] = useState(folder?.description || '');
   const [error, setError] = useState(null);
@@ -41,9 +43,9 @@ const FolderDescription = ({
     }
   }, [isEditing, folder?.description]);
 
-  // Handle expand/collapse with animation timing
+  // Handle expand/collapse with animation timing and persistence
   const handleExpandToggle = (shouldExpand) => {
-    if (shouldExpand === isExpanded) return;
+    if (shouldExpand === contextVisibility.isVisible) return;
     
     // Clear any existing animation timeout
     if (animationTimeoutRef.current) {
@@ -52,12 +54,12 @@ const FolderDescription = ({
     
     if (shouldExpand) {
       // Expanding: no delay needed
-      setIsExpanded(true);
+      contextVisibility.setVisible(true);
       setIsAnimating(false);
     } else {
       // Collapsing: start animation, delay border radius change
       setIsAnimating(true);
-      setIsExpanded(false);
+      contextVisibility.setVisible(false);
       
       // After 200ms (during animation), stop animation state for border radius
       animationTimeoutRef.current = setTimeout(() => {
@@ -77,16 +79,9 @@ const FolderDescription = ({
 
   // Auto-save functionaliteit met visuele feedback
   const handleAutoSave = async (value, immediate = false) => {
-    console.log('handleAutoSave called with:', {
-      value: value?.substring(0, 50) + '...',
-      lastSaved: lastSavedValueRef.current?.substring(0, 50) + '...',
-      immediate,
-      hasChanges: value !== lastSavedValueRef.current
-    });
     
     // Skip if no changes
     if (value === lastSavedValueRef.current) {
-      console.log('No changes detected, skipping save');
       setHasUnsavedChanges(false);
       return;
     }
@@ -98,7 +93,6 @@ const FolderDescription = ({
     }
     
     const saveFunction = async () => {
-      console.log('Actually saving value:', value?.substring(0, 50) + '...');
       setSaveStatus('saving');
       try {
         await onUpdateDescription(folder.id, value);
@@ -106,7 +100,6 @@ const FolderDescription = ({
         setHasUnsavedChanges(false);
         setSaveStatus('saved');
         setError(null);
-        console.log('Save successful, lastSavedValueRef updated to:', value?.substring(0, 50) + '...');
         
         // Reset status after 2 seconds
         setTimeout(() => {
@@ -114,16 +107,14 @@ const FolderDescription = ({
         }, 2000);
       } catch (error) {
         setSaveStatus('error');
-        setError('Opslaan mislukt');
+        setError('Save failed');
         console.error('Save failed:', error);
       }
     };
     
     if (immediate) {
-      console.log('Immediate save requested');
       await saveFunction();
     } else {
-      console.log('Debounced save scheduled (300ms)');
       saveTimeoutRef.current = setTimeout(saveFunction, 300); // Faster debounce
     }
   };
@@ -153,7 +144,6 @@ const FolderDescription = ({
   }, []);
 
   const handleInputChange = (value) => {
-    console.log('Input change - value length:', value?.length, 'first 50 chars:', value?.substring(0, 50));
     setEditValue(value || '');
     handleAutoSave(value || '');
     scrollToCursor();
@@ -178,12 +168,7 @@ const FolderDescription = ({
       const timer = setTimeout(() => {
         const textarea = editorRef.current;
         
-        console.log('DEBUG - Simple textarea found:', textarea ? 'YES' : 'NO');
-        
         if (textarea) {
-          console.log('- Textarea value length:', textarea.value?.length);
-          console.log('- Using simple textarea - cursor should work perfectly now!');
-          
           // Focus the textarea
           textarea.focus();
         }
@@ -195,10 +180,6 @@ const FolderDescription = ({
 
   const toggleEditMode = async () => {
     if (isEditing) {
-      console.log('Switching to view mode - saving changes...');
-      console.log('Current editValue:', editValue);
-      console.log('Folder description:', folder?.description);
-      console.log('Has unsaved changes:', hasUnsavedChanges);
       
       // Save before switching to view mode
       if (saveTimeoutRef.current) {
@@ -210,8 +191,6 @@ const FolderDescription = ({
       setIsEditing(false);
     } else {
       // When entering edit mode, ensure editValue is synced with folder description
-      console.log('Switching to edit mode - syncing data...');
-      console.log('Setting editValue to:', folder?.description || '');
       setEditValue(folder?.description || '');
       setIsEditing(true);
       handleExpandToggle(true);
@@ -232,26 +211,26 @@ const FolderDescription = ({
   }
 
   return (
-    <div className={`collapsible-section section-boundary-restricted ${hasDescription ? 'mb-6' : 'mb-4'}`}>
+    <div className={`collapsible-section section-boundary-restricted mb-4`} data-section-type="context">
       {/* Header */}
       <div className={`w-full flex items-center justify-between overflow-hidden group border ${
         hasDescription 
           ? 'bg-primary-50 dark:bg-primary-900/10 hover:bg-primary-100 dark:hover:bg-primary-900/20 has-[.action-button:hover]:bg-primary-50 dark:has-[.action-button:hover]:bg-primary-900/10 border-primary-200 dark:border-primary-800/50' 
           : 'bg-secondary-50 dark:bg-secondary-900/10 border-secondary-200 dark:border-secondary-800/50'
       } ${
-        isExpanded || isAnimating
+        contextVisibility.isVisible || isAnimating
           ? 'rounded-t-lg' 
           : 'rounded-lg'
       } transition-colors duration-300 ease-in-out transition-[border-radius] duration-75 ease-out`}>
         <button
-          onClick={hasDescription ? () => handleExpandToggle(!isExpanded) : isExpanded ? () => handleExpandToggle(false) : handleStartEdit}
+          onClick={hasDescription ? () => handleExpandToggle(!contextVisibility.isVisible) : contextVisibility.isVisible ? () => handleExpandToggle(false) : handleStartEdit}
           className="flex-1 flex items-center justify-between p-3 focus:outline-none"
-          aria-expanded={isExpanded}
+          aria-expanded={contextVisibility.isVisible}
           aria-controls="context-content"
         >
           <div className="flex items-center space-x-2">
-            {(hasDescription || isExpanded) ? (
-              isExpanded ? (
+            {(hasDescription || contextVisibility.isVisible) ? (
+              contextVisibility.isVisible ? (
                 <ChevronDownIcon className="w-5 h-5 text-secondary-600 dark:text-secondary-400" />
               ) : (
                 <ChevronRightIcon className="w-5 h-5 text-secondary-600 dark:text-secondary-400" />
@@ -270,7 +249,7 @@ const FolderDescription = ({
           <button
             onClick={hasDescription ? toggleEditMode : handleStartEdit}
             className="p-2 text-secondary-600 dark:text-secondary-400 hover:text-secondary-900 dark:hover:text-secondary-100 hover:bg-secondary-100 dark:hover:bg-secondary-800 rounded-lg transition-colors"
-            title={isEditing ? "Terug naar weergave" : hasDescription ? "Bewerken" : "Context toevoegen"}
+            title={isEditing ? "Back to view" : hasDescription ? "Edit" : "Add context"}
           >
             {hasDescription ? (
               isEditing ? (
@@ -290,15 +269,15 @@ const FolderDescription = ({
         id="context-content"
         className="grid transition-[grid-template-rows] duration-300 ease-in-out"
         style={{
-          gridTemplateRows: isExpanded ? '1fr' : '0fr'
+          gridTemplateRows: contextVisibility.isVisible ? '1fr' : '0fr'
         }}
-        aria-hidden={!isExpanded}
+        aria-hidden={!contextVisibility.isVisible}
       >
         <div className="overflow-hidden">
           <div 
             className="transition-all duration-300 ease-in-out"
             style={{
-              opacity: isExpanded ? 1 : 0
+              opacity: contextVisibility.isVisible ? 1 : 0
             }}
           >
             {error && (
@@ -315,8 +294,8 @@ const FolderDescription = ({
                   onChange={(e) => handleInputChange(e.target.value)}
                   onBlur={handleBlur}
                   placeholder={folder.id === 'root' 
-                    ? 'Voeg algemene context, notities en links toe...' 
-                    : `Voeg context, notities en links toe voor "${folder.name}"...`}
+                    ? 'Add general context, notes and links...' 
+                    : `Add context, notes and links for "${folder.name}"...`}
                   className="w-full h-72 p-3 bg-transparent border-none outline-none resize-none text-secondary-900 dark:text-secondary-100 focus:ring-0 focus:border-none focus:outline-none context-textarea"
                   style={{
                     fontSize: '14px',
@@ -333,19 +312,19 @@ const FolderDescription = ({
                 />
               </div>
             ) : editValue?.trim() ? (
-              <div className="p-3 sm:p-4 bg-white dark:bg-secondary-800 border-l border-r border-b border-secondary-200 dark:border-secondary-700 rounded-b-lg">
+              <div className="px-4 sm:px-6 py-4 bg-white dark:bg-secondary-800 border-l border-r border-b border-secondary-200 dark:border-secondary-700 rounded-b-lg">
                 <MarkdownRenderer content={editValue} />
               </div>
             ) : (
               <div className="p-3 sm:p-4 bg-white dark:bg-secondary-800 border-l border-r border-b border-secondary-200 dark:border-secondary-700 rounded-b-lg text-center">
                 <p className="text-secondary-500 dark:text-secondary-400 mb-2">
-                  {folder.id === 'root' ? 'Geen algemene context toegevoegd' : 'Geen beschrijving toegevoegd voor deze folder'}
+                  {folder.id === 'root' ? 'No general context added' : 'No description added for this folder'}
                 </p>
                 <button
                   onClick={handleStartEdit}
                   className="text-primary-600 dark:text-primary-400 hover:text-primary-800 dark:hover:text-primary-300 text-sm font-medium transition-colors"
                 >
-                  Voeg context toe
+                  Add context
                 </button>
               </div>
             )}

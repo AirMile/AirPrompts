@@ -69,10 +69,10 @@ export function MigrationWizard({ isOpen, onClose, onComplete }) {
         setPreviewData(response.data);
         setCurrentStep(MIGRATION_STEPS.CONFIRM);
       } else {
-        setError(`Preview fout: ${response.error?.message || 'Onbekende fout'}`);
+        setError(`Preview error: ${response.error?.message || 'Unknown error'}`);
       }
     } catch (err) {
-      setError(`Preview mislukt: ${err.message}`);
+      setError(`Preview failed: ${err.message}`);
     } finally {
       setIsProcessing(false);
     }
@@ -103,10 +103,10 @@ export function MigrationWizard({ isOpen, onClose, onComplete }) {
         
         onComplete?.(response.data);
       } else {
-        setError(`Migratie fout: ${response.error?.message || 'Onbekende fout'}`);
+        setError(`Migration error: ${response.error?.message || 'Unknown error'}`);
       }
     } catch (err) {
-      setError(`Migratie mislukt: ${err.message}`);
+      setError(`Migration failed: ${err.message}`);
     } finally {
       setIsProcessing(false);
     }
@@ -192,10 +192,10 @@ export function MigrationWizard({ isOpen, onClose, onComplete }) {
                   </svg>
                 </div>
                 <h3 className="text-lg font-medium text-gray-900 mb-2">
-                  Lokale data controleren...
+                  Checking local data...
                 </h3>
                 <p className="text-gray-600">
-                  We zoeken naar bestaande templates, workflows, folders en snippets in je lokale opslag.
+                  We're searching for existing templates, workflows, folders and snippets in your local storage.
                 </p>
               </div>
             </div>

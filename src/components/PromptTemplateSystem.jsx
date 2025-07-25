@@ -144,9 +144,9 @@ const PromptTemplateSystemInner = () => {
         });
       });
       
-      // Use localStorage instead of API
-      const foldersAPI = (await import('../hooks/useAPI.js')).useFoldersAPI();
-      const result = await foldersAPI.updateSortOrders(updates);
+      // Use localStorage directly instead of hook
+      const { updateFoldersSortOrders } = await import('../utils/localStorageManager.js');
+      const result = await updateFoldersSortOrders(updates);
       
       if (!result.success) {
         throw new Error('Failed to update folder sort order');

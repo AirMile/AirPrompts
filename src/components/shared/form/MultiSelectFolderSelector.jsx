@@ -9,7 +9,7 @@ const MultiSelectFolderSelector = ({
   folders = [], 
   selectedFolderIds = [], 
   onFoldersSelect, 
-  placeholder = "Selecteer folders...",
+  placeholder = "Select folders...",
   className = "",
   maxHeight = "max-h-64"
 }) => {
@@ -129,7 +129,7 @@ const MultiSelectFolderSelector = ({
       return selectedFolders.map(f => f.name).join(', ');
     }
     
-    return `${selectedFolders.length} folders geselecteerd`;
+    return `${selectedFolders.length} folders selected`;
   }, [folders, selectedFolderIds, placeholder]);
 
   const hierarchicalFolders = buildFolderHierarchy(filteredFolders);
@@ -198,7 +198,7 @@ const MultiSelectFolderSelector = ({
               <input
                 ref={searchInputRef}
                 type="text"
-                placeholder="Zoek folders..."
+                placeholder="Search folders..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="w-full pl-10 pr-3 py-2 bg-secondary-100 dark:bg-secondary-700 border border-secondary-300 dark:border-secondary-600 rounded-md text-secondary-900 dark:text-secondary-100 placeholder-secondary-500 dark:placeholder-secondary-400 focus:ring-2 focus:ring-primary-500 focus:border-transparent text-sm"
@@ -209,7 +209,7 @@ const MultiSelectFolderSelector = ({
           <div className="max-h-48 overflow-y-auto">
             {filteredFolders.length === 0 ? (
               <div className="p-3 text-secondary-600 dark:text-secondary-500 text-center text-sm">
-                {searchTerm ? 'Geen folders gevonden' : 'Geen folders beschikbaar'}
+                {searchTerm ? 'No folders found' : 'No folders available'}
               </div>
             ) : searchTerm ? (
               filteredFolders.map(folder => renderFolderOption(folder, 0))
@@ -222,7 +222,7 @@ const MultiSelectFolderSelector = ({
             <div className="p-3 border-t border-secondary-200 dark:border-secondary-700 bg-secondary-50 dark:bg-secondary-900/50">
               <div className="flex items-center justify-between text-sm">
                 <span className="text-secondary-600 dark:text-secondary-400">
-                  {selectedFolderIds.length} folder{selectedFolderIds.length !== 1 ? 's' : ''} geselecteerd
+                  {selectedFolderIds.length} folder{selectedFolderIds.length !== 1 ? 's' : ''} selected
                 </span>
                 <button
                   onClick={(e) => {

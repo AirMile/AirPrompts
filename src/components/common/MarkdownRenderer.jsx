@@ -4,7 +4,7 @@ import remarkBreaks from 'remark-breaks';
 
 const MarkdownRenderer = ({ content, className = '' }) => {
   return (
-    <div className={`prose prose-sm dark:prose-invert max-w-none ${className}`}>
+    <div className={`prose prose-sm dark:prose-invert max-w-none pl-2 ${className}`}>
       <ReactMarkdown 
         remarkPlugins={[remarkGfm, remarkBreaks]}
         components={{

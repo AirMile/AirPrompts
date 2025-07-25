@@ -96,7 +96,8 @@ export const createWorkflowStep = (data = {}) => {
     information: data.information || '', // Information text shown with any step type
     insertId: data.insertId || null, // For insert steps
     insertContent: data.insertContent || '', // For insert steps
-    snippetTags: data.snippetTags || [] // Tags to filter snippets in this step
+    snippetTags: data.snippetTags || [], // Tags to filter snippets in this step
+    repeat: data.repeat || false // For template and workflow steps - allows repeating after completion
   };
 };
 

@@ -6,6 +6,7 @@ import { useItemColors } from '../../../hooks/useItemColors.js';
 
 const ItemExecutor = ({ item, type, templates = [], workflows = [], snippets = [], onComplete, onCancel, onEdit }) => {
   const { getColorClasses } = useItemColors();
+  const [repeatMode, setRepeatMode] = useState(false);
 
   // Check if classic dark theme is active
   const isClassicDark = () => {
@@ -1144,7 +1145,11 @@ const ItemExecutor = ({ item, type, templates = [], workflows = [], snippets = [
       setTimeout(() => {
         setCopied(false);
         
-        if (isWorkflow && currentStep < steps.length - 1) {
+        if (repeatMode && (stepType === 'template' || stepType === 'workflow')) {
+          // In repeat mode, reset variables but stay on current step
+          setVariableValues({});
+          setSelectedSnippets(new Set());
+        } else if (isWorkflow && currentStep < steps.length - 1) {
           // Move to next step in workflow
           setCurrentStep(currentStep + 1);
           setVariableValues({});
@@ -1156,6 +1161,7 @@ const ItemExecutor = ({ item, type, templates = [], workflows = [], snippets = [
       }, 1500);
     }
   };
+
   
   const canProceed = (() => {
     if (stepType === 'info') return true; // Info steps don't need variables
@@ -1290,6 +1296,31 @@ const ItemExecutor = ({ item, type, templates = [], workflows = [], snippets = [
                 <Edit className="w-5 h-5" />
                 Edit Snippet
               </button>
+            )}
+            {/* Show repeat toggle for template and workflow steps when not needsSelection */}
+            {!needsSelection && (stepType === 'template' || stepType === 'workflow') && (
+              <label className="flex items-center gap-3 px-8 py-4 bg-secondary-200 dark:bg-secondary-700 text-secondary-800 dark:text-secondary-100 rounded-2xl hover:bg-secondary-300 dark:hover:bg-secondary-600 transition-all duration-300 cursor-pointer font-semibold hover:shadow-lg transform hover:scale-105 border border-secondary-300 dark:border-secondary-600/50 hover:border-secondary-400 dark:hover:border-secondary-500">
+                <div className="relative">
+                  <input
+                    type="checkbox"
+                    checked={repeatMode}
+                    onChange={(e) => setRepeatMode(e.target.checked)}
+                    className="sr-only"
+                  />
+                  <div className={`w-14 h-7 rounded-full transition-all duration-300 ${
+                    repeatMode 
+                      ? 'bg-gradient-to-r from-primary-500 to-primary-600 dark:from-primary-500 dark:to-primary-600'
+                      : 'bg-secondary-400 dark:bg-secondary-600'
+                  }`}>
+                    <div className={`absolute top-0.5 left-0.5 w-6 h-6 bg-white rounded-full shadow-lg transform transition-transform duration-300 ${
+                      repeatMode ? 'translate-x-7' : 'translate-x-0'
+                    }`} />
+                  </div>
+                </div>
+                <span className="select-none">
+                  Repeat
+                </span>
+              </label>
             )}
             <button
               onClick={needsSelection ? () => {

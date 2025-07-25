@@ -6,21 +6,21 @@ import MultiSelectFolderSelector from '../shared/form/MultiSelectFolderSelector'
 import { format } from 'date-fns';
 
 const priorityOptions = [
-  { value: 'critical', label: 'Kritiek', color: 'text-red-600 bg-red-50 border-red-300' },
-  { value: 'important', label: 'Belangrijk', color: 'text-orange-600 bg-orange-50 border-orange-300' },
-  { value: 'should', label: 'Zou moeten', color: 'text-yellow-600 bg-yellow-50 border-yellow-300' },
-  { value: 'could', label: 'Zou kunnen', color: 'text-green-600 bg-green-50 border-green-300' },
+  { value: 'critical', label: 'Critical', color: 'text-red-600 bg-red-50 border-red-300' },
+  { value: 'important', label: 'Important', color: 'text-orange-600 bg-orange-50 border-orange-300' },
+  { value: 'should', label: 'Should do', color: 'text-yellow-600 bg-yellow-50 border-yellow-300' },
+  { value: 'could', label: 'Could do', color: 'text-green-600 bg-green-50 border-green-300' },
   { value: 'nice_to_have', label: 'Nice to have', color: 'text-gray-600 bg-gray-50 border-gray-300' }
 ];
 
 const timeEstimateOptions = [
-  { value: '', label: 'Geen schatting' },
-  { value: '1h', label: '1 uur' },
-  { value: 'few_hours', label: 'Paar uur' },
-  { value: 'day', label: '1 dag' },
-  { value: 'days', label: 'Meerdere dagen' },
+  { value: '', label: 'No estimate' },
+  { value: '1h', label: '1 hour' },
+  { value: 'few_hours', label: 'Few hours' },
+  { value: 'day', label: '1 day' },
+  { value: 'days', label: 'Multiple days' },
   { value: 'week', label: '1 week' },
-  { value: 'weeks', label: 'Meerdere weken' }
+  { value: 'weeks', label: 'Multiple weeks' }
 ];
 
 const TodoModal = ({ todo, currentFolderId, onClose }) => {
@@ -148,13 +148,13 @@ const TodoModal = ({ todo, currentFolderId, onClose }) => {
     const newErrors = {};
     
     if (!formData.title.trim()) {
-      newErrors.title = 'Titel is verplicht';
+      newErrors.title = 'Title is required';
     }
     
     if (formData.deadline && formData.deadline_type === 'fixed') {
       const deadlineDate = new Date(formData.deadline);
       if (isNaN(deadlineDate.getTime())) {
-        newErrors.deadline = 'Ongeldige datum';
+        newErrors.deadline = 'Invalid date';
       }
     }
     
@@ -194,7 +194,7 @@ const TodoModal = ({ todo, currentFolderId, onClose }) => {
       onClose();
     } catch (error) {
       console.error('[DEBUG] TodoModal - Error saving todo:', error);
-      setErrors({ submit: 'Er is een fout opgetreden bij het opslaan' });
+      setErrors({ submit: 'An error occurred while saving' });
     }
   };
   
@@ -205,7 +205,7 @@ const TodoModal = ({ todo, currentFolderId, onClose }) => {
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b border-secondary-200 dark:border-secondary-700">
           <h2 className="text-lg font-semibold flex items-center gap-2 text-secondary-900 dark:text-secondary-100">
-            {todo ? 'Todo bewerken' : 'Nieuwe todo'}
+            {todo ? 'Edit todo' : 'New todo'}
           </h2>
           <button
             onClick={onClose}
@@ -220,14 +220,14 @@ const TodoModal = ({ todo, currentFolderId, onClose }) => {
           {/* Title */}
           <div>
             <label className="block text-sm font-medium mb-1 text-secondary-700 dark:text-secondary-300">
-              Titel <span className="text-red-500">*</span>
+              Title <span className="text-red-500">*</span>
             </label>
             <input
               type="text"
               name="title"
               value={formData.title}
               onChange={handleChange}
-              placeholder="Wat moet er gedaan worden?"
+              placeholder="What needs to be done?"
               className={`w-full px-3 py-2 border rounded-md bg-white dark:bg-secondary-700 text-secondary-900 dark:text-secondary-100 placeholder-secondary-500 dark:placeholder-secondary-400 ${
                 errors.title ? 'border-red-500' : 'border-secondary-300 dark:border-secondary-600'
               } focus:outline-none focus:ring-2 focus:ring-primary-500 dark:focus:ring-primary-400`}
@@ -240,13 +240,13 @@ const TodoModal = ({ todo, currentFolderId, onClose }) => {
           {/* Description */}
           <div>
             <label className="block text-sm font-medium mb-1 text-secondary-700 dark:text-secondary-300">
-              Beschrijving
+              Description
             </label>
             <textarea
               name="description"
               value={formData.description}
               onChange={handleChange}
-              placeholder="Extra details of notities..."
+              placeholder="Extra details or notes..."
               rows={3}
               className="w-full px-3 py-2 border border-secondary-300 dark:border-secondary-600 rounded-md bg-white dark:bg-secondary-700 text-secondary-900 dark:text-secondary-100 placeholder-secondary-500 dark:placeholder-secondary-400 focus:outline-none focus:ring-2 focus:ring-primary-500 dark:focus:ring-primary-400"
             />
@@ -255,7 +255,7 @@ const TodoModal = ({ todo, currentFolderId, onClose }) => {
           {/* Priority */}
           <div>
             <label className="block text-sm font-medium mb-1 text-secondary-700 dark:text-secondary-300">
-              Prioriteit
+              Priority
             </label>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
               {priorityOptions.map(option => (
@@ -287,7 +287,7 @@ const TodoModal = ({ todo, currentFolderId, onClose }) => {
             <div>
               <label className="block text-sm font-medium mb-1 flex items-center gap-1 text-secondary-700 dark:text-secondary-300">
                 <Clock className="w-4 h-4" />
-                Tijd schatting
+                Time estimate
               </label>
               <select
                 name="time_estimate"
@@ -323,7 +323,7 @@ const TodoModal = ({ todo, currentFolderId, onClose }) => {
           <div>
             <label className="block text-sm font-medium mb-1 flex items-center gap-1 text-secondary-700 dark:text-secondary-300">
               <Folder className="w-4 h-4" />
-              Zichtbaarheid
+              Visibility
             </label>
             <div className="space-y-3">
               {/* Visibility mode radio buttons */}
@@ -338,7 +338,7 @@ const TodoModal = ({ todo, currentFolderId, onClose }) => {
                     className="text-primary-500 focus:ring-primary-500 dark:focus:ring-primary-400"
                   />
                   <span className="text-sm text-secondary-700 dark:text-secondary-300">
-                    🌐 Altijd zichtbaar (alle folders)
+                    🌐 Always visible (all folders)
                   </span>
                 </label>
                 
@@ -352,7 +352,7 @@ const TodoModal = ({ todo, currentFolderId, onClose }) => {
                     className="text-primary-500 focus:ring-primary-500 dark:focus:ring-primary-400"
                   />
                   <span className="text-sm text-secondary-700 dark:text-secondary-300">
-                    🏠 Alleen bij Home
+                    🏠 Only at Home
                   </span>
                 </label>
                 
@@ -366,7 +366,7 @@ const TodoModal = ({ todo, currentFolderId, onClose }) => {
                     className="text-primary-500 focus:ring-primary-500 dark:focus:ring-primary-400"
                   />
                   <span className="text-sm text-secondary-700 dark:text-secondary-300">
-                    📁 Specifieke folders
+                    📁 Specific folders
                   </span>
                 </label>
               </div>
@@ -381,12 +381,12 @@ const TodoModal = ({ todo, currentFolderId, onClose }) => {
                     folders={folders}
                     selectedFolderIds={formData.folder_ids}
                     onFoldersSelect={handleMultiFoldersSelect}
-                    placeholder="Selecteer een of meerdere folders..."
+                    placeholder="Select one or more folders..."
                     className="w-full"
                     maxHeight="max-h-48"
                   />
                   <p className="text-xs text-secondary-600 dark:text-secondary-400 mt-1">
-                    💡 Selecteer de folders waar deze todo zichtbaar moet zijn
+                    💡 Select the folders where this todo should be visible
                   </p>
                 </div>
               )}
@@ -408,7 +408,7 @@ const TodoModal = ({ todo, currentFolderId, onClose }) => {
             onClick={onClose}
             className="px-4 py-2 text-secondary-700 dark:text-secondary-300 hover:bg-secondary-200 dark:hover:bg-secondary-700 rounded-md transition-colors order-2 sm:order-1"
           >
-            Annuleren
+            Cancel
           </button>
           <button
             onClick={handleSubmit}
@@ -416,7 +416,7 @@ const TodoModal = ({ todo, currentFolderId, onClose }) => {
             className="px-4 py-2 bg-primary-600 text-white rounded-md hover:bg-primary-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 order-1 sm:order-2"
           >
             <Save className="w-4 h-4" />
-            {todo ? 'Opslaan' : 'Aanmaken'}
+            {todo ? 'Save' : 'Create'}
           </button>
         </div>
       </div>

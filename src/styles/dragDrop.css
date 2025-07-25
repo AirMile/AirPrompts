@@ -296,6 +296,69 @@ body.dragging-folder * {
   }
 }
 
+/* New drag & drop styles for iOS/Android-like experience */
+.folder-item {
+  transform: translateZ(0);
+  backface-visibility: hidden;
+  will-change: transform, opacity;
+}
+
+.folder-item.dragging {
+  opacity: 0.3 !important;
+  transform: scale(0.95) !important;
+  filter: grayscale(50%);
+  transition: opacity 0.2s ease, transform 0.2s ease, filter 0.2s ease;
+  pointer-events: none;
+}
+
+/* Hover target styling */
+.folder-item.hover-target {
+  background-color: rgba(59, 130, 246, 0.1) !important;
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.3) !important;
+  transform: scale(1.02) !important;
+  border-radius: 8px !important;
+  animation: hover-pulse 1s ease-in-out infinite;
+}
+
+@keyframes hover-pulse {
+  0%, 100% { 
+    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.3);
+    background-color: rgba(59, 130, 246, 0.05);
+  }
+  50% { 
+    box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.5);
+    background-color: rgba(59, 130, 246, 0.1);
+  }
+}
+
+/* Folder preview in drag overlay */
+.folder-preview {
+  backdrop-filter: blur(12px);
+  transform: scale(1.05);
+  box-shadow: 0 16px 40px rgba(0,0,0,0.25);
+  animation: folder-lift 0.2s ease-out;
+}
+
+@keyframes folder-lift {
+  from {
+    transform: scale(1) translateY(0);
+    box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+  }
+  to {
+    transform: scale(1.05) translateY(-2px);
+    box-shadow: 0 16px 40px rgba(0,0,0,0.25);
+  }
+}
+
+/* Spring-based transitions */
+.folder-item:not(.dragging) {
+  transition: 
+    transform 350ms cubic-bezier(0.25, 0.46, 0.45, 0.94),
+    opacity 200ms ease,
+    box-shadow 200ms ease,
+    background-color 200ms ease;
+}
+
 /* High contrast mode support */
 @media (prefers-contrast: high) {
   .card-dragging {

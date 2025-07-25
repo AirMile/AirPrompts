@@ -104,9 +104,9 @@ const CollapsibleSection = ({
   // This ensures consistent spacing across all folders
   const shouldUseReducedSpacing = !hasContent;
   
-  // Build spacing class - deterministic spacing regardless of input className
+  // Build spacing class - consistent spacing for all sections
   // mb-4 = 1rem = 16px, same as the py-4 container padding
-  const spacingClass = shouldUseReducedSpacing ? 'mb-4' : 'mb-6';
+  const spacingClass = 'mb-4';
   
   // Clean className of any existing margin-bottom classes and add our spacing
   const cleanClassName = className.replace(/mb-\d+/g, '').trim();
@@ -186,7 +186,7 @@ const CollapsibleSection = ({
         <div className="overflow-hidden">
           <div 
             className={`transition-all duration-300 ease-in-out ${
-              hasContent ? 'pt-6' : ''
+              hasContent ? 'pt-4' : ''
             }`}
             style={{
               opacity: isVisible ? 1 : 0

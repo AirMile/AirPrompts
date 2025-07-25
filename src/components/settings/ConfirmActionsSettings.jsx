@@ -15,36 +15,36 @@ const ConfirmActionsSettings = () => {
   const confirmationOptions = [
     {
       key: 'deleteFolder',
-      label: 'Mappen verwijderen',
-      description: 'Vraag bevestiging voordat een map wordt verwijderd',
+      label: 'Delete folders',
+      description: 'Ask for confirmation before deleting a folder',
       icon: Trash2,
       color: 'text-red-500'
     },
     {
       key: 'deleteTemplate',
-      label: 'Templates verwijderen',
-      description: 'Vraag bevestiging voordat een template wordt verwijderd',
+      label: 'Delete templates',
+      description: 'Ask for confirmation before deleting a template',
       icon: Trash2,
       color: 'text-red-500'
     },
     {
       key: 'deleteWorkflow',
-      label: 'Workflows verwijderen',
-      description: 'Vraag bevestiging voordat een workflow wordt verwijderd',
+      label: 'Delete workflows',
+      description: 'Ask for confirmation before deleting a workflow',
       icon: Trash2,
       color: 'text-red-500'
     },
     {
       key: 'deleteSnippet',
-      label: 'Snippets verwijderen',
-      description: 'Vraag bevestiging voordat een snippet wordt verwijderd',
+      label: 'Delete snippets',
+      description: 'Ask for confirmation before deleting a snippet',
       icon: Trash2,
       color: 'text-red-500'
     },
     {
       key: 'deleteTodo',
-      label: "Todo's verwijderen",
-      description: "Vraag bevestiging voordat een todo wordt verwijderd",
+      label: "Delete todos",
+      description: "Ask for confirmation before deleting a todo",
       icon: Trash2,
       color: 'text-red-500'
     }
@@ -57,10 +57,10 @@ const ConfirmActionsSettings = () => {
         <Shield className="w-6 h-6 text-secondary-600 dark:text-secondary-400" />
         <div>
           <h2 className="text-xl font-semibold text-secondary-900 dark:text-secondary-100">
-            Bevestiging acties
+            Confirmation actions
           </h2>
           <p className="text-sm text-secondary-600 dark:text-secondary-400 mt-1">
-            Configureer wanneer je een bevestiging wilt zien voor belangrijke acties
+            Configure when you want to see confirmation for important actions
           </p>
         </div>
       </div>
@@ -70,11 +70,11 @@ const ConfirmActionsSettings = () => {
         <AlertTriangle className="w-5 h-5 text-orange-600 dark:text-orange-400 flex-shrink-0 mt-0.5" />
         <div className="text-sm">
           <p className="font-medium text-orange-800 dark:text-orange-200">
-            Let op
+            Warning
           </p>
           <p className="text-orange-700 dark:text-orange-300 mt-1">
-            Als je bevestigingen uitschakelt, worden acties direct uitgevoerd zonder waarschuwing. 
-            Dit kan niet ongedaan worden gemaakt.
+            If you disable confirmations, actions will be executed immediately without warning. 
+            This cannot be undone.
           </p>
         </div>
       </div>
@@ -82,7 +82,7 @@ const ConfirmActionsSettings = () => {
       {/* Confirmation options */}
       <div className="space-y-4">
         <h3 className="text-lg font-medium text-secondary-900 dark:text-secondary-100">
-          Verwijderacties
+          Delete actions
         </h3>
         
         <div className="space-y-3">
@@ -128,7 +128,7 @@ const ConfirmActionsSettings = () => {
                     `} />
                   </div>
                   <span className="ml-3 text-sm font-medium text-secondary-900 dark:text-secondary-100">
-                    {isEnabled ? 'Aan' : 'Uit'}
+                    {isEnabled ? 'On' : 'Off'}
                   </span>
                 </label>
               </div>
@@ -140,12 +140,12 @@ const ConfirmActionsSettings = () => {
       {/* Additional info */}
       <div className="mt-8 p-4 bg-secondary-50 dark:bg-secondary-800 rounded-lg">
         <h4 className="font-medium text-secondary-900 dark:text-secondary-100 mb-2">
-          Over bevestigingen
+          About confirmations
         </h4>
         <ul className="text-sm text-secondary-600 dark:text-secondary-400 space-y-1">
-          <li>• Bevestigingen helpen ongewenste acties te voorkomen</li>
-          <li>• Je kunt deze instellingen altijd weer wijzigen</li>
-          <li>• Voor mappen met submappen wordt altijd een extra waarschuwing getoond</li>
+          <li>• Confirmations help prevent unwanted actions</li>
+          <li>• You can always change these settings</li>
+          <li>• For folders with subfolders, an extra warning is always shown</li>
         </ul>
       </div>
     </div>

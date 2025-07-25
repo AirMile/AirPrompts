@@ -98,7 +98,7 @@ const TemplateEditor = ({ template, folders = [], onSave, onCancel }) => {
                 folders={folders}
                 selectedFolderIds={formData.folderIds}
                 onFoldersSelect={(folderIds) => setFormData({...formData, folderIds})}
-                placeholder="Selecteer een of meerdere folders..."
+                placeholder="Select one or more folders..."
               />
             </div>
 

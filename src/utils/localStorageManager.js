@@ -450,3 +450,77 @@ export const clearFoldersData = () => {
   localStorage.removeItem(STORAGE_KEYS.VERSION); // Force re-initialization
   console.log('🗑️ Cleared folders data from localStorage');
 };
+
+// Ensure all folders have sortOrder
+export const ensureFoldersSortOrder = () => {
+  try {
+    const folders = loadFromStorage(STORAGE_KEYS.FOLDERS, []);
+    let needsUpdate = false;
+    
+    // Group folders by parent
+    const foldersByParent = {};
+    folders.forEach(folder => {
+      const parentId = folder.parentId || 'root';
+      if (!foldersByParent[parentId]) {
+        foldersByParent[parentId] = [];
+      }
+      foldersByParent[parentId].push(folder);
+    });
+    
+    // Assign sortOrder to folders that don't have one
+    Object.keys(foldersByParent).forEach(parentId => {
+      const siblings = foldersByParent[parentId];
+      siblings.forEach((folder, index) => {
+        if (folder.sortOrder === undefined || folder.sortOrder === null) {
+          folder.sortOrder = index;
+          needsUpdate = true;
+          console.log(`🔧 Assigned sortOrder ${index} to folder: ${folder.name}`);
+        }
+      });
+    });
+    
+    if (needsUpdate) {
+      saveToStorage(STORAGE_KEYS.FOLDERS, folders);
+      console.log('✅ Updated folders with missing sortOrder values');
+    }
+    
+    return folders;
+  } catch (error) {
+    console.error('Error ensuring folder sort orders:', error);
+    return loadFromStorage(STORAGE_KEYS.FOLDERS, []);
+  }
+};
+
+// Update folder sort orders
+export const updateFoldersSortOrders = async (updates) => {
+  try {
+    const folders = loadFromStorage(STORAGE_KEYS.FOLDERS, []);
+    
+    // Update each folder's sortOrder
+    updates.forEach(update => {
+      const folderIndex = folders.findIndex(f => f.id === update.id);
+      if (folderIndex !== -1) {
+        // Handle both sortOrder and sort_order for compatibility
+        const newSortOrder = update.sortOrder ?? update.sort_order;
+        folders[folderIndex].sortOrder = newSortOrder;
+        folders[folderIndex].sort_order = newSortOrder; // Keep both fields in sync
+        folders[folderIndex].updatedAt = new Date().toISOString();
+        console.log(`💾 Updated folder ${folders[folderIndex].name} sortOrder to ${newSortOrder}`);
+      }
+    });
+    
+    // Save updated folders
+    const success = saveToStorage(STORAGE_KEYS.FOLDERS, folders);
+    
+    return {
+      success,
+      data: success ? folders : null
+    };
+  } catch (error) {
+    console.error('Error updating folder sort orders:', error);
+    return {
+      success: false,
+      error: error.message
+    };
+  }
+};

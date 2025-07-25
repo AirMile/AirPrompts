@@ -6,7 +6,7 @@ const MarkdownEditor = ({
   onChange, 
   onSave, 
   onCancel,
-  placeholder = "Voeg context en notities toe...",
+  placeholder = "Add context and notes...",
   isLoading = false,
   showCharCount = true,
   maxLength = 50000
@@ -25,7 +25,7 @@ const MarkdownEditor = ({
           }`}
           onClick={() => setActiveTab('write')}
         >
-          Bewerken
+          Edit
         </button>
         <button
           className={`px-4 py-2 text-sm font-medium ${
@@ -35,7 +35,7 @@ const MarkdownEditor = ({
           }`}
           onClick={() => setActiveTab('preview')}
         >
-          Voorbeeld
+          Preview
         </button>
       </div>
 
@@ -53,7 +53,7 @@ const MarkdownEditor = ({
             {showCharCount && (
               <div className="mt-2 text-xs text-gray-500 dark:text-gray-400 text-right">
                 <span className={value.length > maxLength ? 'text-red-600 dark:text-red-400' : ''}>
-                  {value.length.toLocaleString('nl-NL')} / {maxLength.toLocaleString('nl-NL')} tekens
+                  {value.length.toLocaleString('en-US')} / {maxLength.toLocaleString('en-US')} characters
                 </span>
               </div>
             )}
@@ -63,7 +63,7 @@ const MarkdownEditor = ({
             {value ? (
               <MarkdownRenderer content={value} />
             ) : (
-              <p className="text-gray-500 dark:text-gray-400 italic">Geen inhoud om te tonen</p>
+              <p className="text-gray-500 dark:text-gray-400 italic">No content to show</p>
             )}
           </div>
         )}
@@ -76,14 +76,14 @@ const MarkdownEditor = ({
           disabled={isLoading}
           className="px-3 sm:px-4 py-1.5 sm:py-2 text-sm font-medium text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 disabled:opacity-50 transition-colors"
         >
-          Annuleren
+          Cancel
         </button>
         <button
           onClick={onSave}
           disabled={isLoading}
           className="px-3 sm:px-4 py-1.5 sm:py-2 text-sm font-medium bg-primary-600 dark:bg-primary-500 text-white rounded-md hover:bg-primary-700 dark:hover:bg-primary-600 disabled:opacity-50 transition-colors"
         >
-          {isLoading ? 'Opslaan...' : 'Opslaan'}
+          {isLoading ? 'Saving...' : 'Save'}
         </button>
       </div>
     </div>

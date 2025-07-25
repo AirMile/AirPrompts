@@ -113,8 +113,8 @@ const FolderTree = ({
       // Check if folder has children or items
       const hasSubfolders = folders.some(f => f.parentId === folderId);
       const warningMessage = hasSubfolders 
-        ? 'Deze map bevat submappen. Weet je zeker dat je deze map en alle inhoud wilt verwijderen?'
-        : 'Weet je zeker dat je deze map wilt verwijderen?';
+        ? 'This folder contains subfolders. Are you sure you want to delete this folder and all its content?'
+        : 'Are you sure you want to delete this folder?';
       
       if (confirm(warningMessage)) {
         onDeleteFolder(folderId);
@@ -385,7 +385,7 @@ const FolderTree = ({
             className="flex items-center gap-2 px-3 py-2 text-sm hover:bg-red-50 dark:hover:bg-red-900/20 text-red-600 dark:text-red-400 w-full text-left"
           >
             <Trash2 className="w-4 h-4" />
-            Verwijderen
+            Delete
           </button>
         </div>
       )}

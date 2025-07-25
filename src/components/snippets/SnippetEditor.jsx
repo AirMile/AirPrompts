@@ -14,13 +14,13 @@ const SnippetEditor = ({ snippet, folders = [], onSave, onCancel }) => {
         favorite: snippet.favorite || false,
         description: snippet.description || '', // Ensure controlled input
         // Support both old folderId and new folderIds
-        folderIds: snippet.folderIds || (snippet.folderId ? [snippet.folderId] : ['snippets'])
+        folderIds: snippet.folderIds || (snippet.folderId ? [snippet.folderId] : [])
       };
     }
     const newSnippet = createSnippet();
     return {
       ...newSnippet,
-      folderIds: [newSnippet.folderId || 'snippets']
+      folderIds: []
     };
   });
   
@@ -36,7 +36,7 @@ const SnippetEditor = ({ snippet, folders = [], onSave, onCancel }) => {
         favorite: snippet.favorite || false,
         description: snippet.description || '', // Ensure controlled input
         // Support both old folderId and new folderIds
-        folderIds: snippet.folderIds || (snippet.folderId ? [snippet.folderId] : ['snippets'])
+        folderIds: snippet.folderIds || (snippet.folderId ? [snippet.folderId] : [])
       });
     }
   }, [snippet]);
@@ -206,7 +206,7 @@ const SnippetEditor = ({ snippet, folders = [], onSave, onCancel }) => {
                 folders={folders}
                 selectedFolderIds={formData.folderIds}
                 onFoldersSelect={(folderIds) => setFormData({...formData, folderIds})}
-                placeholder="Selecteer folders..."
+                placeholder="Select folders..."
               />
             </div>
 

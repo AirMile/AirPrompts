@@ -76,7 +76,7 @@ const TodoItem = ({ todo, onStatusChange, onEdit }) => {
     console.log('[DEBUG] TodoItem - handleDelete called for todo:', todo.id);
     
     // Check user preferences for delete confirmation
-    if (!confirmActions.deleteTodo || window.confirm('Weet je zeker dat je deze todo wilt verwijderen?')) {
+    if (!confirmActions.deleteTodo || window.confirm('Are you sure you want to delete this todo?')) {
       console.log('[DEBUG] TodoItem - User confirmed deletion, calling mutation');
       deleteMutation.mutate(todo.id);
     } else {
@@ -205,14 +205,14 @@ const TodoItem = ({ todo, onStatusChange, onEdit }) => {
           <button
             onClick={handleEdit}
             className="p-1 hover:bg-white hover:bg-opacity-60 rounded transition-colors"
-            title="Bewerken"
+            title="Edit"
           >
             <Edit2 className="w-3.5 h-3.5 text-gray-600" />
           </button>
           <button
             onClick={handleDelete}
             className="p-1 hover:bg-white hover:bg-opacity-60 rounded transition-colors"
-            title="Verwijderen"
+            title="Delete"
           >
             <Trash2 className="w-3.5 h-3.5 text-gray-600" />
           </button>

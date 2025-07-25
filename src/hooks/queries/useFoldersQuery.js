@@ -34,6 +34,82 @@ export const useFolders = () => {
         parent_id: folder.parent_id,
         sort_order: folder.sort_order
       }));
+
+      // Ensure all folders have a valid sortOrder
+      const foldersByParent = {};
+      transformedFolders.forEach(folder => {
+        const parentId = folder.parentId || 'root';
+        if (!foldersByParent[parentId]) {
+          foldersByParent[parentId] = [];
+        }
+        foldersByParent[parentId].push(folder);
+      });
+
+      // Debug logging to see what sortOrder values we're getting from localStorage
+      console.log('🔍 DEBUG: Raw folders from localStorage:', transformedFolders.map(f => ({ 
+        id: f.id, 
+        name: f.name, 
+        sortOrder: f.sortOrder, 
+        sort_order: f.sort_order,
+        parentId: f.parentId 
+      })));
+      
+      // Debug what's actually in localStorage
+      const rawFoldersFromStorage = JSON.parse(localStorage.getItem('airprompts_folders') || '[]');
+      console.log('🔍 DEBUG: Direct from localStorage:', rawFoldersFromStorage.map(f => ({ 
+        id: f.id, 
+        name: f.name, 
+        sortOrder: f.sortOrder, 
+        sort_order: f.sort_order,
+        parentId: f.parentId 
+      })));
+
+      // Assign sortOrder to folders that don't have one (only for folders that truly don't have a sortOrder)
+      Object.keys(foldersByParent).forEach(parentId => {
+        const siblings = foldersByParent[parentId];
+        
+        console.log(`🔍 DEBUG: Processing parent ${parentId}, siblings:`, siblings.map(f => ({ 
+          name: f.name, 
+          sortOrder: f.sortOrder, 
+          sort_order: f.sort_order 
+        })));
+        
+        // Check if any folder has sort_order (NOT sortOrder!) since that's what comes from localStorage
+        const hasAnySortOrder = siblings.some(folder => 
+          folder.sort_order !== undefined && folder.sort_order !== null
+        );
+        
+        console.log(`🔍 DEBUG: Parent ${parentId} hasAnySortOrder: ${hasAnySortOrder}`);
+        
+        if (!hasAnySortOrder) {
+          // Sort siblings by name first for consistent initial ordering
+          siblings.sort((a, b) => a.name.localeCompare(b.name));
+          
+          siblings.forEach((folder, index) => {
+            folder.sortOrder = index;
+            folder.sort_order = index; // Keep both in sync
+            console.log(`🔧 Assigned initial sortOrder ${index} to folder: ${folder.name}`);
+          });
+        } else {
+          // Some folders already have sortOrder, only assign to those that don't
+          siblings.forEach((folder, index) => {
+            if (folder.sort_order === undefined || folder.sort_order === null) {
+              // Find the highest existing sortOrder and add 1
+              const maxSortOrder = Math.max(
+                -1, 
+                ...siblings
+                  .filter(f => f.sort_order !== undefined && f.sort_order !== null)
+                  .map(f => f.sort_order)
+              );
+              folder.sortOrder = maxSortOrder + 1;
+              folder.sort_order = maxSortOrder + 1;
+              console.log(`🔧 Assigned sortOrder ${folder.sortOrder} to new folder: ${folder.name}`);
+            } else {
+              console.log(`✅ Keeping existing sortOrder ${folder.sortOrder} for folder: ${folder.name}`);
+            }
+          });
+        }
+      });
       
       // console.log('🔍 Transformed folders:', transformedFolders);
       return transformedFolders;

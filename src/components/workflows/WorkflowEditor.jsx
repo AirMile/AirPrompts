@@ -145,7 +145,7 @@ const WorkflowEditor = ({ workflow, templates, snippets = [], workflows = [], fo
       name: workflow?.name || '',
       description: workflow?.description || '',
       // Support both old folderId and new folderIds
-      folderIds: workflow?.folderIds || (workflow?.folderId ? [workflow.folderId] : ['workflows']),
+      folderIds: workflow?.folderIds || (workflow?.folderId ? [workflow.folderId] : []),
       steps: processedSteps
     };
   });
@@ -521,7 +521,7 @@ const WorkflowEditor = ({ workflow, templates, snippets = [], workflows = [], fo
                 folders={folders}
                 selectedFolderIds={formData.folderIds}
                 onFoldersSelect={(folderIds) => setFormData({...formData, folderIds})}
-                placeholder="Selecteer folders..."
+                placeholder="Select folders..."
               />
             </div>
 
@@ -603,12 +603,33 @@ const WorkflowEditor = ({ workflow, templates, snippets = [], workflows = [], fo
                               placeholder="Step name..."
                             />
                           </div>
-                          <p className="text-sm text-secondary-600 dark:text-secondary-300">
-                            {step.type === 'template' && `${step.templateOptions?.length || 0} template(s), ${step.snippetOptions?.length || 0} snippet(s)`}
-                            {step.type === 'info' && 'Information step'}
-                            {step.type === 'insert' && 'Snippet insert step'}
-                            {step.type === 'workflow' && `${step.workflowOptions?.length || 0} workflow(s)`}
-                          </p>
+                          <div className="flex items-center gap-4">
+                            <p className="text-sm text-secondary-600 dark:text-secondary-300">
+                              {step.type === 'template' && `${step.templateOptions?.length || 0} template(s), ${step.snippetOptions?.length || 0} snippet(s)`}
+                              {step.type === 'info' && 'Information step'}
+                              {step.type === 'insert' && 'Snippet insert step'}
+                              {step.type === 'workflow' && `${step.workflowOptions?.length || 0} workflow(s)`}
+                            </p>
+                            {/* Show repeat checkbox only for template and workflow steps */}
+                            {(step.type === 'template' || step.type === 'workflow') && (
+                              <label className="flex items-center gap-2 text-sm text-secondary-600 dark:text-secondary-300">
+                                <input
+                                  type="checkbox"
+                                  checked={step.repeat || false}
+                                  onChange={(e) => {
+                                    setFormData({
+                                      ...formData,
+                                      steps: formData.steps.map(s => 
+                                        s.id === step.id ? { ...s, repeat: e.target.checked } : s
+                                      )
+                                    });
+                                  }}
+                                  className="w-4 h-4 text-primary-600 bg-white dark:bg-secondary-800 border-secondary-300 dark:border-secondary-600 rounded focus:ring-primary-500 dark:focus:ring-primary-600 focus:ring-2"
+                                />
+                                Repeat
+                              </label>
+                            )}
+                          </div>
                         </div>
                       </div>
                       <div className="flex items-center gap-1">

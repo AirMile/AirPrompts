@@ -6,6 +6,17 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 **IMPORTANT:** Please communicate in Dutch (Nederlands) when responding to the user. All explanations, summaries, and communications should be in Dutch, while code and technical content can remain in English.
 
+## UI Language
+
+**IMPORTANT:** This is an English web application. All user interface text, error messages, placeholders, labels, and other user-facing content must be in English. This includes:
+- Button labels
+- Form field labels and placeholders  
+- Error messages and validation text
+- Status messages
+- Navigation items
+- Help text and tooltips
+- Empty state messages
+
 ## Development Commands
 
 **Critical:** All npm commands must be run from the correct working directory. The project files are in the main directory, not a subdirectory.
