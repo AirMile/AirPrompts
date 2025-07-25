@@ -15,13 +15,10 @@ export const useFolders = () => {
       if (!response.success) {
         throw new Error(response.error || 'Failed to fetch folders');
       }
-      // console.log('🔍 Raw API response for folders:', response.data);
       
       // Filter out placeholder folders based on known placeholder IDs
       const placeholderIds = ['root', 'projects', 'writing', 'school', 'development', 'workshop', 'moods', 'blocks', 'ai-character-story', 'prompt-website', 'rogue-lite-game'];
       const filteredFolders = response.data.filter(folder => !placeholderIds.includes(folder.id));
-      
-      // console.log('🧹 Filtered out placeholder folders, remaining:', filteredFolders.length);
       
       // Transform API data to match UI expectations
       const transformedFolders = filteredFolders.map(folder => ({
@@ -45,41 +42,14 @@ export const useFolders = () => {
         foldersByParent[parentId].push(folder);
       });
 
-      // Debug logging to see what sortOrder values we're getting from localStorage
-      console.log('🔍 DEBUG: Raw folders from localStorage:', transformedFolders.map(f => ({ 
-        id: f.id, 
-        name: f.name, 
-        sortOrder: f.sortOrder, 
-        sort_order: f.sort_order,
-        parentId: f.parentId 
-      })));
-      
-      // Debug what's actually in localStorage
-      const rawFoldersFromStorage = JSON.parse(localStorage.getItem('airprompts_folders') || '[]');
-      console.log('🔍 DEBUG: Direct from localStorage:', rawFoldersFromStorage.map(f => ({ 
-        id: f.id, 
-        name: f.name, 
-        sortOrder: f.sortOrder, 
-        sort_order: f.sort_order,
-        parentId: f.parentId 
-      })));
-
       // Assign sortOrder to folders that don't have one (only for folders that truly don't have a sortOrder)
       Object.keys(foldersByParent).forEach(parentId => {
         const siblings = foldersByParent[parentId];
-        
-        console.log(`🔍 DEBUG: Processing parent ${parentId}, siblings:`, siblings.map(f => ({ 
-          name: f.name, 
-          sortOrder: f.sortOrder, 
-          sort_order: f.sort_order 
-        })));
         
         // Check if any folder has sort_order (NOT sortOrder!) since that's what comes from localStorage
         const hasAnySortOrder = siblings.some(folder => 
           folder.sort_order !== undefined && folder.sort_order !== null
         );
-        
-        console.log(`🔍 DEBUG: Parent ${parentId} hasAnySortOrder: ${hasAnySortOrder}`);
         
         if (!hasAnySortOrder) {
           // Sort siblings by name first for consistent initial ordering
@@ -88,7 +58,6 @@ export const useFolders = () => {
           siblings.forEach((folder, index) => {
             folder.sortOrder = index;
             folder.sort_order = index; // Keep both in sync
-            console.log(`🔧 Assigned initial sortOrder ${index} to folder: ${folder.name}`);
           });
         } else {
           // Some folders already have sortOrder, only assign to those that don't
@@ -103,15 +72,11 @@ export const useFolders = () => {
               );
               folder.sortOrder = maxSortOrder + 1;
               folder.sort_order = maxSortOrder + 1;
-              console.log(`🔧 Assigned sortOrder ${folder.sortOrder} to new folder: ${folder.name}`);
-            } else {
-              console.log(`✅ Keeping existing sortOrder ${folder.sortOrder} for folder: ${folder.name}`);
             }
           });
         }
       });
       
-      // console.log('🔍 Transformed folders:', transformedFolders);
       return transformedFolders;
     },
     staleTime: 0, // Always fresh to ensure we get latest data
@@ -139,7 +104,6 @@ export const useCreateFolder = () => {
         delete apiData.parentId;
       }
       
-      console.log('🔍 Creating folder with API data:', apiData);
       const response = await foldersAPI.create(apiData);
       if (!response.success) {
         throw new Error(response.error || 'Failed to create folder');
@@ -181,8 +145,6 @@ export const useUpdateFolder = () => {
         // Remove the camelCase version
         delete apiData.parentId;
       }
-      
-      // console.log('🔍 Updating folder with API data:', apiData);
       const response = await foldersAPI.update(id, apiData);
       if (!response.success) {
         throw new Error(response.error || 'Failed to update folder');

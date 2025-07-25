@@ -1206,8 +1206,8 @@ const ItemExecutor = ({ item, type, templates = [], workflows = [], snippets = [
   }
 
   return (
-    <div className="max-w-4xl mx-auto p-4 bg-transparent">
-      <div className="bg-gradient-to-br from-white to-secondary-50 dark:from-secondary-800 dark:to-secondary-900 rounded-2xl shadow-2xl border border-secondary-300 dark:border-secondary-700 p-8" onKeyDown={handleGlobalKeyDown} tabIndex={-1}>
+    <div className="max-w-full lg:max-w-4xl mx-auto p-2 sm:p-4 bg-transparent">
+      <div className="bg-gradient-to-br from-white to-secondary-50 dark:from-secondary-800 dark:to-secondary-900 rounded-xl sm:rounded-2xl shadow-2xl border border-secondary-300 dark:border-secondary-700 p-4 sm:p-6 lg:p-8" onKeyDown={handleGlobalKeyDown} tabIndex={-1}>
         <div className="flex items-start justify-between mb-4">
           <div className="flex-1">
             <div className="flex items-center gap-4 mb-3">
@@ -1227,7 +1227,7 @@ const ItemExecutor = ({ item, type, templates = [], workflows = [], snippets = [
                 )}
               </div>
               <div>
-                <h2 className="text-3xl font-bold text-secondary-900 dark:text-white mb-1">{item.name}</h2>
+                <h2 className="text-xl sm:text-2xl lg:text-3xl font-bold text-secondary-900 dark:text-white mb-1">{item.name}</h2>
                 {item.category && (
                   <div className="flex items-center gap-2">
                     <span className="px-2 py-1 bg-secondary-200 dark:bg-secondary-600/50 text-secondary-700 dark:text-secondary-300 rounded text-xs">
@@ -1279,10 +1279,10 @@ const ItemExecutor = ({ item, type, templates = [], workflows = [], snippets = [
               </div>
             )}
           </div>
-          <div className="flex gap-3 items-start">
+          <div className="flex flex-wrap gap-2 sm:gap-3 items-start">
             <button
               onClick={onCancel}
-              className="px-8 py-4 text-secondary-600 dark:text-secondary-300 border border-secondary-400 dark:border-secondary-500 rounded-2xl hover:bg-secondary-200 dark:hover:bg-secondary-700 hover:border-secondary-500 dark:hover:border-secondary-400 hover:text-secondary-800 dark:hover:text-white transition-all duration-300 font-semibold hover:shadow-lg transform hover:scale-105 bg-secondary-50 dark:bg-secondary-800/50 backdrop-blur-sm"
+              className="px-4 sm:px-6 lg:px-8 py-2 sm:py-3 lg:py-4 text-sm sm:text-base text-secondary-600 dark:text-secondary-300 border border-secondary-400 dark:border-secondary-500 rounded-xl sm:rounded-2xl hover:bg-secondary-200 dark:hover:bg-secondary-700 hover:border-secondary-500 dark:hover:border-secondary-400 hover:text-secondary-800 dark:hover:text-white transition-all duration-300 font-semibold hover:shadow-lg transform hover:scale-105 bg-secondary-50 dark:bg-secondary-800/50 backdrop-blur-sm"
               tabIndex={stepType === 'snippet' ? 10 : allVariables.length + 2 || 2}
             >
               Cancel
@@ -1290,7 +1290,7 @@ const ItemExecutor = ({ item, type, templates = [], workflows = [], snippets = [
             {stepType === 'snippet' && onEdit && (
               <button
                 onClick={() => onEdit(item)}
-                className="px-8 py-4 bg-secondary-200 dark:bg-secondary-700 text-secondary-800 dark:text-secondary-100 rounded-2xl hover:bg-secondary-300 dark:hover:bg-secondary-600 transition-all duration-300 flex items-center gap-3 font-semibold hover:shadow-lg transform hover:scale-105 border border-secondary-300 dark:border-secondary-600/50 hover:border-secondary-400 dark:hover:border-secondary-500"
+                className="px-4 sm:px-6 lg:px-8 py-2 sm:py-3 lg:py-4 text-sm sm:text-base bg-secondary-200 dark:bg-secondary-700 text-secondary-800 dark:text-secondary-100 rounded-xl sm:rounded-2xl hover:bg-secondary-300 dark:hover:bg-secondary-600 transition-all duration-300 flex items-center gap-2 sm:gap-3 font-semibold hover:shadow-lg transform hover:scale-105 border border-secondary-300 dark:border-secondary-600/50 hover:border-secondary-400 dark:hover:border-secondary-500"
                 tabIndex={11}
               >
                 <Edit className="w-5 h-5" />
@@ -1299,7 +1299,7 @@ const ItemExecutor = ({ item, type, templates = [], workflows = [], snippets = [
             )}
             {/* Show repeat toggle for template and workflow steps when not needsSelection */}
             {!needsSelection && (stepType === 'template' || stepType === 'workflow') && (
-              <label className="flex items-center gap-3 px-8 py-4 bg-secondary-200 dark:bg-secondary-700 text-secondary-800 dark:text-secondary-100 rounded-2xl hover:bg-secondary-300 dark:hover:bg-secondary-600 transition-all duration-300 cursor-pointer font-semibold hover:shadow-lg transform hover:scale-105 border border-secondary-300 dark:border-secondary-600/50 hover:border-secondary-400 dark:hover:border-secondary-500">
+              <label className="flex items-center gap-2 sm:gap-3 px-4 sm:px-6 lg:px-8 py-2 sm:py-3 lg:py-4 text-sm sm:text-base bg-secondary-200 dark:bg-secondary-700 text-secondary-800 dark:text-secondary-100 rounded-xl sm:rounded-2xl hover:bg-secondary-300 dark:hover:bg-secondary-600 transition-all duration-300 cursor-pointer font-semibold hover:shadow-lg transform hover:scale-105 border border-secondary-300 dark:border-secondary-600/50 hover:border-secondary-400 dark:hover:border-secondary-500">
                 <div className="relative">
                   <input
                     type="checkbox"
@@ -1342,14 +1342,14 @@ const ItemExecutor = ({ item, type, templates = [], workflows = [], snippets = [
               } : (stepType === 'info' ? handleNextStep : handleCopyAndNext)}
               onKeyDown={(e) => e.key === 'Enter' && (stepType === 'info' ? handleNextStep() : handleCopyAndNext())}
               disabled={!canProceed && !needsSelection}
-              className={`px-8 py-4 text-white rounded-2xl font-bold disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-3 transition-all duration-300 shadow-xl hover:shadow-2xl transform hover:scale-110 hover:-translate-y-1 relative overflow-hidden group ${
+              className={`px-4 sm:px-6 lg:px-8 py-2 sm:py-3 lg:py-4 text-sm sm:text-base rounded-xl sm:rounded-2xl font-bold disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 sm:gap-3 transition-all duration-300 shadow-xl hover:shadow-2xl transform hover:scale-105 lg:hover:scale-110 hover:-translate-y-1 relative overflow-hidden group ${
                 stepType === 'snippet' 
-                  ? getColorClasses('snippet', 'button')
+                  ? getColorClasses('snippet', 'button-primary')
                   : stepType === 'workflow'
-                  ? getColorClasses('workflow', 'button')
+                  ? getColorClasses('workflow', 'button-primary')
                   : stepType === 'info'
-                  ? getColorClasses('info', 'button')
-                  : getColorClasses('template', 'button')
+                  ? getColorClasses('info', 'button-primary')
+                  : getColorClasses('template', 'button-primary')
               }`}
               tabIndex={stepType === 'snippet' ? 1 : allVariables.length + 1 || 1}
               data-action-button={stepType === 'info' || stepType === 'insert' || stepType === 'snippet' ? 'true' : undefined}
@@ -1385,12 +1385,12 @@ const ItemExecutor = ({ item, type, templates = [], workflows = [], snippets = [
         {/* Info Step - Only show centered info if no templates/snippets attached */}
         {stepType === 'info' && currentStepData.type === 'info' && !currentStepData.templateId && !currentStepData.snippetIds?.length && (
           <div className="max-w-4xl mx-auto mb-6">
-            <div className="bg-success-900 dark:bg-success-900 rounded-lg p-6 border border-success-700 dark:border-success-700">
-              <h3 className="text-lg font-semibold text-success-100 dark:text-success-100 mb-3 flex items-center gap-2">
+            <div className={`rounded-lg p-4 sm:p-6 ${getColorClasses('info', 'info-block')}`}>
+              <h3 className={`text-base sm:text-lg font-semibold mb-3 flex items-center gap-2 ${getColorClasses('info', 'info-header')}`}>
                 <Info className="w-5 h-5" />
                 Information Step
               </h3>
-              <div className="text-success-200 dark:text-success-200 whitespace-pre-wrap">
+              <div className={`whitespace-pre-wrap text-sm sm:text-base ${getColorClasses('info', 'info-text')}`}>
                 {currentStepData.info || currentStepData.content || 'No information provided for this step.'}
               </div>
             </div>
@@ -1402,19 +1402,19 @@ const ItemExecutor = ({ item, type, templates = [], workflows = [], snippets = [
          (currentStepData.information?.trim() || currentStepData.info?.trim()) && 
          (currentStepData.information !== ' ' || currentStepData.info !== ' ') && (
           <div className="max-w-4xl mx-auto mb-6">
-            <div className="bg-primary-900 dark:bg-primary-900 rounded-lg p-4 border border-primary-700 dark:border-primary-700">
-              <h3 className="text-sm font-semibold text-primary-100 dark:text-primary-100 mb-2 flex items-center gap-2">
+            <div className={`rounded-lg p-3 sm:p-4 ${getColorClasses('template', 'info-block')}`}>
+              <h3 className={`text-xs sm:text-sm font-semibold mb-2 flex items-center gap-2 ${getColorClasses('template', 'info-header')}`}>
                 <Info className="w-4 h-4" />
                 Step Information {(currentStepData.type === 'info' && (currentStepData.templateId || currentStepData.snippetIds?.length > 0)) ? '(optional)' : ''}
               </h3>
-              <div className="text-primary-200 dark:text-primary-200 whitespace-pre-wrap text-sm">
+              <div className={`whitespace-pre-wrap text-xs sm:text-sm ${getColorClasses('template', 'info-text')}`}>
                 {currentStepData.information || currentStepData.info}
               </div>
             </div>
           </div>
         )}
 
-        <div className={`grid gap-6 ${
+        <div className={`grid gap-4 sm:gap-6 ${
           stepType === 'template' 
             ? 'grid-cols-1 lg:grid-cols-12' 
             : stepType === 'snippet' 
@@ -1823,7 +1823,7 @@ const ItemExecutor = ({ item, type, templates = [], workflows = [], snippets = [
                         key={snippet.id}
                         className={`p-3 border rounded-lg cursor-pointer transition-colors ${
                           selectedSnippets.has(snippet.id)
-                            ? 'border-primary-500 dark:border-primary-500 bg-primary-100/30 dark:bg-primary-900/30'
+                            ? `${getColorClasses('template', 'border')} ${getColorClasses('template', 'background')}`
                             : 'border-secondary-300 dark:border-secondary-600 bg-white dark:bg-secondary-800 hover:bg-secondary-100 dark:hover:bg-secondary-700'
                         }`}
                         onClick={() => {
@@ -1872,9 +1872,9 @@ const ItemExecutor = ({ item, type, templates = [], workflows = [], snippets = [
                     if (!snippet) return null;
                     
                     return (
-                      <div key={snippetId} className="bg-primary-900 dark:bg-primary-900 rounded-lg p-3 border border-primary-700 dark:border-primary-700">
+                      <div key={snippetId} className={`rounded-lg p-3 ${getColorClasses('template', 'info-block')}`}>
                         <div className="flex items-center justify-between mb-1">
-                          <p className="text-sm font-medium text-primary-100 dark:text-primary-100">
+                          <p className={`text-sm font-medium ${getColorClasses('template', 'info-header')}`}>
                             {snippet.name}
                           </p>
                           <button

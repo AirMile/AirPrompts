@@ -71,6 +71,18 @@ export const getItemColorClasses = (itemType, variant = 'base') => {
         indigo: 'bg-indigo-100/50 dark:bg-indigo-900/50 hover:bg-indigo-100/70 dark:hover:bg-indigo-900/70 text-indigo-700 dark:text-indigo-300 border border-indigo-500 dark:border-indigo-600/50'
       }[colorScheme];
       
+    case 'button-primary':
+      return {
+        primary: 'bg-primary-600 dark:bg-primary-600 hover:bg-primary-700 dark:hover:bg-primary-700 text-white border border-primary-700 dark:border-primary-500',
+        success: 'bg-success-600 dark:bg-success-600 hover:bg-success-700 dark:hover:bg-success-700 text-white border border-success-700 dark:border-success-500',
+        warning: 'bg-warning-600 dark:bg-warning-600 hover:bg-warning-700 dark:hover:bg-warning-700 text-white border border-warning-700 dark:border-warning-500',
+        danger: 'bg-danger-600 dark:bg-danger-600 hover:bg-danger-700 dark:hover:bg-danger-700 text-white border border-danger-700 dark:border-danger-500',
+        orange: 'bg-orange-600 dark:bg-orange-600 hover:bg-orange-700 dark:hover:bg-orange-700 text-white border border-orange-700 dark:border-orange-500',
+        purple: 'bg-purple-600 dark:bg-purple-600 hover:bg-purple-700 dark:hover:bg-purple-700 text-white border border-purple-700 dark:border-purple-500',
+        pink: 'bg-pink-600 dark:bg-pink-600 hover:bg-pink-700 dark:hover:bg-pink-700 text-white border border-pink-700 dark:border-pink-500',
+        indigo: 'bg-indigo-600 dark:bg-indigo-600 hover:bg-indigo-700 dark:hover:bg-indigo-700 text-white border border-indigo-700 dark:border-indigo-500'
+      }[colorScheme];
+      
     case 'gradient':
       return {
         primary: 'bg-gradient-to-br from-primary-500 to-primary-600',
@@ -129,6 +141,42 @@ export const getItemColorClasses = (itemType, variant = 'base') => {
         purple: 'bg-purple-100 dark:bg-purple-100 text-purple-800 dark:text-purple-800',
         pink: 'bg-pink-100 dark:bg-pink-100 text-pink-800 dark:text-pink-800',
         indigo: 'bg-indigo-100 dark:bg-indigo-100 text-indigo-800 dark:text-indigo-800'
+      }[colorScheme];
+      
+    case 'info-block':
+      return {
+        primary: 'bg-primary-50 dark:bg-primary-950/50 text-primary-700 dark:text-primary-300 border border-primary-200 dark:border-primary-800',
+        success: 'bg-success-50 dark:bg-success-950/50 text-success-700 dark:text-success-300 border border-success-200 dark:border-success-800',
+        warning: 'bg-warning-50 dark:bg-warning-950/50 text-warning-700 dark:text-warning-300 border border-warning-200 dark:border-warning-800',
+        danger: 'bg-danger-50 dark:bg-danger-950/50 text-danger-700 dark:text-danger-300 border border-danger-200 dark:border-danger-800',
+        orange: 'bg-orange-50 dark:bg-orange-950/50 text-orange-700 dark:text-orange-300 border border-orange-200 dark:border-orange-800',
+        purple: 'bg-purple-50 dark:bg-purple-950/50 text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-800',
+        pink: 'bg-pink-50 dark:bg-pink-950/50 text-pink-700 dark:text-pink-300 border border-pink-200 dark:border-pink-800',
+        indigo: 'bg-indigo-50 dark:bg-indigo-950/50 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800'
+      }[colorScheme];
+      
+    case 'info-header':
+      return {
+        primary: 'text-primary-700 dark:text-primary-300',
+        success: 'text-success-700 dark:text-success-300',
+        warning: 'text-warning-700 dark:text-warning-300',
+        danger: 'text-danger-700 dark:text-danger-300',
+        orange: 'text-orange-700 dark:text-orange-300',
+        purple: 'text-purple-700 dark:text-purple-300',
+        pink: 'text-pink-700 dark:text-pink-300',
+        indigo: 'text-indigo-700 dark:text-indigo-300'
+      }[colorScheme];
+      
+    case 'info-text':
+      return {
+        primary: 'text-primary-600 dark:text-primary-400',
+        success: 'text-success-600 dark:text-success-400',
+        warning: 'text-warning-600 dark:text-warning-400',
+        danger: 'text-danger-600 dark:text-danger-400',
+        orange: 'text-orange-600 dark:text-orange-400',
+        purple: 'text-purple-600 dark:text-purple-400',
+        pink: 'text-pink-600 dark:text-pink-400',
+        indigo: 'text-indigo-600 dark:text-indigo-400'
       }[colorScheme];
       
     case 'hover-border':

@@ -379,10 +379,6 @@ const CollapsibleFolderTree = ({
   const buildFolderTree = useCallback((parentId = null) => {
     // Use tempFolders in reorder mode, otherwise use normal folders
     const foldersToUse = isReorderMode ? tempFolders : folders;
-    console.log('🏗️ === DEBUG: buildFolderTree ===');
-    console.log('🏗️ parentId:', parentId, 'isReorderMode:', isReorderMode);
-    console.log('🏗️ foldersToUse length:', foldersToUse.length);
-    console.log('🏗️ foldersToUse:', foldersToUse.map(f => ({ id: f.id, name: f.name, sortOrder: f.sortOrder, parentId: f.parentId })));
     
     // Normalize parentId - treat 'root', null, and undefined as the same
     const normalizedParentId = parentId === 'root' ? null : parentId;
@@ -391,11 +387,6 @@ const CollapsibleFolderTree = ({
       return folderParentId === normalizedParentId;
     });
     
-    if (isReorderMode && parentId === 'root') {
-      console.log('🏗️ Building folder tree in reorder mode for root:');
-      console.log('📁 All tempFolders:', tempFolders.map(f => ({ id: f.id, name: f.name, sortOrder: f.sortOrder, parentId: f.parentId })));
-      console.log('📁 Filtered root folders before sort:', filteredFolders.map(f => ({ id: f.id, name: f.name, sortOrder: f.sortOrder })));
-    }
     
     // Apply favorites filter
     if (showOnlyFavorites && parentId === 'root') {
@@ -448,11 +439,6 @@ const CollapsibleFolderTree = ({
       }
     });
     
-    if (isReorderMode && parentId === 'root') {
-      console.log('📁 Final root folders after sort:', filteredFolders.map(f => ({ id: f.id, name: f.name, sortOrder: f.sortOrder })));
-    }
-    
-    console.log('🏗️ Returning filteredFolders:', filteredFolders.map(f => ({ id: f.id, name: f.name, sortOrder: f.sortOrder })));
     return filteredFolders;
   }, [folders, tempFolders, isReorderMode, expandedFolders, showOnlyFavorites, favoriteFolders, sortBy, searchQuery]);
 
@@ -616,8 +602,6 @@ const CollapsibleFolderTree = ({
 
   // Reorder mode functions
   const enterReorderMode = () => {
-    console.log('🚀 Entering reorder mode');
-    console.log('📁 Original folders:', folders.map(f => ({ id: f.id, name: f.name, sortOrder: f.sortOrder, parentId: f.parentId })));
     
     // Use the folders as-is from props (parent component should ensure sortOrder)
     // Save original folder order for cancel functionality  
@@ -625,7 +609,6 @@ const CollapsibleFolderTree = ({
     setTempFolders([...folders]);
     setModifiedFolders(new Set());
     setIsReorderMode(true);
-    console.log('✅ Reorder mode activated');
   };
 
   const exitReorderMode = () => {
@@ -636,17 +619,12 @@ const CollapsibleFolderTree = ({
   };
 
   const moveFolderUp = (folderId, parentId) => {
-    console.log('🔄 Moving folder up:', folderId, 'parentId:', parentId);
     
     // Update visual state immediately (tempFolders)
     updateFolderPositionVisually(folderId, parentId, 'up');
   };
 
   const updateFolderPositionVisually = (folderId, parentId, direction) => {
-    console.log('🔧 === DEBUG: updateFolderPositionVisually ===');
-    console.log('🔧 Moving folder:', folderId, 'direction:', direction, 'parentId:', parentId);
-    console.log('🔧 Current tempFolders length:', tempFolders.length);
-    console.log('🔧 Current tempFolders:', tempFolders.map(f => ({ id: f.id, name: f.name, sortOrder: f.sortOrder })));
     
     const updatedFolders = [...tempFolders];
     // Normalize parentId for consistent comparison
@@ -656,33 +634,27 @@ const CollapsibleFolderTree = ({
       return folderParentId === normalizedParentId;
     }).sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0));
     
-    console.log('📋 Siblings before visual move:', siblings.map(s => ({ id: s.id, name: s.name, sortOrder: s.sortOrder })));
     
     const folderIndex = siblings.findIndex(f => f.id === folderId);
-    console.log('🔧 Folder index in siblings:', folderIndex);
     
     let targetIndex;
     if (direction === 'up') {
       if (folderIndex <= 0) {
-        console.log('❌ Cannot move up - already at top or not found');
         return;
       }
       targetIndex = folderIndex - 1;
     } else { // direction === 'down'
       if (folderIndex === -1 || folderIndex >= siblings.length - 1) {
-        console.log('❌ Cannot move down - already at bottom or not found');
         return;
       }
       targetIndex = folderIndex + 1;
     }
 
-    console.log('🔧 Target index:', targetIndex);
 
     // Swap sortOrder with target sibling
     const currentFolder = siblings[folderIndex];
     const targetFolder = siblings[targetIndex];
     
-    console.log('🔄 Visual swap:', currentFolder.name, '(order:', currentFolder.sortOrder, ') with', targetFolder.name, '(order:', targetFolder.sortOrder, ')');
     
     const tempOrder = currentFolder.sortOrder;
     currentFolder.sortOrder = targetFolder.sortOrder;
@@ -692,27 +664,20 @@ const CollapsibleFolderTree = ({
     const currentFolderGlobalIndex = updatedFolders.findIndex(f => f.id === folderId);
     const targetFolderGlobalIndex = updatedFolders.findIndex(f => f.id === targetFolder.id);
     
-    console.log('🔧 Global indices - current:', currentFolderGlobalIndex, 'target:', targetFolderGlobalIndex);
     
     updatedFolders[currentFolderGlobalIndex] = currentFolder;
     updatedFolders[targetFolderGlobalIndex] = targetFolder;
 
-    console.log('📋 Siblings after visual move:', siblings.map(s => ({ id: s.id, name: s.name, sortOrder: s.sortOrder })));
-    console.log('🔧 Updated folders after swap:', updatedFolders.map(f => ({ id: f.id, name: f.name, sortOrder: f.sortOrder })));
     
     // Update UI state immediately - this triggers re-render
-    console.log('🎯 CRITICAL: About to call setTempFolders - this should trigger re-render');
     setTempFolders(updatedFolders);
     setModifiedFolders(prev => {
       const newSet = new Set([...prev, folderId, targetFolder.id]);
-      console.log('🎯 CRITICAL: Updated modifiedFolders:', Array.from(newSet));
       return newSet;
     });
-    console.log('🎯 CRITICAL: setTempFolders and setModifiedFolders called - UI should update now');
   };
 
   const moveFolderDown = (folderId, parentId) => {
-    console.log('🔄 Moving folder down:', folderId, 'parentId:', parentId);
     
     // Update visual state immediately (tempFolders)
     updateFolderPositionVisually(folderId, parentId, 'down');
@@ -724,7 +689,6 @@ const CollapsibleFolderTree = ({
       return;
     }
 
-    console.log('💾 Saving changes to localStorage...');
 
     try {
       // Prepare updates for persistence
@@ -739,15 +703,13 @@ const CollapsibleFolderTree = ({
         };
       });
 
-      console.log('📋 Updates to save:', updates);
 
       // Save to localStorage (persistence layer)
       await onReorderFolders(tempFolders.filter(f => modifiedFolders.has(f.id)));
       
-      console.log(`✅ Successfully saved ${modifiedFolders.size} folders to localStorage`);
       exitReorderMode();
     } catch (error) {
-      console.error('❌ Failed to save reorder changes:', error);
+      console.error('Failed to save reorder changes:', error);
       
       // Revert visual state to original on error
       setTempFolders([...originalFolderOrder]);
@@ -1057,7 +1019,7 @@ const CollapsibleFolderTree = ({
     return (
       <div className="flex flex-col h-full bg-secondary-50 dark:bg-secondary-900 border-r border-secondary-200 dark:border-secondary-800">
         {/* Toggle button */}
-        <div className="p-2">
+        <div className="p-2 border-b border-secondary-200 dark:border-secondary-700">
           <button
             onClick={() => setIsCollapsed(false)}
             className="w-full p-2 hover:bg-secondary-200 dark:hover:bg-secondary-800 rounded-lg transition-colors text-secondary-600 dark:text-secondary-400"
