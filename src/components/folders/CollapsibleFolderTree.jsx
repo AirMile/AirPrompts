@@ -985,12 +985,12 @@ const CollapsibleFolderTree = ({
                     className={`p-1.5 hover:bg-secondary-200 dark:hover:bg-secondary-700 rounded transition-colors ${
                       isFirstInParent(folder.id, folder.parentId) 
                         ? 'opacity-30 cursor-not-allowed' 
-                        : 'hover:bg-blue-100 dark:hover:bg-blue-900/30'
+                        : 'hover:bg-primary-100 dark:hover:bg-primary-900/30'
                     }`}
                     title="Omhoog verplaatsen"
                     aria-label={`${folder.name} omhoog verplaatsen`}
                   >
-                    <ChevronUp className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                    <ChevronUp className="w-4 h-4 text-primary-600 dark:text-primary-400" />
                   </button>
                   <button
                     onClick={(e) => {
@@ -1001,12 +1001,12 @@ const CollapsibleFolderTree = ({
                     className={`p-1.5 hover:bg-secondary-200 dark:hover:bg-secondary-700 rounded transition-colors ${
                       isLastInParent(folder.id, folder.parentId) 
                         ? 'opacity-30 cursor-not-allowed' 
-                        : 'hover:bg-blue-100 dark:hover:bg-blue-900/30'
+                        : 'hover:bg-primary-100 dark:hover:bg-primary-900/30'
                     }`}
                     title="Omlaag verplaatsen"
                     aria-label={`${folder.name} omlaag verplaatsen`}
                   >
-                    <ChevronDown className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                    <ChevronDown className="w-4 h-4 text-primary-600 dark:text-primary-400" />
                   </button>
                 </div>
               )}
@@ -1315,32 +1315,20 @@ const CollapsibleFolderTree = ({
 
         {/* Reorder toolbar */}
         {isReorderMode && (
-          <div className="flex items-center justify-between px-4 py-2 bg-blue-50 dark:bg-blue-900/20 border-b border-blue-200 dark:border-blue-800">
+          <div className="flex items-center justify-between px-4 py-2 bg-primary-50 dark:bg-primary-900/20 border-b border-primary-200 dark:border-primary-800">
             <div className="flex items-center gap-2">
-              <ArrowUpDown className="w-4 h-4 text-blue-600 dark:text-blue-400" />
-              <span className="text-sm font-medium text-blue-700 dark:text-blue-300">
-                Herorden Mode
+              <ArrowUpDown className="w-4 h-4 text-primary-600 dark:text-primary-400" />
+              <span className="text-sm font-medium text-primary-700 dark:text-primary-300">
+                Reorder
               </span>
             </div>
             <div className="flex items-center gap-1.5">
               <button
                 onClick={saveReorderChanges}
-                disabled={modifiedFolders.size === 0}
-                className={`px-2.5 py-1.5 text-xs font-medium rounded flex items-center gap-1 ${
-                  modifiedFolders.size > 0
-                    ? 'bg-green-600 hover:bg-green-700 text-white'
-                    : 'bg-secondary-200 dark:bg-secondary-700 text-secondary-500 cursor-not-allowed'
-                }`}
+                className="p-2 rounded flex items-center justify-center hover:bg-primary-100 dark:hover:bg-primary-900/30 text-primary-600 dark:text-primary-400 transition-colors"
+                title="Save changes"
               >
-                <Check className="w-3 h-3" />
-                Opslaan
-              </button>
-              <button
-                onClick={cancelReorderChanges}
-                className="px-2.5 py-1.5 text-xs font-medium rounded bg-secondary-200 dark:bg-secondary-700 text-secondary-700 dark:text-secondary-300 hover:bg-secondary-300 dark:hover:bg-secondary-600 flex items-center gap-1"
-              >
-                <X className="w-3 h-3" />
-                Stoppen
+                <Check className="w-4 h-4" />
               </button>
             </div>
           </div>

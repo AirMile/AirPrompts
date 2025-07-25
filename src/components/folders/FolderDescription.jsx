@@ -228,16 +228,16 @@ const FolderDescription = ({
           aria-expanded={contextVisibility.isVisible}
           aria-controls="context-content"
         >
-          <div className="flex items-center space-x-2">
-            {(hasDescription || contextVisibility.isVisible) ? (
-              contextVisibility.isVisible ? (
-                <ChevronDownIcon className="w-5 h-5 text-secondary-600 dark:text-secondary-400" />
-              ) : (
-                <ChevronRightIcon className="w-5 h-5 text-secondary-600 dark:text-secondary-400" />
-              )
-            ) : (
-              <div className="w-5 h-5" />
-            )}
+          <div className="flex items-center">
+            <div className="w-5 h-5 mr-2">
+              {(hasDescription || contextVisibility.isVisible) && (
+                contextVisibility.isVisible ? (
+                  <ChevronDownIcon className="w-5 h-5 text-secondary-600 dark:text-secondary-400" />
+                ) : (
+                  <ChevronRightIcon className="w-5 h-5 text-secondary-600 dark:text-secondary-400" />
+                )
+              )}
+            </div>
             
             <h3 className="text-lg font-medium text-secondary-900 dark:text-secondary-100">
               Context
@@ -287,7 +287,7 @@ const FolderDescription = ({
             )}
             
             {isEditing ? (
-              <div className="p-3 sm:p-4 bg-white dark:bg-secondary-800 border-l border-r border-b border-secondary-200 dark:border-secondary-700 rounded-b-lg">
+              <div className="px-12 py-4 bg-white dark:bg-secondary-800 border-l border-r border-b border-secondary-200 dark:border-secondary-700 rounded-b-lg">
                 <textarea
                   ref={editorRef}
                   value={editValue}
@@ -312,11 +312,11 @@ const FolderDescription = ({
                 />
               </div>
             ) : editValue?.trim() ? (
-              <div className="px-4 sm:px-6 py-4 bg-white dark:bg-secondary-800 border-l border-r border-b border-secondary-200 dark:border-secondary-700 rounded-b-lg">
+              <div className="px-12 py-4 bg-white dark:bg-secondary-800 border-l border-r border-b border-secondary-200 dark:border-secondary-700 rounded-b-lg">
                 <MarkdownRenderer content={editValue} />
               </div>
             ) : (
-              <div className="p-3 sm:p-4 bg-white dark:bg-secondary-800 border-l border-r border-b border-secondary-200 dark:border-secondary-700 rounded-b-lg text-center">
+              <div className="pl-4 pr-4 py-4 bg-white dark:bg-secondary-800 border-l border-r border-b border-secondary-200 dark:border-secondary-700 rounded-b-lg text-center">
                 <p className="text-secondary-500 dark:text-secondary-400 mb-2">
                   {folder.id === 'root' ? 'No general context added' : 'No description added for this folder'}
                 </p>
