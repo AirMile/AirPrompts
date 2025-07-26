@@ -48,6 +48,8 @@ import FolderModal from './FolderModal';
 import { AVAILABLE_ICONS } from '../../constants/folderIcons';
 import { useFolderUIState } from '../../hooks/queries/useUIStateQuery';
 import { useUserPreferences } from '../../hooks/domain/useUserPreferences';
+import { useFavorites } from '../../hooks/useFavorites';
+import { createVirtualHomeFolder, getAllFoldersIncludingHome } from '../../utils/localStorageManager';
 import ThemeToggle from '../common/ThemeToggle';
 // Removed AdvancedSearch - using simple search input for folders only
 
@@ -69,7 +71,7 @@ const CollapsibleFolderTree = ({
 }) => {
   const queryClient = useQueryClient();
   const [isCollapsed, setIsCollapsed] = useState(false);
-  const [favoriteFolders, setFavoriteFolders] = useState(new Set());
+  const { favorites: favoriteFolders, toggle: toggleFolderFavorite, showOnlyFavorites: filterFavorites } = useFavorites('folders');
   const [isSearchVisible, setIsSearchVisible] = useState(false);
   
   // Drag & Drop state
@@ -209,16 +211,8 @@ const CollapsibleFolderTree = ({
     }
   };
 
-  // Initialize favorite folders from props and sync tempFolders in reorder mode
+  // Sync tempFolders in reorder mode (favorites now handled by useFavorites hook)
   useEffect(() => {
-    const initialFavorites = new Set();
-    folders.forEach(folder => {
-      if (folder.favorite) {
-        initialFavorites.add(folder.id);
-      }
-    });
-    setFavoriteFolders(initialFavorites);
-    
     // If we're in reorder mode and folders change (e.g., after save), update tempFolders
     if (isReorderMode && folders.length > 0) {
       console.log('🔄 Folders updated while in reorder mode, syncing tempFolders');
@@ -380,18 +374,72 @@ const CollapsibleFolderTree = ({
     // Use tempFolders in reorder mode, otherwise use normal folders
     const foldersToUse = isReorderMode ? tempFolders : folders;
     
+    // Special handling for favorites filter - show all favorite folders at root level
+    if (showOnlyFavorites && parentId === 'root') {
+      // Get all favorite folders regardless of their actual parent using the hook
+      let filteredFolders = filterFavorites(foldersToUse);
+      
+      // Apply search filter if needed
+      if (searchQuery && searchQuery.trim()) {
+        const lowerSearchQuery = searchQuery.toLowerCase().trim();
+        filteredFolders = filteredFolders.filter(folder => {
+          // Check if folder name matches
+          if (folder.name.toLowerCase().includes(lowerSearchQuery)) {
+            return true;
+          }
+          // Check if folder description matches
+          if (folder.description && folder.description.toLowerCase().includes(lowerSearchQuery)) {
+            return true;
+          }
+          return false;
+        });
+      }
+      
+      // Sort favorite folders
+      filteredFolders.sort((a, b) => {
+        const sortOrderA = a.sortOrder !== undefined && a.sortOrder !== null ? a.sortOrder : 999;
+        const sortOrderB = b.sortOrder !== undefined && b.sortOrder !== null ? b.sortOrder : 999;
+        
+        // If sortOrder is different, use that
+        if (sortOrderA !== sortOrderB) {
+          return sortOrderA - sortOrderB;
+        }
+        
+        // If in reorder mode or sortOrder is the same, don't apply secondary sorting
+        if (isReorderMode) {
+          return 0;
+        }
+        
+        // Apply secondary sorting based on sortBy setting
+        switch (sortBy) {
+          case 'date':
+            return new Date(b.updatedAt || b.createdAt) - new Date(a.updatedAt || a.createdAt);
+          case 'type':
+            const typeA = a.type || 'folder';
+            const typeB = b.type || 'folder';
+            return typeA.localeCompare(typeB);
+          case 'name':
+          default:
+            return a.name.localeCompare(b.name);
+        }
+      });
+      
+      return filteredFolders;
+    }
+    
+    // For non-favorites view or when looking at children in favorites view, use normal hierarchy
+    if (showOnlyFavorites && parentId !== 'root') {
+      // Don't show children when in favorites mode (since we show all favorites at root level)
+      return [];
+    }
+    
+    // Normal hierarchy handling
     // Normalize parentId - treat 'root', null, and undefined as the same
     const normalizedParentId = parentId === 'root' ? null : parentId;
     let filteredFolders = foldersToUse.filter(folder => {
       const folderParentId = folder.parentId === 'root' ? null : folder.parentId;
       return folderParentId === normalizedParentId;
     });
-    
-    
-    // Apply favorites filter
-    if (showOnlyFavorites && parentId === 'root') {
-      filteredFolders = filteredFolders.filter(folder => favoriteFolders.has(folder.id));
-    }
     
     // Apply search filter - show folders that match search query or have matching children
     if (searchQuery && searchQuery.trim()) {
@@ -440,7 +488,7 @@ const CollapsibleFolderTree = ({
     });
     
     return filteredFolders;
-  }, [folders, tempFolders, isReorderMode, expandedFolders, showOnlyFavorites, favoriteFolders, sortBy, searchQuery]);
+  }, [folders, tempFolders, isReorderMode, expandedFolders, showOnlyFavorites, favoriteFolders, filterFavorites, sortBy, searchQuery]);
 
 
   const toggleFolder = async (folderId) => {
@@ -469,17 +517,11 @@ const CollapsibleFolderTree = ({
 
   const toggleFavorite = (folderId, e) => {
     e.stopPropagation();
-    const newFavorites = new Set(favoriteFolders);
     
-    if (newFavorites.has(folderId)) {
-      newFavorites.delete(folderId);
-    } else {
-      newFavorites.add(folderId);
-    }
+    // Use the hook's toggle function for persistence
+    toggleFolderFavorite(folderId);
     
-    setFavoriteFolders(newFavorites);
-    
-    // Update the folder's favorite status
+    // Keep the folder's favorite status in sync for compatibility
     const folder = folders.find(f => f.id === folderId);
     if (folder && onUpdateFolder) {
       onUpdateFolder({ ...folder, favorite: !folder.favorite });
@@ -508,20 +550,15 @@ const CollapsibleFolderTree = ({
   };
 
   const handleFavoriteToggle = (folderId) => {
-    const newFavorites = new Set(favoriteFolders);
-    if (newFavorites.has(folderId)) {
-      newFavorites.delete(folderId);
-    } else {
-      newFavorites.add(folderId);
-    }
-    setFavoriteFolders(newFavorites);
+    // Use the hook's toggle function for persistence
+    toggleFolderFavorite(folderId);
 
-    // Update the folder in the parent component
+    // Update the folder in the parent component for compatibility
     const folder = folders.find(f => f.id === folderId);
     if (folder && onUpdateFolder) {
       onUpdateFolder({
         ...folder,
-        favorite: newFavorites.has(folderId)
+        favorite: !folder.favorite
       });
     }
   };
@@ -754,8 +791,22 @@ const CollapsibleFolderTree = ({
   };
 
   const renderFolderIcon = (folder, isSelected) => {
-    const iconName = folder.icon || 'Folder';
-    const IconComponent = AVAILABLE_ICONS[iconName] || AVAILABLE_ICONS.Folder;
+    // Special handling for Home folder icon
+    if (folder.isSpecial && folder.icon === 'Home') {
+      const IconComponent = Home;
+      return (
+        <IconComponent 
+          className={`w-4 h-4 mr-2 ${
+            isSelected 
+              ? 'text-primary-600 dark:text-primary-400' 
+              : 'text-secondary-600 dark:text-secondary-400'
+          }`}
+        />
+      );
+    }
+    
+    const iconName = folder.icon || 'FolderClosed';
+    const IconComponent = AVAILABLE_ICONS[iconName] || AVAILABLE_ICONS.FolderClosed;
     
     return (
       <IconComponent 
@@ -935,8 +986,8 @@ const CollapsibleFolderTree = ({
                 </button>
               )}
 
-              {/* Reorder arrows */}
-              {isReorderMode && folder.id !== 'root' && (
+              {/* Reorder arrows - hidden for special folders like Home */}
+              {isReorderMode && !folder.isSpecial && (
                 <div className="flex flex-col ml-2">
                   <button
                     onClick={(e) => {
@@ -1016,10 +1067,26 @@ const CollapsibleFolderTree = ({
     const favoriteFoldersList = getFavoriteFolders();
     const subfoldersList = getSubfoldersForCollapsedView();
     
+    // Check if root/home folder is marked as favorite
+    const isRootFavorite = favoriteFolders.has('root');
+    
+    console.log('🔍 CollapsedView Debug:', {
+      isCollapsed,
+      favoriteFoldersCount: favoriteFoldersList.length,
+      favoriteIds: favoriteFoldersList.map(f => f.id),
+      favoriteNames: favoriteFoldersList.map(f => f.name),
+      favoriteFoldersSet: Array.from(favoriteFolders),
+      isRootFavorite,
+      selectedFolderId,
+      showOnlyFavorites,
+      // Check if any favorite folder is actually the Home folder with different ID
+      hasHomeInFavorites: favoriteFoldersList.some(f => f.name === 'Home' || f.id === 'root')
+    });
+    
     return (
       <div className="flex flex-col h-full bg-secondary-50 dark:bg-secondary-900 border-r border-secondary-200 dark:border-secondary-800">
         {/* Toggle button */}
-        <div className="p-2 border-b border-secondary-200 dark:border-secondary-700">
+        <div className="p-2 border-b border-secondary-200 dark:border-secondary-700 mb-4">
           <button
             onClick={() => setIsCollapsed(false)}
             className="w-full p-2 hover:bg-secondary-200 dark:hover:bg-secondary-800 rounded-lg transition-colors text-secondary-600 dark:text-secondary-400"
@@ -1029,49 +1096,53 @@ const CollapsibleFolderTree = ({
           </button>
         </div>
 
-        {/* Home button */}
-        <div className="px-2 mb-2">
-          <button
-            onClick={() => onFolderSelect('root')}
-            className={`w-full p-3 rounded-lg transition-colors relative ${
-              selectedFolderId === 'root'
-                ? 'text-primary-400 dark:text-primary-400'
-                : 'hover:bg-secondary-200 dark:hover:bg-secondary-800 text-secondary-600 dark:text-secondary-400'
-            }`}
-            title="Home"
-          >
-            <Home className="w-5 h-5 mx-auto" />
-            {selectedFolderId === 'root' && (
-              <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-8 bg-primary-500 dark:bg-primary-400 rounded-r" />
-            )}
-          </button>
-        </div>
+        {/* Home button - only show if it's marked as favorite */}
+        {isRootFavorite && (
+          <div className="px-2 mb-2">
+            <button
+              onClick={() => onFolderSelect('root')}
+              className={`w-full p-3 rounded-lg transition-colors relative ${
+                selectedFolderId === 'root'
+                  ? 'text-primary-400 dark:text-primary-400'
+                  : 'hover:bg-secondary-200 dark:hover:bg-secondary-800 text-secondary-600 dark:text-secondary-400'
+              }`}
+              title="Home"
+            >
+              <Home className="w-5 h-5 mx-auto" />
+              {selectedFolderId === 'root' && (
+                <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-8 bg-primary-500 dark:bg-primary-400 rounded-r" />
+              )}
+            </button>
+          </div>
+        )}
 
         {/* Scrollable content area */}
         <div className="flex-1 overflow-y-auto px-2">
-          {/* Favorite folders */}
-          {favoriteFoldersList.map(folder => {
-            const IconComponent = AVAILABLE_ICONS[folder.icon || 'Folder'] || AVAILABLE_ICONS.Folder;
-            const isSelected = selectedFolderId === folder.id;
-            
-            return (
-              <button
-                key={folder.id}
-                onClick={() => onFolderSelect(folder.id)}
-                className={`w-full p-3 rounded-lg mb-2 transition-colors relative ${
-                  isSelected
-                    ? 'text-primary-400 dark:text-primary-400'
-                    : 'hover:bg-secondary-200 dark:hover:bg-secondary-800 text-secondary-600 dark:text-secondary-400'
-                }`}
-                title={folder.name}
-              >
-                <IconComponent className="w-5 h-5 mx-auto" />
-                {isSelected && (
-                  <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-8 bg-primary-500 dark:bg-primary-400 rounded-r" />
-                )}
-              </button>
-            );
-          })}
+          {/* Favorite folders - exclude any Home folders that might have slipped in */}
+          {favoriteFoldersList
+            .filter(folder => folder.id !== 'root' && folder.name !== 'Home')
+            .map(folder => {
+              const IconComponent = AVAILABLE_ICONS[folder.icon || 'FolderClosed'] || AVAILABLE_ICONS.FolderClosed;
+              const isSelected = selectedFolderId === folder.id;
+              
+              return (
+                <button
+                  key={folder.id}
+                  onClick={() => onFolderSelect(folder.id)}
+                  className={`w-full p-3 rounded-lg mb-2 transition-colors relative ${
+                    isSelected
+                      ? 'text-primary-400 dark:text-primary-400'
+                      : 'hover:bg-secondary-200 dark:hover:bg-secondary-800 text-secondary-600 dark:text-secondary-400'
+                  }`}
+                  title={folder.name}
+                >
+                  <IconComponent className="w-5 h-5 mx-auto" />
+                  {isSelected && (
+                    <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-8 bg-primary-500 dark:bg-primary-400 rounded-r" />
+                  )}
+                </button>
+              );
+            })}
 
           {/* Separator between favorites and subfolders */}
           {favoriteFoldersList.length > 0 && subfoldersList.length > 0 && (
@@ -1080,7 +1151,7 @@ const CollapsibleFolderTree = ({
 
           {/* Subfolders */}
           {subfoldersList.map(folder => {
-            const IconComponent = AVAILABLE_ICONS[folder.icon || 'Folder'] || AVAILABLE_ICONS.Folder;
+            const IconComponent = AVAILABLE_ICONS[folder.icon || 'FolderClosed'] || AVAILABLE_ICONS.FolderClosed;
             const isSelected = selectedFolderId === folder.id;
             
             return (
@@ -1301,7 +1372,7 @@ const CollapsibleFolderTree = ({
           {/* Home folder (not draggable) */}
           <div
             className={`
-              flex items-center px-2 py-1.5 cursor-pointer rounded-md mb-0.5 relative
+              group flex items-center px-2 py-1.5 cursor-pointer rounded-md mb-0.5 relative
               ${selectedFolderId === 'root' 
                 ? 'text-primary-600 dark:text-primary-400 bg-primary-50/50 dark:bg-primary-900/10' 
                 : 'hover:bg-secondary-100 dark:hover:bg-secondary-700 text-secondary-700 dark:text-secondary-300'
@@ -1312,7 +1383,30 @@ const CollapsibleFolderTree = ({
             {/* Placeholder for chevron alignment */}
             <div className="mr-1 p-1 w-6 h-6" />
             <Home className="w-4 h-4 mr-2" />
-            <span className="font-medium">Home</span>
+            <div className="flex-1 min-w-0">
+              <span className="font-medium">Home</span>
+            </div>
+            
+            {/* Favorite button for Home folder */}
+            {!isReorderMode && (
+              <button
+                onClick={(e) => {
+                  toggleFavorite('root', e);
+                  e.currentTarget.blur();
+                }}
+                className="ml-1 p-1 rounded border border-transparent hover:border-secondary-300 dark:hover:border-secondary-600 opacity-0 group-hover:opacity-100 transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-400 focus-visible:ring-opacity-50"
+                title={favoriteFolders.has('root') ? 'Remove from favorites' : 'Add to favorites'}
+              >
+                <svg 
+                  className={`w-4 h-4 text-secondary-600 dark:text-secondary-300 ${favoriteFolders.has('root') ? 'fill-current' : ''}`}
+                  fill={favoriteFolders.has('root') ? 'currentColor' : 'none'}
+                  stroke="currentColor" 
+                  viewBox="0 0 24 24"
+                >
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
+                </svg>
+              </button>
+            )}
           </div>
 
           {/* Root folders with drag & drop */}

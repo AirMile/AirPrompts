@@ -15,12 +15,14 @@ const priorityOptions = [
 
 const timeEstimateOptions = [
   { value: '', label: 'No estimate' },
+  { value: '15min', label: '15 minutes' },
+  { value: '30min', label: '30 minutes' },
   { value: '1h', label: '1 hour' },
-  { value: 'few_hours', label: 'Few hours' },
-  { value: 'day', label: '1 day' },
-  { value: 'days', label: 'Multiple days' },
-  { value: 'week', label: '1 week' },
-  { value: 'weeks', label: 'Multiple weeks' }
+  { value: '2-3h', label: '2-3 hours' },
+  { value: '4h', label: 'Half day (4h)' },
+  { value: '1day', label: '1 day (8h)' },
+  { value: '2-3days', label: '2-3 days' },
+  { value: '1week+', label: '1 week+' }
 ];
 
 const TodoModal = ({ todo, currentFolderId, onClose }) => {

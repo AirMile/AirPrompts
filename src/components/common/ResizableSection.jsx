@@ -27,6 +27,10 @@ const ResizableSection = ({
   defaultHeight = 250,
   isResizable = true,
   isEditMode = false,
+  alwaysCollapsible = false,
+  hideChevronWhenEmpty = false,
+  hasContent = null,
+  hideCount = false,
   ...restProps
 }) => {
   const { isVisible: internalVisible, toggle } = useSectionVisibility(sectionId, defaultVisible);
@@ -132,6 +136,18 @@ const ResizableSection = ({
   const handleToggle = () => {
     const totalCount = count || itemCount || 0;
     
+    // If alwaysCollapsible is true, always allow toggle regardless of content
+    if (alwaysCollapsible) {
+      if (externalVisible !== null && onVisibilityChange) {
+        const newState = !externalVisible;
+        onVisibilityChange(newState);
+      } else {
+        toggle();
+      }
+      return;
+    }
+    
+    // Original logic for non-alwaysCollapsible sections
     if (totalCount === 0 && onCreateNew) {
       onCreateNew();
       return;
@@ -155,7 +171,7 @@ const ResizableSection = ({
   };
 
   const totalCount = count || itemCount || 0;
-  const hasContent = totalCount > 0;
+  const hasContentLocal = totalCount > 0;
   const spacingClass = 'mb-4';
   const cleanClassName = className.replace(/mb-\d+/g, '').trim();
   const dynamicClassName = cleanClassName ? `${cleanClassName} ${spacingClass}` : spacingClass;
@@ -175,22 +191,20 @@ const ResizableSection = ({
           onClick={handleToggle}
           onKeyDown={handleKeyDown}
           className={`flex-1 flex items-center justify-between p-3 focus:outline-none ${
-            (count || itemCount || 0) === 0 && !onCreateNew ? 'cursor-default' : 'cursor-pointer'
+            (count || itemCount || 0) === 0 && !onCreateNew && !alwaysCollapsible ? 'cursor-default' : 'cursor-pointer'
           }`}
           aria-expanded={isVisible}
           aria-controls={`section-content-${sectionId}`}
-          disabled={(count || itemCount || 0) === 0 && !onCreateNew}
+          disabled={(count || itemCount || 0) === 0 && !onCreateNew && !alwaysCollapsible}
           {...headerProps}
         >
           <div className="flex items-center space-x-2">
-            {(count > 0 || itemCount > 0) ? (
-              isVisible ? (
-                <ChevronDownIcon className="w-5 h-5 text-secondary-600 dark:text-secondary-400" />
-              ) : (
-                <ChevronRightIcon className="w-5 h-5 text-secondary-600 dark:text-secondary-400" />
-              )
-            ) : (
+            {(hideChevronWhenEmpty && (hasContent !== null ? !hasContent : totalCount === 0) && !isVisible) ? (
               <div className="w-5 h-5" />
+            ) : isVisible ? (
+              <ChevronDownIcon className="w-5 h-5 text-secondary-600 dark:text-secondary-400" />
+            ) : (
+              <ChevronRightIcon className="w-5 h-5 text-secondary-600 dark:text-secondary-400" />
             )}
             
             {icon && (
@@ -204,7 +218,7 @@ const ResizableSection = ({
             </h3>
           </div>
           
-          {(count > 0 || itemCount > 0) && (
+          {(count > 0 || itemCount > 0) && !hideCount && (
             <span className={`inline-flex items-center justify-center min-w-[1.5rem] h-6 px-2 rounded-full text-xs font-medium tabular-nums ${getCountBadgeColor()}`}>
               {count || itemCount}
             </span>
@@ -232,7 +246,7 @@ const ResizableSection = ({
           <div 
             ref={contentRef}
             className={`transition-all duration-300 ease-in-out ${
-              hasContent && !className.includes('no-content-padding') ? 'pt-4' : ''
+              (hasContent !== null ? hasContent : hasContentLocal) && !className.includes('no-content-padding') ? 'pt-4' : ''
             } relative`}
             style={{
               opacity: isVisible ? 1 : 0,

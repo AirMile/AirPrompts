@@ -182,8 +182,8 @@ const Homepage = ({
     return folders.find(f => f.id === selectedFolderId);
   }, [folders, selectedFolderId, rootFolderVersion]);
 
-  // Validate selected folder exists, fallback to root if invalid
-  useEffect(() => {
+  // Validate selected folder exists, only fallback to root if folder doesn't exist
+  useEffect(() => {    
     if (folders && folders.length > 0 && selectedFolderId) {
       // Always validate against available folders
       const folderExists = folders.some(f => f.id === selectedFolderId) || selectedFolderId === 'root';
@@ -281,12 +281,12 @@ const Homepage = ({
   const getFilteredItems = useCallback((items, itemType) => {
     if (!items || items.length === 0) return [];
     
-    // console.log(`Filtering ${itemType} items:`, { 
+    // console.log(`🔍 Filtering ${itemType} items:`, { 
     //   totalItems: items.length, 
     //   selectedFolderId,
-    //   sampleItem: items[0],
-    //   itemFolders: items.slice(0, 3).map(item => ({ 
+    //   sampleItems: items.slice(0, 3).map(item => ({ 
     //     id: item.id, 
+    //     name: item.name,
     //     folderId: item.folderId, 
     //     folderIds: item.folderIds 
     //   }))
@@ -298,11 +298,19 @@ const Homepage = ({
       let folderMatch = false;
       
       if (!selectedFolderId || selectedFolderId === 'root') {
-        // For root folder, show items that belong to root
-        if (item.folderIds && item.folderIds.length > 0) {
-          folderMatch = item.folderIds.includes('root');
+        // For root folder, show items that belong to root OR have no folder assignment
+        if (item.folderIds && Array.isArray(item.folderIds) && item.folderIds.length > 0) {
+          // If item has folderIds array, check if it includes 'root' or is empty/contains null
+          folderMatch = item.folderIds.includes('root') || 
+                       item.folderIds.includes(null) || 
+                       item.folderIds.includes(undefined) ||
+                       item.folderIds.includes('');
+        } else if (item.folderId !== undefined) {
+          // If item has folderId property, check if it's null, empty, or 'root'
+          folderMatch = !item.folderId || item.folderId === 'root' || item.folderId === '';
         } else {
-          folderMatch = !item.folderId || item.folderId === 'root';
+          // If item has no folder properties at all, show it in root
+          folderMatch = true;
         }
       } else if (selectedFolderId === 'home') {
         // For Home folder, show items from root and immediate children
@@ -331,9 +339,13 @@ const Homepage = ({
       return folderMatch;
     });
     
-    // console.log(`After folder filtering ${itemType}:`, { 
+    // console.log(`✅ After folder filtering ${itemType}:`, { 
     //   filteredCount: folderFiltered.length,
-    //   selectedFolderId 
+    //   selectedFolderId,
+    //   filteredItems: folderFiltered.slice(0, 2).map(item => ({ 
+    //     id: item.id, 
+    //     name: item.name 
+    //   }))
     // });
     
     // Apply filter system (includes tag filtering, category, favorites, etc.)

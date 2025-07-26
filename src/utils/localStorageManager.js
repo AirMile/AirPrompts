@@ -18,6 +18,7 @@ const STORAGE_KEYS = {
   SNIPPETS: 'airprompts_snippets',
   FOLDERS: 'airprompts_folders',
   ROOT_FOLDER: 'airprompts_root_folder',
+  FOLDER_FAVORITES: 'airprompts_folder_favorites',
   TODOS: 'airprompts_todos',
   FOLDER_UI_STATE: 'airprompts_folder_ui_state',
   HEADER_UI_STATE: 'airprompts_header_ui_state',
@@ -435,6 +436,117 @@ export const toggleFolderFavorite = (entityType, entityId, folderId, isFavorite)
   }
   
   return null;
+};
+
+// Folder favorites operations (for folder sidebar)
+export const getFolderFavorites = () => {
+  try {
+    const favorites = loadFromStorage(STORAGE_KEYS.FOLDER_FAVORITES, []);
+    return new Set(favorites);
+  } catch (error) {
+    console.error('Error loading folder favorites:', error);
+    return new Set();
+  }
+};
+
+export const saveFolderFavorites = (favoritesSet) => {
+  try {
+    const favoritesArray = Array.from(favoritesSet);
+    return saveToStorage(STORAGE_KEYS.FOLDER_FAVORITES, favoritesArray);
+  } catch (error) {
+    console.error('Error saving folder favorites:', error);
+    return false;
+  }
+};
+
+export const toggleFolderFavoriteById = (folderId) => {
+  try {
+    const favorites = getFolderFavorites();
+    
+    if (favorites.has(folderId)) {
+      favorites.delete(folderId);
+    } else {
+      favorites.add(folderId);
+    }
+    
+    const success = saveFolderFavorites(favorites);
+    return success ? favorites : null;
+  } catch (error) {
+    console.error('Error toggling folder favorite:', error);
+    return null;
+  }
+};
+
+// Create virtual Home folder object for unified architecture
+export const createVirtualHomeFolder = () => {
+  try {
+    const rootData = getRootFolder();
+    return {
+      id: 'root',
+      name: 'Home',
+      icon: 'Home', // Special icon identifier
+      parentId: null,
+      sortOrder: -1, // Always first
+      isSpecial: true, // Flag for special behavior restrictions
+      description: rootData.description || '',
+      createdAt: '2024-01-01T00:00:00.000Z', // Virtual creation date
+      updatedAt: rootData.updatedAt || new Date().toISOString(),
+      // Standard folder properties for consistency
+      favorite: false, // Handled by favorites system
+      folderFavorites: {},
+      folderOrder: {}
+    };
+  } catch (error) {
+    console.error('Error creating virtual home folder:', error);
+    // Fallback minimal object
+    return {
+      id: 'root',
+      name: 'Home',
+      icon: 'Home',
+      parentId: null,
+      sortOrder: -1,
+      isSpecial: true,
+      description: '',
+      createdAt: '2024-01-01T00:00:00.000Z',
+      updatedAt: new Date().toISOString(),
+      favorite: false,
+      folderFavorites: {},
+      folderOrder: {}
+    };
+  }
+};
+
+// Get all folders including virtual Home folder for unified handling
+export const getAllFoldersIncludingHome = () => {
+  try {
+    const regularFolders = getFolders();
+    const homeFolder = createVirtualHomeFolder();
+    
+    // Return Home folder first, then regular folders sorted by their sortOrder
+    return [homeFolder, ...regularFolders.sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0))];
+  } catch (error) {
+    console.error('Error getting all folders including home:', error);
+    return [createVirtualHomeFolder()]; // Fallback to just home folder
+  }
+};
+
+// Migration helper for legacy folder favorites
+export const migrateLegacyFolderFavorites = () => {
+  try {
+    // Check if there's any legacy data to migrate
+    const legacyKey = 'folder-favorites-legacy';
+    const legacyData = localStorage.getItem(legacyKey);
+    
+    if (legacyData && !localStorage.getItem(STORAGE_KEYS.FOLDER_FAVORITES)) {
+      console.log('🔄 Migrating legacy folder favorites...');
+      const parsed = JSON.parse(legacyData);
+      saveFolderFavorites(new Set(parsed));
+      localStorage.removeItem(legacyKey);
+      console.log('✅ Legacy folder favorites migrated');
+    }
+  } catch (error) {
+    console.error('Error migrating legacy folder favorites:', error);
+  }
 };
 
 // Clear all data

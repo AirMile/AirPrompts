@@ -135,8 +135,8 @@ const FolderTree = ({
   };
 
   const renderFolderIcon = (folder, isSelected) => {
-    const iconName = folder.icon || 'Folder';
-    const IconComponent = AVAILABLE_ICONS[iconName] || AVAILABLE_ICONS.Folder;
+    const iconName = folder.icon || 'FolderClosed';
+    const IconComponent = AVAILABLE_ICONS[iconName] || AVAILABLE_ICONS.FolderClosed;
     
     return (
       <IconComponent 

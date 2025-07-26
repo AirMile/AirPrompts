@@ -90,7 +90,7 @@ const FolderModal = ({
   useEffect(() => {
     if (folder) {
       setName(folder.name);
-      setSelectedIcon(folder.icon || 'Folder');
+      setSelectedIcon(folder.icon || 'FolderClosed');
       setSelectedParentId(folder.parentId || 'root');
     } else {
       setName('');
@@ -186,7 +186,7 @@ const FolderModal = ({
 
   if (!isOpen) return null;
 
-  const SelectedIconComponent = AVAILABLE_ICONS[selectedIcon] || AVAILABLE_ICONS.Folder;
+  const SelectedIconComponent = AVAILABLE_ICONS[selectedIcon] || AVAILABLE_ICONS.FolderClosed;
 
   return (
     <div className="fixed inset-0 flex items-center justify-center z-50 p-4">
@@ -272,7 +272,7 @@ const FolderModal = ({
 
                   {/* Hierarchical folder list */}
                   {hierarchicalFolders.map((f) => {
-                    const FolderIcon = AVAILABLE_ICONS[f.icon] || AVAILABLE_ICONS.Folder;
+                    const FolderIcon = AVAILABLE_ICONS[f.icon] || AVAILABLE_ICONS.FolderClosed;
                     const isExpanded = expandedFolders.has(f.id);
                     
                     return (

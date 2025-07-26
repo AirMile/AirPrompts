@@ -208,10 +208,10 @@ export const useHeaderUIState = () => {
   }, [loadHeaderStates]);
 
   // Get header state
-  const getHeaderState = useCallback((folderId, headerType) => {
+  const getHeaderState = useCallback((folderId, headerType, defaultVisible = true) => {
     const folderStates = headerStates.get(folderId);
-    if (!folderStates) return true; // Default expanded
-    return folderStates.get(headerType) ?? true;
+    if (!folderStates) return defaultVisible; // Use parameter
+    return folderStates.get(headerType) ?? defaultVisible; // Use parameter
   }, [headerStates]);
 
   // Toggle header state
@@ -240,7 +240,7 @@ export const useHeaderUIState = () => {
 export const useFolderSectionVisibility = (folderId, sectionType, defaultExpanded = true) => {
   const { getHeaderState, toggleHeaderState } = useHeaderUIState();
   
-  const isVisible = getHeaderState(folderId, sectionType) ?? defaultExpanded;
+  const isVisible = getHeaderState(folderId, sectionType, defaultExpanded);
   
   const toggleVisibility = useCallback(() => {
     toggleHeaderState(folderId, sectionType);
