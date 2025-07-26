@@ -1,0 +1,147 @@
+name: Test Coverage Report
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+jobs:
+  coverage:
+    name: Generate Coverage Report
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20.x'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run tests with coverage
+        run: npm run test:coverage -- --json --outputFile=jest-results.json
+
+      - name: Generate coverage summary
+        id: coverage
+        run: |
+          # Extract coverage percentages
+          COVERAGE_JSON=$(cat coverage/coverage-summary.json)
+          LINES=$(echo $COVERAGE_JSON | jq -r '.total.lines.pct')
+          STATEMENTS=$(echo $COVERAGE_JSON | jq -r '.total.statements.pct')
+          FUNCTIONS=$(echo $COVERAGE_JSON | jq -r '.total.functions.pct')
+          BRANCHES=$(echo $COVERAGE_JSON | jq -r '.total.branches.pct')
+          
+          # Calculate average
+          AVERAGE=$(echo "scale=2; ($LINES + $STATEMENTS + $FUNCTIONS + $BRANCHES) / 4" | bc)
+          
+          # Set output variables
+          echo "lines=$LINES" >> $GITHUB_OUTPUT
+          echo "statements=$STATEMENTS" >> $GITHUB_OUTPUT
+          echo "functions=$FUNCTIONS" >> $GITHUB_OUTPUT
+          echo "branches=$BRANCHES" >> $GITHUB_OUTPUT
+          echo "average=$AVERAGE" >> $GITHUB_OUTPUT
+          
+          # Determine if coverage meets threshold
+          if (( $(echo "$AVERAGE >= 90" | bc -l) )); then
+            echo "status=success" >> $GITHUB_OUTPUT
+            echo "color=green" >> $GITHUB_OUTPUT
+          elif (( $(echo "$AVERAGE >= 80" | bc -l) )); then
+            echo "status=warning" >> $GITHUB_OUTPUT
+            echo "color=yellow" >> $GITHUB_OUTPUT
+          else
+            echo "status=failure" >> $GITHUB_OUTPUT
+            echo "color=red" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Create coverage badge
+        uses: schneegans/dynamic-badges-action@v1.6.0
+        with:
+          auth: ${{ secrets.GIST_SECRET }}
+          gistID: your-gist-id-here
+          filename: coverage-badge.json
+          label: Coverage
+          message: ${{ steps.coverage.outputs.average }}%
+          color: ${{ steps.coverage.outputs.color }}
+
+      - name: Generate coverage report comment
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const coverage = {
+              lines: '${{ steps.coverage.outputs.lines }}',
+              statements: '${{ steps.coverage.outputs.statements }}',
+              functions: '${{ steps.coverage.outputs.functions }}',
+              branches: '${{ steps.coverage.outputs.branches }}',
+              average: '${{ steps.coverage.outputs.average }}'
+            };
+            
+            const status = '${{ steps.coverage.outputs.status }}';
+            const statusEmoji = status === 'success' ? '✅' : status === 'warning' ? '⚠️' : '❌';
+            
+            const comment = `## ${statusEmoji} Test Coverage Report
+            
+            | Metric | Coverage | Target |
+            |--------|----------|--------|
+            | Lines | ${coverage.lines}% | 90% |
+            | Statements | ${coverage.statements}% | 90% |
+            | Functions | ${coverage.functions}% | 90% |
+            | Branches | ${coverage.branches}% | 90% |
+            | **Average** | **${coverage.average}%** | **90%** |
+            
+            ${status === 'success' 
+              ? '🎉 Coverage meets the required threshold!' 
+              : status === 'warning'
+              ? '⚠️ Coverage is below the target threshold. Please add more tests.'
+              : '❌ Coverage is significantly below the target. Tests must be added before merging.'}
+            
+            ### Coverage Trend
+            View the full coverage report in the [Actions artifacts](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}).
+            `;
+            
+            // Find existing comment
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+            });
+            
+            const botComment = comments.find(comment => 
+              comment.user.type === 'Bot' && comment.body.includes('Test Coverage Report')
+            );
+            
+            // Update or create comment
+            if (botComment) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: botComment.id,
+                body: comment
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body: comment
+              });
+            }
+
+      - name: Upload coverage reports
+        uses: actions/upload-artifact@v3
+        with:
+          name: coverage-reports
+          path: |
+            coverage/
+            jest-results.json
+
+      - name: Check coverage threshold
+        run: |
+          AVERAGE=${{ steps.coverage.outputs.average }}
+          if (( $(echo "$AVERAGE < 90" | bc -l) )); then
+            echo "❌ Coverage is below the required 90% threshold (current: ${AVERAGE}%)"
+            exit 1
+          fi

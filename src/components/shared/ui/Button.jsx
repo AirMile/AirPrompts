@@ -10,6 +10,9 @@ const Button = forwardRef(function Button({
   iconPosition = 'left',
   children,
   className = '',
+  'aria-label': ariaLabel,
+  'aria-pressed': ariaPressed,
+  'aria-describedby': ariaDescribedBy,
   ...props
 }, ref) {
   const baseClasses = 'inline-flex items-center justify-center transition-colors font-medium rounded-lg focus:outline-none focus:ring-2 focus:ring-offset-2';
@@ -37,20 +40,40 @@ const Button = forwardRef(function Button({
   `.trim();
   
   const LoadingIcon = () => (
-    <Loader2 className={`animate-spin ${children ? 'mr-2' : ''}`} size={16} />
+    <Loader2 className={`animate-spin ${children ? 'mr-2' : ''}`} size={16} aria-hidden="true" />
   );
+  
+  // Ensure button has accessible label
+  const hasAccessibleLabel = children || ariaLabel;
   
   return (
     <button
       ref={ref}
       className={classes}
       disabled={disabled || loading}
+      aria-label={ariaLabel}
+      aria-pressed={ariaPressed}
+      aria-describedby={ariaDescribedBy}
+      aria-busy={loading}
+      aria-disabled={disabled || loading}
       {...props}
     >
-      {loading && <LoadingIcon />}
-      {!loading && Icon && iconPosition === 'left' && <Icon className="mr-2" size={16} />}
+      {loading && (
+        <>
+          <LoadingIcon />
+          <span className="sr-only">Loading</span>
+        </>
+      )}
+      {!loading && Icon && iconPosition === 'left' && (
+        <Icon className="mr-2" size={16} aria-hidden="true" />
+      )}
       {children}
-      {!loading && Icon && iconPosition === 'right' && <Icon className="ml-2" size={16} />}
+      {!loading && Icon && iconPosition === 'right' && (
+        <Icon className="ml-2" size={16} aria-hidden="true" />
+      )}
+      {!hasAccessibleLabel && (
+        <span className="sr-only">Button</span>
+      )}
     </button>
   );
 });

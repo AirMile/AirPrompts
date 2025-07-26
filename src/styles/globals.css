@@ -1,6 +1,7 @@
 @import './colors.css';
 @import './theme-variables.css';
 @import './view-transitions.css';
+@import './animations.css';
 @import './dragDrop.css';
 @import './components.css';
 @tailwind base;

@@ -1,10 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, memo } from 'react';
 import { Settings, User, MoreVertical, Edit2, Trash2, Plus, FolderPlus, ChevronDown, ChevronUp } from 'lucide-react';
 import FolderModal from './FolderModal';
 import { AVAILABLE_ICONS } from '../../constants/folderIcons';
 import { useUserPreferences } from '../../hooks/domain/useUserPreferences';
 
-const FolderTree = ({ 
+const FolderTree = memo(({ 
   folders = [], 
   selectedFolderId, 
   onFolderSelect, 
@@ -36,79 +36,83 @@ const FolderTree = ({
     setFavoriteFolders(initialFavorites);
   }, [folders]);
 
-  // Build folder hierarchy
-  const buildFolderTree = (parentId = null) => {
+  // Build folder hierarchy - memoized for performance
+  const buildFolderTree = useCallback((parentId = null) => {
     return folders
       .filter(folder => folder.parentId === parentId)
       .sort((a, b) => {
         // Sort alphabetically only - don't prioritize favorites
         return a.name.localeCompare(b.name);
       });
-  };
+  }, [folders]);
 
-  const toggleFolder = (folderId) => {
-    const newExpanded = new Set(expandedFolders);
-    if (newExpanded.has(folderId)) {
-      newExpanded.delete(folderId);
-    } else {
-      newExpanded.add(folderId);
-    }
-    setExpandedFolders(newExpanded);
-  };
+  const toggleFolder = useCallback((folderId) => {
+    setExpandedFolders(prev => {
+      const newExpanded = new Set(prev);
+      if (newExpanded.has(folderId)) {
+        newExpanded.delete(folderId);
+      } else {
+        newExpanded.add(folderId);
+      }
+      return newExpanded;
+    });
+  }, []);
 
-  const hasChildren = (folderId) => {
+  const hasChildren = useCallback((folderId) => {
     return folders.some(folder => folder.parentId === folderId);
-  };
+  }, [folders]);
 
-  const toggleFavorite = (folderId, e) => {
+  const toggleFavorite = useCallback((folderId, e) => {
     e.stopPropagation();
-    const newFavorites = new Set(favoriteFolders);
-    if (newFavorites.has(folderId)) {
-      newFavorites.delete(folderId);
-    } else {
-      newFavorites.add(folderId);
-    }
-    setFavoriteFolders(newFavorites);
+    setFavoriteFolders(prev => {
+      const newFavorites = new Set(prev);
+      if (newFavorites.has(folderId)) {
+        newFavorites.delete(folderId);
+      } else {
+        newFavorites.add(folderId);
+      }
+      return newFavorites;
+    });
     
     // Update the folder's favorite status
     const folder = folders.find(f => f.id === folderId);
     if (folder && onUpdateFolder) {
       onUpdateFolder({ ...folder, favorite: !folder.favorite });
     }
-  };
+  }, [folders, onUpdateFolder]);
 
-  const expandAll = () => {
+  const expandAll = useCallback(() => {
     const allFolderIds = new Set(folders.map(f => f.id));
     setExpandedFolders(allFolderIds);
-  };
+  }, [folders]);
 
-  const collapseAll = () => {
+  const collapseAll = useCallback(() => {
     setExpandedFolders(new Set(['root']));
-  };
+  }, []);
 
   // Helper functions
-  const handleContextMenu = (e, folder) => {
+  const handleContextMenu = useCallback((e, folder) => {
     e.stopPropagation();
     const rect = e.currentTarget.getBoundingClientRect();
     setContextMenuPosition({ x: rect.right, y: rect.bottom });
     setShowContextMenu(folder.id);
-  };
+  }, []);
 
-  const handleCreateNewFolder = (parentId) => {
+  const handleCreateNewFolder = useCallback((parentId) => {
     const parent = folders.find(f => f.id === parentId) || { id: 'root', name: 'Root' };
     setParentFolderForNew(parent);
     setEditingFolder(null);
     setShowFolderModal(true);
-  };
+  }, [folders]);
 
-  const handleEditFolder = (folder) => {
+  const handleEditFolder = useCallback((folder) => {
     setEditingFolder(folder);
     setParentFolderForNew(null);
     setShowFolderModal(true);
     setShowContextMenu(null);
-  };
+  }, []);
 
-  const handleDeleteFolder = (folderId) => {
+  const handleDeleteFolder = useCallback((folderId) => {
     if (confirmActions.deleteFolder) {
       // Check if folder has children or items
       const hasSubfolders = folders.some(f => f.parentId === folderId);
@@ -124,15 +128,15 @@ const FolderTree = ({
       onDeleteFolder(folderId);
     }
     setShowContextMenu(null);
-  };
+  }, [confirmActions.deleteFolder, folders, onDeleteFolder]);
 
-  const handleSaveFolder = (folderData) => {
+  const handleSaveFolder = useCallback((folderData) => {
     if (editingFolder) {
       onUpdateFolder(folderData);
     } else {
       onCreateFolder(folderData);
     }
-  };
+  }, [editingFolder, onUpdateFolder, onCreateFolder]);
 
   const renderFolderIcon = (folder, isSelected) => {
     const iconName = folder.icon || 'FolderClosed';
@@ -405,6 +409,8 @@ const FolderTree = ({
       />
     </div>
   );
-};
+});
+
+FolderTree.displayName = 'FolderTree';
 
 export default FolderTree;

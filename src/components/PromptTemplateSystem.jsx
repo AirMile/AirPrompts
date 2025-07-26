@@ -12,19 +12,19 @@ import { useFolders, useCreateFolder, useUpdateFolder, useDeleteFolder } from '.
 import { useQueryClient } from '@tanstack/react-query';
 import { LoadingSpinner } from './shared/ui';
 
-// Import components directly to troubleshoot loading issue
-import TemplateEditor from './templates/TemplateEditor.jsx';
-import ItemExecutor from './features/execution/ItemExecutor.jsx';
-import Homepage from './dashboard/Homepage.jsx';
-import WorkflowEditor from './workflows/WorkflowEditor.jsx';
-import SnippetEditor from './snippets/SnippetEditor.jsx';
+// Lazy load heavy components for better performance
+const Homepage = React.lazy(() => import('./dashboard/Homepage.jsx'));
+const TemplateEditor = React.lazy(() => import('./templates/TemplateEditor.jsx'));
+const WorkflowEditor = React.lazy(() => import('./workflows/WorkflowEditorRefactored.jsx'));
+const SnippetEditor = React.lazy(() => import('./snippets/SnippetEditor.jsx'));
+const ItemExecutor = React.lazy(() => import('./features/execution/ItemExecutor.jsx'));
 
-// Lazy load heavy components (disabled for debugging)
-// const TemplateEditor = React.lazy(() => import('./templates/TemplateEditor.jsx'));
-// const ItemExecutor = React.lazy(() => import('./features/execution/ItemExecutor.jsx'));
-// const Homepage = React.lazy(() => import('./dashboard/Homepage.jsx'));
-// const WorkflowEditor = React.lazy(() => import('./workflows/WorkflowEditor.jsx'));
-// const SnippetEditor = React.lazy(() => import('./snippets/SnippetEditor.jsx'));
+// Preload critical components on idle
+if ('requestIdleCallback' in window) {
+  requestIdleCallback(() => {
+    import('./dashboard/Homepage.jsx');
+  }, { timeout: 2000 });
+}
 
 // Temporary API test component
 import APITestComponent from './test/APITestComponent.jsx';

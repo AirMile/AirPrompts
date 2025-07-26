@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo } from 'react';
+import React, { useCallback, useMemo, memo } from 'react';
 import { SortableContext, verticalListSortingStrategy, rectSortingStrategy } from '@dnd-kit/sortable';
 import ListView from './ListView.jsx';
 import SortableCard from './SortableCard.jsx';
@@ -8,8 +8,9 @@ import VirtualizedCard from './VirtualizedCard.jsx';
 
 /**
  * Geoptimaliseerde item renderer met virtualization support
+ * Memoized to prevent unnecessary re-renders
  */
-const OptimizedItemRenderer = ({
+const OptimizedItemRenderer = memo(({
   items,
   sectionType,
   viewMode,
@@ -152,6 +153,19 @@ const OptimizedItemRenderer = ({
   }
 
   return renderRegularGrid();
-};
+}, (prevProps, nextProps) => {
+  // Custom comparison function for better performance
+  // Only re-render if critical props change
+  return (
+    prevProps.items === nextProps.items &&
+    prevProps.viewMode === nextProps.viewMode &&
+    prevProps.sectionType === nextProps.sectionType &&
+    prevProps.shouldUseVirtualization === nextProps.shouldUseVirtualization &&
+    prevProps.keyboardNavigation.focusedIndex === nextProps.keyboardNavigation.focusedIndex &&
+    prevProps.keyboardNavigation.isActive === nextProps.keyboardNavigation.isActive
+  );
+});
+
+OptimizedItemRenderer.displayName = 'OptimizedItemRenderer';
 
 export default OptimizedItemRenderer;

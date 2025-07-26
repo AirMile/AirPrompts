@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { memo } from 'react';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { GripVertical } from 'lucide-react';
@@ -12,7 +12,7 @@ import FocusableCard from './FocusableCard';
  * @param {boolean} props.disabled - Of dragging disabled is
  * @param {...Object} cardProps - Alle andere props worden doorgegeven aan FocusableCard
  */
-const SortableCard = ({ 
+const SortableCard = memo(({ 
   item, 
   id, 
   disabled = false,
@@ -51,6 +51,21 @@ const SortableCard = ({
       />
     </div>
   );
-};
+}, (prevProps, nextProps) => {
+  // Custom comparison for performance optimization
+  // Only re-render if item or dragging state changes
+  return (
+    prevProps.item === nextProps.item &&
+    prevProps.id === nextProps.id &&
+    prevProps.disabled === nextProps.disabled &&
+    // Compare key cardProps that might affect rendering
+    prevProps.onExecute === nextProps.onExecute &&
+    prevProps.onEdit === nextProps.onEdit &&
+    prevProps.onDelete === nextProps.onDelete &&
+    prevProps.onToggleFavorite === nextProps.onToggleFavorite
+  );
+});
+
+SortableCard.displayName = 'SortableCard';
 
 export default SortableCard;
