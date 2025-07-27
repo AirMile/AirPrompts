@@ -148,7 +148,7 @@ export const createFolder = (data = {}) => {
  */
 export const DEFAULT_FOLDERS = [
   { id: 'root', name: 'Root', parentId: null },
-  { id: 'general', name: 'Home', parentId: 'root' },
+  { id: 'general', name: 'General', parentId: 'root' },
   { id: 'workshop', name: 'Workshop', parentId: 'root' }
 ];
 

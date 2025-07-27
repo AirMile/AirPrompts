@@ -31,14 +31,12 @@ const FolderBreadcrumb = ({ folders = [], currentFolderId, onFolderSelect, class
 
   const fullPath = currentFolderId ? buildPath(currentFolderId) : [];
   
-  // Handle root folder specially - show "Home" instead of filtering it out
-  let path;
-  if (currentFolderId === 'root' || !currentFolderId) {
-    path = [{ id: 'root', name: 'Home' }];
-  } else {
-    // Filter out root folder from breadcrumb for non-root paths
-    path = fullPath.filter(folder => folder.id !== 'root');
-    if (path.length === 0) return null; // Nu is dit veilig omdat alle hooks al zijn aangeroepen
+  // Filter out root folder from breadcrumb paths
+  let path = fullPath.filter(folder => folder.id !== 'root');
+  
+  // If no path after filtering (root or empty), don't show breadcrumb
+  if (path.length === 0 || currentFolderId === 'root' || !currentFolderId) {
+    return null;
   }
 
   const shouldTruncate = path.length > 3;

@@ -10,7 +10,6 @@ import {
   Trash2, 
   Plus, 
   FolderPlus,
-  Home,
   Star,
   ChevronDown,
   ChevronUp,
@@ -49,7 +48,7 @@ import { AVAILABLE_ICONS } from '../../constants/folderIcons';
 import { useFolderUIState } from '../../hooks/queries/useUIStateQuery';
 import { useUserPreferences } from '../../hooks/domain/useUserPreferences';
 import { useFavorites } from '../../hooks/useFavorites';
-import { createVirtualHomeFolder, getAllFoldersIncludingHome } from '../../utils/localStorageManager';
+import { getAllFoldersIncludingHome } from '../../utils/localStorageManager';
 import ThemeToggle from '../common/ThemeToggle';
 // Removed AdvancedSearch - using simple search input for folders only
 
@@ -791,9 +790,9 @@ const CollapsibleFolderTree = ({
   };
 
   const renderFolderIcon = (folder, isSelected) => {
-    // Special handling for Home folder icon
-    if (folder.isSpecial && folder.icon === 'Home') {
-      const IconComponent = Home;
+    // Special handling for folder icons
+    if (folder.isSpecial && folder.icon && folder.icon !== 'Home') {
+      const IconComponent = AVAILABLE_ICONS[folder.icon] || FolderPlus;
       return (
         <IconComponent 
           className={`w-4 h-4 mr-2 ${
@@ -986,7 +985,7 @@ const CollapsibleFolderTree = ({
                 </button>
               )}
 
-              {/* Reorder arrows - hidden for special folders like Home */}
+              {/* Reorder arrows - hidden for special folders */}
               {isReorderMode && !folder.isSpecial && (
                 <div className="flex flex-col ml-2">
                   <button
@@ -1067,7 +1066,7 @@ const CollapsibleFolderTree = ({
     const favoriteFoldersList = getFavoriteFolders();
     const subfoldersList = getSubfoldersForCollapsedView();
     
-    // Check if root/home folder is marked as favorite
+    // Check if root folder is marked as favorite
     const isRootFavorite = favoriteFolders.has('root');
     
     console.log('🔍 CollapsedView Debug:', {
@@ -1079,8 +1078,8 @@ const CollapsibleFolderTree = ({
       isRootFavorite,
       selectedFolderId,
       showOnlyFavorites,
-      // Check if any favorite folder is actually the Home folder with different ID
-      hasHomeInFavorites: favoriteFoldersList.some(f => f.name === 'Home' || f.id === 'root')
+      // Check if any favorite folder is actually the root folder
+      hasRootInFavorites: favoriteFoldersList.some(f => f.id === 'root')
     });
     
     return (
@@ -1096,31 +1095,12 @@ const CollapsibleFolderTree = ({
           </button>
         </div>
 
-        {/* Home button - only show if it's marked as favorite */}
-        {isRootFavorite && (
-          <div className="px-2 mb-2">
-            <button
-              onClick={() => onFolderSelect('root')}
-              className={`w-full p-3 rounded-lg transition-colors relative ${
-                selectedFolderId === 'root'
-                  ? 'text-primary-400 dark:text-primary-400'
-                  : 'hover:bg-secondary-200 dark:hover:bg-secondary-800 text-secondary-600 dark:text-secondary-400'
-              }`}
-              title="Home"
-            >
-              <Home className="w-5 h-5 mx-auto" />
-              {selectedFolderId === 'root' && (
-                <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-8 bg-primary-500 dark:bg-primary-400 rounded-r" />
-              )}
-            </button>
-          </div>
-        )}
 
         {/* Scrollable content area */}
         <div className="flex-1 overflow-y-auto px-2">
-          {/* Favorite folders - exclude any Home folders that might have slipped in */}
+          {/* Favorite folders */}
           {favoriteFoldersList
-            .filter(folder => folder.id !== 'root' && folder.name !== 'Home')
+            .filter(folder => folder.id !== 'root')
             .map(folder => {
               const IconComponent = AVAILABLE_ICONS[folder.icon || 'FolderClosed'] || AVAILABLE_ICONS.FolderClosed;
               const isSelected = selectedFolderId === folder.id;
@@ -1369,45 +1349,6 @@ const CollapsibleFolderTree = ({
 
         {/* Folder tree with drag and drop */}
         <div className={`flex-1 overflow-y-auto p-2 ${isReorderMode ? 'bg-secondary-50/50 dark:bg-secondary-900/50' : ''}`}>
-          {/* Home folder (not draggable) */}
-          <div
-            className={`
-              group flex items-center px-2 py-1.5 cursor-pointer rounded-md mb-0.5 relative
-              ${selectedFolderId === 'root' 
-                ? 'text-primary-600 dark:text-primary-400 bg-primary-50/50 dark:bg-primary-900/10' 
-                : 'hover:bg-secondary-100 dark:hover:bg-secondary-700 text-secondary-700 dark:text-secondary-300'
-              }
-            `}
-            onClick={() => onFolderSelect('root')}
-          >
-            {/* Placeholder for chevron alignment */}
-            <div className="mr-1 p-1 w-6 h-6" />
-            <Home className="w-4 h-4 mr-2" />
-            <div className="flex-1 min-w-0">
-              <span className="font-medium">Home</span>
-            </div>
-            
-            {/* Favorite button for Home folder */}
-            {!isReorderMode && (
-              <button
-                onClick={(e) => {
-                  toggleFavorite('root', e);
-                  e.currentTarget.blur();
-                }}
-                className="ml-1 p-1 rounded border border-transparent hover:border-secondary-300 dark:hover:border-secondary-600 opacity-0 group-hover:opacity-100 transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-400 focus-visible:ring-opacity-50"
-                title={favoriteFolders.has('root') ? 'Remove from favorites' : 'Add to favorites'}
-              >
-                <svg 
-                  className={`w-4 h-4 text-secondary-600 dark:text-secondary-300 ${favoriteFolders.has('root') ? 'fill-current' : ''}`}
-                  fill={favoriteFolders.has('root') ? 'currentColor' : 'none'}
-                  stroke="currentColor" 
-                  viewBox="0 0 24 24"
-                >
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
-                </svg>
-              </button>
-            )}
-          </div>
 
           {/* Root folders with drag & drop */}
           {/* Drag mode temporarily disabled to prevent crashes */}

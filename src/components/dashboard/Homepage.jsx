@@ -20,6 +20,7 @@ import VirtualizedCard from '../common/VirtualizedCard.jsx';
 import OptimizedItemRenderer from '../common/OptimizedItemRenderer.jsx';
 import MobileNavigation from '../navigation/MobileNavigation.jsx';
 import CollapsibleTodoSidebar from '../todos/CollapsibleTodoSidebar.jsx';
+import WelcomeEmptyState from './WelcomeEmptyState.jsx';
 import useKeyboardNavigation from '../../hooks/ui/useKeyboardNavigation.js';
 import usePagination from '../../hooks/ui/usePagination.js';
 import useFilters from '../../hooks/ui/useFilters.js';
@@ -99,6 +100,11 @@ const Homepage = ({
   onReorderFolders,
   onToggleFolderFavorite
 }) => {
+  // Check if user has any real folders (not just root)
+  const hasRealFolders = useMemo(() => {
+    return folders && folders.length > 0 && folders.some(folder => folder.id !== 'root');
+  }, [folders]);
+  
   // Homepage rendering
   
   // Use preferences system for view mode
@@ -1627,8 +1633,12 @@ const Homepage = ({
 
 
           {/* Dynamic Sections */}
-          {sections.map((section, index) => 
-            renderSection(section, index === sections.length - 1)
+          {!hasRealFolders ? (
+            <WelcomeEmptyState onCreateFolder={onCreateFolder} />
+          ) : (
+            sections.map((section, index) => 
+              renderSection(section, index === sections.length - 1)
+            )
           )}
         </div>
       </div>
