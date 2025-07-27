@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { 
   ChevronLeft, 
@@ -21,26 +21,26 @@ import {
   X
 } from 'lucide-react';
 
-// @dnd-kit imports DISABLED to prevent crashes
-// import {
-//   DndContext,
-//   PointerSensor,
-//   KeyboardSensor,
-//   useSensor,
-//   useSensors,
-//   closestCenter,
-//   DragOverlay
-// } from '@dnd-kit/core';
-// import {
-//   SortableContext,
-//   verticalListSortingStrategy,
-//   sortableKeyboardCoordinates,
-//   arrayMove
-// } from '@dnd-kit/sortable';
-// import {
-//   useSortable
-// } from '@dnd-kit/sortable';
-// import { CSS } from '@dnd-kit/utilities';
+// @dnd-kit imports 
+import {
+  DndContext,
+  PointerSensor,
+  KeyboardSensor,
+  useSensor,
+  useSensors,
+  closestCenter,
+  DragOverlay
+} from '@dnd-kit/core';
+import {
+  SortableContext,
+  verticalListSortingStrategy,
+  sortableKeyboardCoordinates,
+  arrayMove
+} from '@dnd-kit/sortable';
+import {
+  useSortable
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 
 
 import FolderModal from './FolderModal';
@@ -48,7 +48,6 @@ import { AVAILABLE_ICONS } from '../../constants/folderIcons';
 import { useFolderUIState } from '../../hooks/queries/useUIStateQuery';
 import { useUserPreferences } from '../../hooks/domain/useUserPreferences';
 import { useFavorites } from '../../hooks/useFavorites';
-import { getAllFoldersIncludingHome } from '../../utils/localStorageManager';
 import ThemeToggle from '../common/ThemeToggle';
 // Removed AdvancedSearch - using simple search input for folders only
 
@@ -68,16 +67,14 @@ const CollapsibleFolderTree = ({
   searchQuery = '',
   setSearchQuery
 }) => {
-  const queryClient = useQueryClient();
   const [isCollapsed, setIsCollapsed] = useState(false);
   const { favorites: favoriteFolders, toggle: toggleFolderFavorite, showOnlyFavorites: filterFavorites } = useFavorites('folders');
   const [isSearchVisible, setIsSearchVisible] = useState(false);
   
   // Drag & Drop state
-  const [activeFolder, setActiveFolder] = useState(null);
   const [hoverTarget, setHoverTarget] = useState(null);
   const [showSubfolderPreview, setShowSubfolderPreview] = useState(false);
-  const [isDragModeEnabled, setIsDragModeEnabled] = useState(false); // FORCE DISABLED
+  const isDragModeEnabled = false; // FORCE DISABLED
   
   // Hover timer for subfolder creation
   const [hoverTimer, setHoverTimer] = useState(null);
@@ -105,7 +102,7 @@ const CollapsibleFolderTree = ({
   const [showContextMenu, setShowContextMenu] = useState(null);
   const [contextMenuPosition, setContextMenuPosition] = useState({ x: 0, y: 0 });
   const [showOnlyFavorites, setShowOnlyFavorites] = useState(false);
-  const [sortBy, setSortBy] = useState('name'); // 'name', 'date', 'type'
+  const [sortBy] = useState('name'); // 'name', 'date', 'type'
   
   // Reorder mode state
   const [isReorderMode, setIsReorderMode] = useState(false);

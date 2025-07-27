@@ -1,4 +1,4 @@
-import React, { useEffect, useLayoutEffect, useRef, useMemo, useCallback, memo, useState } from 'react';
+import React, { useEffect, useLayoutEffect, useRef, useMemo, useCallback, useState } from 'react';
 import { Plus, Play, Edit, Trash2, Search, Workflow, FileText, Star, Tag, Puzzle, GripVertical } from 'lucide-react';
 import { DndContext, DragOverlay, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
 import { SortableContext, verticalListSortingStrategy, rectSortingStrategy } from '@dnd-kit/sortable';
@@ -21,7 +21,6 @@ import OptimizedItemRenderer from '../common/OptimizedItemRenderer.jsx';
 import MobileNavigation from '../navigation/MobileNavigation.jsx';
 import CollapsibleTodoSidebar from '../todos/CollapsibleTodoSidebar.jsx';
 import WelcomeEmptyState from './WelcomeEmptyState.jsx';
-import useKeyboardNavigation from '../../hooks/ui/useKeyboardNavigation.js';
 import usePagination from '../../hooks/ui/usePagination.js';
 import useFilters from '../../hooks/ui/useFilters.js';
 import useDragAndDrop from '../../hooks/ui/useDragAndDrop.js';
@@ -36,41 +35,10 @@ import { useFoldersQuery } from '../../hooks/queries/useFoldersQuery.js';
 import { getRootFolder } from '../../utils/localStorageManager.js';
 import { 
   getFolderFavorites, 
-  getFolderItems,
   toggleFolderFavorite,
   isItemFavoriteInFolder
 } from '../../types/template.types.js';
 
-/**
- * Custom collision detection that restricts dragging to section boundaries
- */
-const createBoundedCollisionDetection = (sectionType) => {
-  return (args) => {
-    // Get the section element
-    const sectionElement = document.querySelector(`[data-section-type="${sectionType}"]`);
-    if (!sectionElement) {
-      return closestCenter(args);
-    }
-
-    const sectionRect = sectionElement.getBoundingClientRect();
-    const { pointerCoordinates } = args;
-
-    // Check if pointer is within section bounds
-    if (
-      pointerCoordinates &&
-      (pointerCoordinates.x < sectionRect.left ||
-       pointerCoordinates.x > sectionRect.right ||
-       pointerCoordinates.y < sectionRect.top ||
-       pointerCoordinates.y > sectionRect.bottom)
-    ) {
-      // Pointer is outside section bounds, return empty array to prevent dropping
-      return [];
-    }
-
-    // Use default collision detection within bounds
-    return closestCenter(args);
-  };
-};
 
 const Homepage = ({ 
   templates, 
@@ -109,7 +77,6 @@ const Homepage = ({
   
   // Use preferences system for view mode
   const { layout, updateLayout } = useUserPreferences();
-  const { getColorClasses } = useItemColors();
   const viewMode = layout.viewMode;
   
   const setViewMode = (mode) => {
