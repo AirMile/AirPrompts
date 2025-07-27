@@ -44,7 +44,8 @@ const TemplateEditor = ({ template, folders = [], onSave, onCancel }) => {
 
   return (
     <BaseEditor
-      entity={initialData}
+      entity={template}
+      initialData={initialData}
       entityType="template"
       schema={templateSchema}
       onSave={handleSave}

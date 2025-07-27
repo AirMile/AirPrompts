@@ -136,7 +136,8 @@ const WorkflowEditorRefactored = ({
 
   return (
     <BaseEditor
-      entity={initialData}
+      entity={workflow}
+      initialData={initialData}
       entityType="workflow"
       schema={workflowSchema}
       onSave={handleSave}

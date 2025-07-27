@@ -28,6 +28,7 @@ import FieldRenderer from './FieldRenderer';
  */
 export const BaseEditor = ({ 
   entity,
+  initialData,
   entityType,
   schema,
   onSave,
@@ -48,7 +49,7 @@ export const BaseEditor = ({
     handleBlur,
     validate,
     reset
-  } = useEntityForm(entity, schema);
+  } = useEntityForm(initialData || entity, schema);
   
   const { getColorClasses } = useEntityTheme(entityType);
 

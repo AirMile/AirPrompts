@@ -47,7 +47,8 @@ const SnippetEditor = ({ snippet, folders = [], onSave, onCancel }) => {
 
   return (
     <BaseEditor
-      entity={initialData}
+      entity={snippet}
+      initialData={initialData}
       entityType="snippet"
       schema={snippetSchema}
       onSave={handleSave}
