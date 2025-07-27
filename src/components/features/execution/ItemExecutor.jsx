@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Copy, ArrowLeft, ArrowRight, Check, Info, Tag, Plus, Edit, FileText, Layers, Workflow } from 'lucide-react';
 import { copyToClipboard } from '../../../utils/clipboard.js';
-import { extractAllVariables } from '../../../types/template.types.js';
+import { extractAllVariables, getMergedComponents } from '../../../types/template.types.js';
 import { useItemColors } from '../../../hooks/useItemColors.js';
 
 const ItemExecutor = ({ item, type, templates = [], workflows = [], snippets = [], onComplete, onCancel, onEdit }) => {
@@ -61,6 +61,15 @@ const ItemExecutor = ({ item, type, templates = [], workflows = [], snippets = [
   
   // State for tracking selected options - must be defined before getStepType function
   const [selectedOptions, setSelectedOptions] = useState({}); // stepId -> { type: 'template'|'snippet', id: itemId }
+
+  // Helper function to get all available components for a step (global + nested)
+  const getAvailableComponentsForStep = useCallback((step) => {
+    if (!isWorkflow || !step) {
+      return { templates, snippets, workflows };
+    }
+    
+    return getMergedComponents(step, templates, snippets, workflows);
+  }, [isWorkflow, templates, snippets, workflows]);
   
   // Ref for Copy Snippet button auto-focus
   const copyButtonRef = useRef(null);
@@ -202,7 +211,10 @@ const ItemExecutor = ({ item, type, templates = [], workflows = [], snippets = [
       return [];
     }
     
-    // DEBUG: getAllStepOptions - templates available: ${templates.length}
+    // Get merged components (global + nested) for this step
+    const availableComponents = getAvailableComponentsForStep(currentStepData);
+    
+    // DEBUG: getAllStepOptions - templates available: ${availableComponents.templates.length}
     
     if (currentStepData.templateOptions?.length > 0) {
       // DEBUG: templateOptions available
@@ -226,10 +238,10 @@ const ItemExecutor = ({ item, type, templates = [], workflows = [], snippets = [
             template = templateOption;
             console.log('Using template object directly:', template);
           } else {
-            // It's an ID, find the template
+            // It's an ID, find the template (check both global and nested)
             const templateId = templateOption;
-            template = templates.find(t => t.id === templateId);
-            console.log('Looking for template with ID:', templateId, 'Found:', template);
+            template = availableComponents.templates.find(t => t.id === templateId);
+            console.log('Looking for template with ID:', templateId, 'Found:', template, 'isNested:', template?.isNested);
           }
           
           if (template) {
@@ -259,10 +271,10 @@ const ItemExecutor = ({ item, type, templates = [], workflows = [], snippets = [
             snippet = snippetOption;
             console.log('Using snippet object directly:', snippet);
           } else {
-            // It's an ID, find the snippet
+            // It's an ID, find the snippet (check both global and nested)
             const snippetId = snippetOption;
-            snippet = snippets.find(s => s.id === snippetId);
-            console.log('Looking for snippet with ID:', snippetId, 'Found:', snippet);
+            snippet = availableComponents.snippets.find(s => s.id === snippetId);
+            console.log('Looking for snippet with ID:', snippetId, 'Found:', snippet, 'isNested:', snippet?.isNested);
           }
           
           if (snippet) {
@@ -281,6 +293,66 @@ const ItemExecutor = ({ item, type, templates = [], workflows = [], snippets = [
       }
       
       console.log('Returning prioritized options (templates + snippets):', options);
+      return options;
+    }
+    
+    // Handle Choice Steps (steps with options array)
+    if (currentStepData.options?.length > 0) {
+      console.log('🎯 Choice Step detected with options:', currentStepData.options);
+      const options = [];
+      
+      currentStepData.options.forEach(option => {
+        const componentType = option.type;
+        let component;
+        
+        // Skip options without a type selected
+        if (!componentType) return;
+        
+        // Info steps don't need a component
+        if (componentType === 'info') {
+          options.push({
+            type: 'info',
+            id: option.id,
+            name: option.name,
+            item: {
+              id: option.id,
+              name: option.name,
+              content: '', // Info steps can have content from option
+              type: 'info'
+            }
+          });
+          return;
+        }
+        
+        if (option.componentId) {
+          // Find the component from available components
+          if (componentType === 'template') {
+            component = availableComponents.templates.find(t => t.id === option.componentId);
+          } else if (componentType === 'snippet') {
+            component = availableComponents.snippets.find(s => s.id === option.componentId);
+          } else if (componentType === 'workflow') {
+            component = availableComponents.workflows.find(w => w.id === option.componentId);
+          }
+        } else if (option.nestedComponent) {
+          // Use the nested component directly
+          component = option.nestedComponent;
+        }
+        
+        if (component) {
+          const { variables } = extractAllVariables(component.content || '');
+          options.push({
+            type: componentType,
+            id: option.id,
+            name: option.name,
+            item: {
+              ...component,
+              variables: variables || []
+            }
+          });
+        }
+      });
+      
+      console.log('Returning choice options:', options);
       return options;
     }
     
@@ -313,7 +385,7 @@ const ItemExecutor = ({ item, type, templates = [], workflows = [], snippets = [
         // Info step has snippetIds
         currentStepData.snippetIds.forEach(snippetId => {
           // In a real app, you'd fetch the snippet from your data store
-          const snippet = snippets.find(s => s.id === snippetId);
+          const snippet = availableComponents.snippets.find(s => s.id === snippetId);
           // Found snippet for ID
           if (snippet) {
             const { variables } = extractAllVariables(snippet.content);
@@ -345,7 +417,7 @@ const ItemExecutor = ({ item, type, templates = [], workflows = [], snippets = [
     
     // Check for legacy selectedTemplateId field
     if (currentStepData.selectedTemplateId && !currentStepData.templateOptions) {
-      const template = templates.find(t => t.id === currentStepData.selectedTemplateId);
+      const template = availableComponents.templates.find(t => t.id === currentStepData.selectedTemplateId);
       if (template) {
         const { variables } = extractAllVariables(template.content || '');
         allItems.push({
@@ -434,7 +506,7 @@ const ItemExecutor = ({ item, type, templates = [], workflows = [], snippets = [
     }
     
     return options;
-  }, [isWorkflow, currentStepData, templates, workflows, snippets]);
+  }, [isWorkflow, currentStepData, templates, workflows, snippets, getAvailableComponentsForStep]);
 
   // Get the current template or snippet for this step
   const getCurrentTemplate = () => {
@@ -1053,6 +1125,7 @@ const ItemExecutor = ({ item, type, templates = [], workflows = [], snippets = [
     
     // Only log for Tab key to reduce noise
     if (e.key === 'Tab') {
+      // Tab key processing
     }
     
     // Handle keyboard navigation for option selection - only when we actually need selection
@@ -1606,7 +1679,9 @@ const ItemExecutor = ({ item, type, templates = [], workflows = [], snippets = [
                               </span>
                             </div>
                             <div>
-                              <h4 className="font-semibold text-secondary-900 dark:text-secondary-100 text-base">{option.item.name}</h4>
+                              <h4 className="font-semibold text-secondary-900 dark:text-secondary-100 text-base">
+                                {option.name ? `${option.name}: ${option.item.name}` : option.item.name}
+                              </h4>
                               <p className="text-sm text-secondary-600 dark:text-secondary-400 mt-1 line-clamp-2">{option.item.description}</p>
                             </div>
                           </div>

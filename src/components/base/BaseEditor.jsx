@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useEntityForm } from '../../hooks/base/useEntityForm';
 import { useEntityTheme } from '../../hooks/base/useEntityTheme';
 import EditorErrorBoundary from '../errors/EditorErrorBoundary';
@@ -7,6 +7,7 @@ import EditorHeader from './EditorHeader';
 import EditorForm from './EditorForm';
 import EditorActions from './EditorActions';
 import FieldRenderer from './FieldRenderer';
+import ConfirmationModal from '../common/ConfirmationModal';
 
 /**
  * Base Editor Component - Reusable editor for all entity types
@@ -40,6 +41,8 @@ export const BaseEditor = ({
   onFormChange,
   ...props
 }) => {
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
+  
   const { 
     formData, 
     errors, 
@@ -74,12 +77,22 @@ export const BaseEditor = ({
 
   const handleCancel = () => {
     if (isDirty) {
-      const confirmed = window.confirm('You have unsaved changes. Are you sure you want to cancel?');
-      if (!confirmed) return;
+      setShowConfirmModal(true);
+      return;
     }
     
     reset();
     onCancel();
+  };
+
+  const handleConfirmCancel = () => {
+    setShowConfirmModal(false);
+    reset();
+    onCancel();
+  };
+
+  const handleModalCancel = () => {
+    setShowConfirmModal(false);
   };
 
   const layoutClass = props.twoColumn ? 'grid grid-cols-1 lg:grid-cols-2 gap-6' : 'space-y-4';
@@ -131,6 +144,18 @@ export const BaseEditor = ({
           />
         </EditorForm>
       </EditorLayout>
+
+      {/* Confirmation Modal */}
+      <ConfirmationModal
+        isOpen={showConfirmModal}
+        title="Unsaved Changes"
+        message="You have unsaved changes. Are you sure you want to cancel? All changes will be lost."
+        confirmText="Yes, Cancel"
+        cancelText="Continue Editing"
+        onConfirm={handleConfirmCancel}
+        onCancel={handleModalCancel}
+        variant="warning"
+      />
     </EditorErrorBoundary>
   );
 };

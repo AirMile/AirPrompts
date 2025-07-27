@@ -84,7 +84,7 @@ export const createWorkflowStep = (data = {}) => {
   return {
     id: data.id || `step_${Date.now()}`,
     name: data.name || '',
-    type: data.type || 'template', // 'template', 'info', 'insert', 'workflow'
+    type: data.type !== undefined ? data.type : 'template', // 'template', 'info', 'insert', 'workflow'
     templateOptions: data.templateOptions || [], // For template steps
     snippetOptions: data.snippetOptions || [], // For snippet steps
     workflowOptions: data.workflowOptions || [], // For workflow steps
@@ -97,7 +97,31 @@ export const createWorkflowStep = (data = {}) => {
     insertId: data.insertId || null, // For insert steps
     insertContent: data.insertContent || '', // For insert steps
     snippetTags: data.snippetTags || [], // Tags to filter snippets in this step
-    repeat: data.repeat || false // For template and workflow steps - allows repeating after completion
+    repeat: data.repeat || false, // For template and workflow steps - allows repeating after completion
+    // Nested components - local to this workflow step
+    nestedComponents: data.nestedComponents || {
+      templates: [], // Local templates created within this step
+      snippets: [], // Local snippets created within this step
+      workflows: [] // Local workflows created within this step
+    },
+    // Choice options - when step has multiple options for user to choose
+    options: data.options || []
+  };
+};
+
+/**
+ * Create a new workflow step option for choice steps
+ * @param {Object} data - Option data
+ * @returns {Object} Complete step option object
+ */
+export const createStepOption = (data = {}) => {
+  return {
+    id: data.id || `option_${Date.now()}`,
+    name: data.name || 'Option',
+    type: data.type || null, // 'template', 'snippet', 'workflow', 'info' - null means user must choose
+    componentId: data.componentId || null, // ID of the selected component
+    nestedComponent: data.nestedComponent || null, // Local component if created
+    order: data.order || 0
   };
 };
 
@@ -485,4 +509,139 @@ export const migrateToFolderSystem = (items) => {
  */
 export const isItemFavoriteInFolder = (item, folderId) => {
   return item.folderFavorites?.[folderId]?.isFavorite === true;
+};
+
+// ====================================
+// NESTED COMPONENTS UTILITIES
+// ====================================
+
+/**
+ * Add a nested component to a workflow step
+ * @param {Object} step - Workflow step
+ * @param {string} type - Component type ('template', 'snippet', 'workflow')
+ * @param {Object} component - Component data
+ * @returns {Object} Updated step
+ */
+export const addNestedComponent = (step, type, component) => {
+  if (!['template', 'snippet', 'workflow'].includes(type)) {
+    throw new Error(`Invalid nested component type: ${type}`);
+  }
+  
+  const nestedComponents = { ...step.nestedComponents };
+  const typeKey = `${type}s`; // templates, snippets, workflows
+  
+  // Ensure the component has a unique ID within this step's nested components
+  const existingIds = nestedComponents[typeKey].map(c => c.id);
+  let componentId = component.id || crypto.randomUUID();
+  while (existingIds.includes(componentId)) {
+    componentId = crypto.randomUUID();
+  }
+  
+  const newComponent = {
+    ...component,
+    id: componentId,
+    isNested: true, // Mark as nested component
+    parentStepId: step.id // Reference to parent step
+  };
+  
+  nestedComponents[typeKey] = [...nestedComponents[typeKey], newComponent];
+  
+  return {
+    ...step,
+    nestedComponents
+  };
+};
+
+/**
+ * Update a nested component in a workflow step
+ * @param {Object} step - Workflow step
+ * @param {string} type - Component type ('template', 'snippet', 'workflow')
+ * @param {string} componentId - Component ID to update
+ * @param {Object} updates - Updates to apply
+ * @returns {Object} Updated step
+ */
+export const updateNestedComponent = (step, type, componentId, updates) => {
+  const nestedComponents = { ...step.nestedComponents };
+  const typeKey = `${type}s`;
+  
+  nestedComponents[typeKey] = nestedComponents[typeKey].map(component =>
+    component.id === componentId 
+      ? { ...component, ...updates, updatedAt: new Date().toISOString() }
+      : component
+  );
+  
+  return {
+    ...step,
+    nestedComponents
+  };
+};
+
+/**
+ * Remove a nested component from a workflow step
+ * @param {Object} step - Workflow step
+ * @param {string} type - Component type ('template', 'snippet', 'workflow')
+ * @param {string} componentId - Component ID to remove
+ * @returns {Object} Updated step
+ */
+export const removeNestedComponent = (step, type, componentId) => {
+  const nestedComponents = { ...step.nestedComponents };
+  const typeKey = `${type}s`;
+  
+  nestedComponents[typeKey] = nestedComponents[typeKey].filter(
+    component => component.id !== componentId
+  );
+  
+  return {
+    ...step,
+    nestedComponents
+  };
+};
+
+/**
+ * Get all nested components from a workflow step, optionally filtered by type
+ * @param {Object} step - Workflow step
+ * @param {string} [type] - Optional type filter ('template', 'snippet', 'workflow')
+ * @returns {Array} Array of nested components
+ */
+export const getNestedComponents = (step, type = null) => {
+  if (!step.nestedComponents) return [];
+  
+  if (type) {
+    const typeKey = `${type}s`;
+    return step.nestedComponents[typeKey] || [];
+  }
+  
+  // Return all nested components with type information
+  const allComponents = [];
+  Object.entries(step.nestedComponents).forEach(([typeKey, components]) => {
+    const componentType = typeKey.slice(0, -1); // Remove 's' suffix
+    components.forEach(component => {
+      allComponents.push({
+        ...component,
+        nestedType: componentType
+      });
+    });
+  });
+  
+  return allComponents;
+};
+
+/**
+ * Merge global and nested components for a step
+ * @param {Object} step - Workflow step
+ * @param {Array} globalTemplates - Global templates array
+ * @param {Array} globalSnippets - Global snippets array
+ * @param {Array} globalWorkflows - Global workflows array
+ * @returns {Object} Merged component lists
+ */
+export const getMergedComponents = (step, globalTemplates = [], globalSnippets = [], globalWorkflows = []) => {
+  const nestedTemplates = getNestedComponents(step, 'template');
+  const nestedSnippets = getNestedComponents(step, 'snippet');
+  const nestedWorkflows = getNestedComponents(step, 'workflow');
+  
+  return {
+    templates: [...globalTemplates, ...nestedTemplates],
+    snippets: [...globalSnippets, ...nestedSnippets],
+    workflows: [...globalWorkflows, ...nestedWorkflows]
+  };
 };

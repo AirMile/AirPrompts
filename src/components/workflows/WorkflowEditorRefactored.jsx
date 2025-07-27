@@ -1,4 +1,4 @@
-import React, { useCallback, useState } from 'react';
+import React, { useCallback } from 'react';
 import { BaseEditor } from '../base/BaseEditor';
 import { workflowSchema } from '../../schemas/entitySchemas';
 import WorkflowStepsEditor from './WorkflowStepsEditor';
@@ -19,9 +19,18 @@ const WorkflowEditorRefactored = ({
   // Process existing workflow steps to handle info steps with snippetIds/templateId
   const processStepsForEditing = (steps) => {
     return (steps || []).map(step => {
+      const processedStep = { ...step };
+      
+      // Ensure nestedComponents structure exists
+      if (!processedStep.nestedComponents) {
+        processedStep.nestedComponents = {
+          templates: [],
+          snippets: [],
+          workflows: []
+        };
+      }
+      
       if (step.type === 'info') {
-        const processedStep = { ...step };
-        
         // Convert snippetIds back to snippetOptions for editing
         if (step.snippetIds && step.snippetIds.length > 0) {
           processedStep.snippetOptions = step.snippetIds
@@ -48,10 +57,9 @@ const WorkflowEditorRefactored = ({
         if (step.info && !step.content) {
           processedStep.content = step.info;
         }
-        
-        return processedStep;
       }
-      return step;
+      
+      return processedStep;
     });
   };
 
