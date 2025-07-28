@@ -195,7 +195,7 @@ const IntelligentTagsField = ({ field, value, onChange, onBlur, error }) => {
             type="button"
             onClick={() => tagInput.trim() && handleAddTag(tagInput)}
             disabled={!tagInput.trim()}
-            className="px-3 py-3 bg-primary-600 hover:bg-primary-700 disabled:bg-secondary-400 disabled:cursor-not-allowed text-white rounded-lg transition-all duration-200"
+            className="w-12 h-12 flex items-center justify-center bg-primary-600 hover:bg-primary-700 disabled:bg-secondary-400 disabled:cursor-not-allowed text-white rounded-md transition-all duration-200"
             aria-label="Add tag"
           >
             <Plus className="w-4 h-4" />

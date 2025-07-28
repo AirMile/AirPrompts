@@ -1,0 +1,25 @@
+{
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "powershell.exe -ExecutionPolicy Bypass -File \".claude/scripts/sync-to-obsidian-fixed.ps1\""
+          }
+        ]
+      }
+    ]
+  },
+  "project": {
+    "name": "CodeStation",
+    "description": "AirPrompts Development Hub with Obsidian Integration"
+  },
+  "obsidian": {
+    "vault_path": "C:/Users/mzeil/Documents/Notes 2025/",
+    "project_folder": "CodeStation",
+    "progress_file": "Development Progress.md",
+    "changelog_file": "Changelog.md"
+  }
+}

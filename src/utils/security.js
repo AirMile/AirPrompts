@@ -21,9 +21,9 @@ export function sanitizeHtml(dirty, options = {}) {
     FORCE_BODY: true,
     SANITIZE_DOM: true,
     KEEP_CONTENT: true,
-    IN_PLACE: false
+    IN_PLACE: false,
   };
-  
+
   return DOMPurify.sanitize(dirty, { ...defaultOptions, ...options });
 }
 
@@ -34,10 +34,10 @@ export function sanitizeHtml(dirty, options = {}) {
  */
 export function sanitizeText(input) {
   if (typeof input !== 'string') return '';
-  
+
   // Remove all HTML tags
   const text = DOMPurify.sanitize(input, { ALLOWED_TAGS: [] });
-  
+
   // Additional sanitization for special characters
   return text
     .replace(/[<>]/g, '') // Remove any remaining angle brackets
@@ -53,11 +53,9 @@ export function sanitizeText(input) {
  */
 export function sanitizeVariableName(variable) {
   if (typeof variable !== 'string') return '';
-  
+
   // Only allow alphanumeric, underscore, and dash
-  return variable
-    .replace(/[^a-zA-Z0-9_-]/g, '')
-    .substring(0, 50); // Limit length
+  return variable.replace(/[^a-zA-Z0-9_-]/g, '').substring(0, 50); // Limit length
 }
 
 /**
@@ -67,30 +65,30 @@ export function sanitizeVariableName(variable) {
  */
 export function validateTemplateContent(content) {
   const issues = [];
-  
+
   // Check for script tags
   if (/<script[^>]*>[\s\S]*?<\/script>/gi.test(content)) {
     issues.push('Script tags are not allowed in templates');
   }
-  
+
   // Check for event handlers
   if (/on\w+\s*=/gi.test(content)) {
     issues.push('Event handlers are not allowed in templates');
   }
-  
+
   // Check for javascript: protocol
   if (/javascript:/gi.test(content)) {
     issues.push('JavaScript protocol is not allowed');
   }
-  
+
   // Check for data: protocol (can be used for XSS)
   if (/data:text\/html/gi.test(content)) {
     issues.push('Data URI with HTML content is not allowed');
   }
-  
+
   return {
     isValid: issues.length === 0,
-    issues
+    issues,
   };
 }
 
@@ -101,17 +99,17 @@ export function validateTemplateContent(content) {
  */
 export function escapeHtml(str) {
   if (typeof str !== 'string') return '';
-  
+
   const escapeMap = {
     '&': '&amp;',
     '<': '&lt;',
     '>': '&gt;',
     '"': '&quot;',
     "'": '&#39;',
-    '/': '&#x2F;'
+    '/': '&#x2F;',
   };
-  
-  return str.replace(/[&<>"'/]/g, char => escapeMap[char]);
+
+  return str.replace(/[&<>"'/]/g, (char) => escapeMap[char]);
 }
 
 /**
@@ -132,19 +130,19 @@ export function validateLength(input, maxLength) {
  */
 export function sanitizePath(path) {
   if (typeof path !== 'string') return '';
-  
+
   // Remove path traversal attempts
   const sanitized = path
     .replace(/\.\./g, '')
-    .replace(/[\\\/]+/g, '/')
-    .replace(/^[\\\/]+/, '')
-    .replace(/[\\\/]+$/, '');
-  
+    .replace(/[\\/]+/g, '/')
+    .replace(/^[\\/]+/, '')
+    .replace(/[\\/]+$/, '');
+
   // Only allow safe characters
   if (!/^[a-zA-Z0-9_\-./]+$/.test(sanitized)) {
     return '';
   }
-  
+
   return sanitized;
 }
 
@@ -155,18 +153,18 @@ export function sanitizePath(path) {
  */
 export function validateJsonStructure(obj) {
   const dangerous = ['__proto__', 'constructor', 'prototype'];
-  
+
   function checkObject(o) {
     if (o === null || typeof o !== 'object') return true;
-    
+
     for (const key in o) {
       if (dangerous.includes(key)) return false;
       if (!checkObject(o[key])) return false;
     }
-    
+
     return true;
   }
-  
+
   return checkObject(obj);
 }
 
@@ -177,41 +175,34 @@ export function validateJsonStructure(obj) {
  * @returns {string} - Sanitized input
  */
 export function sanitizeUserInput(input, options = {}) {
-  const {
-    maxLength = 10000,
-    allowHtml = false,
-    allowVariables = true
-  } = options;
-  
+  const { maxLength = 10000, allowHtml = false, allowVariables = true } = options;
+
   if (typeof input !== 'string') return '';
-  
+
   // Truncate to max length
   let sanitized = input.substring(0, maxLength);
-  
+
   if (allowHtml) {
     sanitized = sanitizeHtml(sanitized);
   } else {
     sanitized = sanitizeText(sanitized);
   }
-  
+
   // Preserve template variables if allowed
   if (allowVariables) {
     // Re-add properly formatted variables
     const variablePattern = /\{([a-zA-Z0-9_-]+)\}/g;
     const variables = input.match(variablePattern) || [];
-    
-    variables.forEach(variable => {
+
+    variables.forEach((variable) => {
       const varName = variable.slice(1, -1);
       const sanitizedVar = sanitizeVariableName(varName);
       if (sanitizedVar) {
-        sanitized = sanitized.replace(
-          new RegExp(escapeRegex(variable), 'g'),
-          `{${sanitizedVar}}`
-        );
+        sanitized = sanitized.replace(new RegExp(escapeRegex(variable), 'g'), `{${sanitizedVar}}`);
       }
     });
   }
-  
+
   return sanitized;
 }
 
@@ -231,7 +222,7 @@ function escapeRegex(str) {
  */
 export function validateEmail(email) {
   if (typeof email !== 'string') return false;
-  
+
   // Basic email validation
   const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
   return emailRegex.test(email) && email.length <= 254;
@@ -244,7 +235,7 @@ export function validateEmail(email) {
 export function generateCSRFToken() {
   const array = new Uint8Array(32);
   crypto.getRandomValues(array);
-  return Array.from(array, byte => byte.toString(16).padStart(2, '0')).join('');
+  return Array.from(array, (byte) => byte.toString(16).padStart(2, '0')).join('');
 }
 
 /**
@@ -267,24 +258,24 @@ export class RateLimiter {
     this.windowMs = windowMs;
     this.requests = new Map();
   }
-  
+
   check(identifier) {
     const now = Date.now();
     const requests = this.requests.get(identifier) || [];
-    
+
     // Remove old requests
-    const validRequests = requests.filter(time => now - time < this.windowMs);
-    
+    const validRequests = requests.filter((time) => now - time < this.windowMs);
+
     if (validRequests.length >= this.maxRequests) {
       return false;
     }
-    
+
     validRequests.push(now);
     this.requests.set(identifier, validRequests);
-    
+
     return true;
   }
-  
+
   reset(identifier) {
     this.requests.delete(identifier);
   }

@@ -3,15 +3,15 @@ import MultiSelectFolderSelector from '../shared/form/MultiSelectFolderSelector.
 import FolderSelector from '../shared/form/FolderSelector.jsx';
 import { Tag, X, Plus } from 'lucide-react';
 
-const FieldRenderer = ({ 
-  fields, 
-  data, 
-  errors = {}, 
-  touched = {}, 
-  onChange, 
+const FieldRenderer = ({
+  fields,
+  data,
+  errors = {},
+  touched = {},
+  onChange,
   onBlur,
   folders = [],
-  customComponents = {}
+  customComponents = {},
 }) => {
   const renderField = (field) => {
     const value = data[field.name] || '';
@@ -38,8 +38,8 @@ const FieldRenderer = ({
       case 'text':
         return (
           <div>
-            <label 
-              htmlFor={field.name} 
+            <label
+              htmlFor={field.name}
               className="block text-sm font-medium text-secondary-700 dark:text-secondary-300 mb-2"
             >
               {field.label} {field.required && '*'}
@@ -52,8 +52,8 @@ const FieldRenderer = ({
               onChange={onChange}
               onBlur={onBlur}
               className={`w-full p-3 border ${
-                showError 
-                  ? 'border-danger-500 dark:border-danger-400' 
+                showError
+                  ? 'border-danger-500 dark:border-danger-400'
                   : 'border-secondary-300 dark:border-secondary-600'
               } bg-secondary-50 dark:bg-secondary-700 text-secondary-900 dark:text-secondary-100 rounded-lg focus:ring-2 focus:ring-primary-500 dark:focus:ring-primary-500 focus:border-primary-500 dark:focus:border-primary-500 transition-all duration-200`}
               placeholder={field.placeholder}
@@ -63,7 +63,9 @@ const FieldRenderer = ({
               <p className="mt-1 text-sm text-danger-600 dark:text-danger-400">{error}</p>
             )}
             {field.helperText && !showError && (
-              <p className="mt-1 text-sm text-secondary-600 dark:text-secondary-400">{field.helperText}</p>
+              <p className="mt-1 text-sm text-secondary-600 dark:text-secondary-400">
+                {field.helperText}
+              </p>
             )}
           </div>
         );
@@ -71,8 +73,8 @@ const FieldRenderer = ({
       case 'textarea':
         return (
           <div>
-            <label 
-              htmlFor={field.name} 
+            <label
+              htmlFor={field.name}
               className="block text-sm font-medium text-secondary-700 dark:text-secondary-300 mb-2"
             >
               {field.label} {field.required && '*'}
@@ -85,8 +87,8 @@ const FieldRenderer = ({
               onBlur={onBlur}
               rows={field.rows || 4}
               className={`w-full p-3 border ${
-                showError 
-                  ? 'border-danger-500 dark:border-danger-400' 
+                showError
+                  ? 'border-danger-500 dark:border-danger-400'
                   : 'border-secondary-300 dark:border-secondary-600'
               } bg-secondary-50 dark:bg-secondary-700 text-secondary-900 dark:text-secondary-100 rounded-lg focus:ring-2 focus:ring-primary-500 dark:focus:ring-primary-500 focus:border-primary-500 dark:focus:border-primary-500 transition-all duration-200 ${
                 field.name === 'content' ? 'font-mono text-sm' : ''
@@ -98,7 +100,9 @@ const FieldRenderer = ({
               <p className="mt-1 text-sm text-danger-600 dark:text-danger-400">{error}</p>
             )}
             {field.helperText && !showError && (
-              <p className="mt-1 text-sm text-secondary-600 dark:text-secondary-400">{field.helperText}</p>
+              <p className="mt-1 text-sm text-secondary-600 dark:text-secondary-400">
+                {field.helperText}
+              </p>
             )}
           </div>
         );
@@ -112,16 +116,20 @@ const FieldRenderer = ({
             <MultiSelectFolderSelector
               folders={folders}
               selectedFolderIds={value || []}
-              onFoldersSelect={(folderIds) => onChange({ 
-                target: { name: field.name, value: folderIds, type: 'multiselect' } 
-              })}
+              onFoldersSelect={(folderIds) =>
+                onChange({
+                  target: { name: field.name, value: folderIds, type: 'multiselect' },
+                })
+              }
               placeholder={field.placeholder}
             />
             {showError && (
               <p className="mt-1 text-sm text-danger-600 dark:text-danger-400">{error}</p>
             )}
             {field.helperText && !showError && (
-              <p className="mt-1 text-sm text-secondary-600 dark:text-secondary-400">{field.helperText}</p>
+              <p className="mt-1 text-sm text-secondary-600 dark:text-secondary-400">
+                {field.helperText}
+              </p>
             )}
           </div>
         );
@@ -129,8 +137,8 @@ const FieldRenderer = ({
       case 'select':
         return (
           <div>
-            <label 
-              htmlFor={field.name} 
+            <label
+              htmlFor={field.name}
               className="block text-sm font-medium text-secondary-700 dark:text-secondary-300 mb-2"
             >
               {field.label} {field.required && '*'}
@@ -140,15 +148,19 @@ const FieldRenderer = ({
               name={field.name}
               folders={folders}
               selectedFolderId={value}
-              onFolderSelect={(folderId) => onChange({ 
-                target: { name: field.name, value: folderId, type: 'select' } 
-              })}
+              onFolderSelect={(folderId) =>
+                onChange({
+                  target: { name: field.name, value: folderId, type: 'select' },
+                })
+              }
             />
             {showError && (
               <p className="mt-1 text-sm text-danger-600 dark:text-danger-400">{error}</p>
             )}
             {field.helperText && !showError && (
-              <p className="mt-1 text-sm text-secondary-600 dark:text-secondary-400">{field.helperText}</p>
+              <p className="mt-1 text-sm text-secondary-600 dark:text-secondary-400">
+                {field.helperText}
+              </p>
             )}
           </div>
         );
@@ -179,7 +191,9 @@ const FieldRenderer = ({
               {field.label}
             </label>
             {field.helperText && (
-              <p className="ml-6 text-sm text-secondary-600 dark:text-secondary-400">{field.helperText}</p>
+              <p className="ml-6 text-sm text-secondary-600 dark:text-secondary-400">
+                {field.helperText}
+              </p>
             )}
           </div>
         );
@@ -195,10 +209,8 @@ const FieldRenderer = ({
 
   return (
     <div className="space-y-4">
-      {fields.map(field => (
-        <div key={field.name}>
-          {renderField(field)}
-        </div>
+      {fields.map((field) => (
+        <div key={field.name}>{renderField(field)}</div>
       ))}
     </div>
   );
@@ -212,24 +224,24 @@ const TagsField = ({ field, value, onChange, onBlur, error }) => {
   const handleAddTag = () => {
     const newTag = tagInput.trim().toLowerCase();
     if (newTag && !tags.includes(newTag)) {
-      onChange({ 
-        target: { 
-          name: field.name, 
-          value: [...tags, newTag], 
-          type: 'tags' 
-        } 
+      onChange({
+        target: {
+          name: field.name,
+          value: [...tags, newTag],
+          type: 'tags',
+        },
       });
       setTagInput('');
     }
   };
 
   const handleRemoveTag = (tagToRemove) => {
-    onChange({ 
-      target: { 
-        name: field.name, 
-        value: tags.filter(tag => tag !== tagToRemove), 
-        type: 'tags' 
-      } 
+    onChange({
+      target: {
+        name: field.name,
+        value: tags.filter((tag) => tag !== tagToRemove),
+        type: 'tags',
+      },
     });
   };
 
@@ -247,29 +259,62 @@ const TagsField = ({ field, value, onChange, onBlur, error }) => {
   const handlePaste = (e) => {
     e.preventDefault();
     const pastedText = e.clipboardData.getData('text');
-    const pastedTags = pastedText.split(',').map(t => t.trim().toLowerCase()).filter(t => t);
-    const uniqueNewTags = pastedTags.filter(tag => !tags.includes(tag));
-    
+    const pastedTags = pastedText
+      .split(',')
+      .map((t) => t.trim().toLowerCase())
+      .filter((t) => t);
+    const uniqueNewTags = pastedTags.filter((tag) => !tags.includes(tag));
+
     if (uniqueNewTags.length > 0) {
-      onChange({ 
-        target: { 
-          name: field.name, 
-          value: [...tags, ...uniqueNewTags], 
-          type: 'tags' 
-        } 
+      onChange({
+        target: {
+          name: field.name,
+          value: [...tags, ...uniqueNewTags],
+          type: 'tags',
+        },
       });
     }
   };
 
   // Common tags for suggestions
   const commonTags = [
-    'enhancement', 'formatting', 'quality', 'accessibility', 'technical', 
-    'analysis', 'urgency', 'financial', 'creativity', 'productivity', 
-    'context', 'detailed', 'structured', 'guide', 'examples', 'practical', 
-    'standards', 'professional', 'beginner', 'simple', 'advanced', 'expert', 
-    'comparison', 'balanced', 'quick', 'immediate', 'budget', 'cost-effective', 
-    'innovative', 'unique', 'risk', 'planning', 'actionable', 'results', 
-    'mood', 'tone', 'style'
+    'enhancement',
+    'formatting',
+    'quality',
+    'accessibility',
+    'technical',
+    'analysis',
+    'urgency',
+    'financial',
+    'creativity',
+    'productivity',
+    'context',
+    'detailed',
+    'structured',
+    'guide',
+    'examples',
+    'practical',
+    'standards',
+    'professional',
+    'beginner',
+    'simple',
+    'advanced',
+    'expert',
+    'comparison',
+    'balanced',
+    'quick',
+    'immediate',
+    'budget',
+    'cost-effective',
+    'innovative',
+    'unique',
+    'risk',
+    'planning',
+    'actionable',
+    'results',
+    'mood',
+    'tone',
+    'style',
   ];
 
   return (
@@ -293,12 +338,12 @@ const TagsField = ({ field, value, onChange, onBlur, error }) => {
           <button
             type="button"
             onClick={handleAddTag}
-            className="px-3 py-3 bg-primary-600 hover:bg-primary-700 text-white rounded-lg transition-all duration-200"
+            className="w-12 h-12 flex items-center justify-center bg-primary-600 hover:bg-primary-700 text-white rounded-md transition-all duration-200"
           >
             <Plus className="w-4 h-4" />
           </button>
         </div>
-        
+
         {tags.length > 0 && (
           <div className="flex flex-wrap gap-2">
             {tags.map((tag, index) => (
@@ -329,19 +374,19 @@ const TagsField = ({ field, value, onChange, onBlur, error }) => {
             <p className="text-sm text-secondary-600 dark:text-secondary-400 mb-1">Common tags:</p>
             <div className="flex flex-wrap gap-1">
               {commonTags
-                .filter(tag => !tags.includes(tag))
+                .filter((tag) => !tags.includes(tag))
                 .slice(0, 20)
-                .map(tag => (
+                .map((tag) => (
                   <button
                     key={tag}
                     type="button"
                     onClick={() => {
-                      onChange({ 
-                        target: { 
-                          name: field.name, 
-                          value: [...tags, tag], 
-                          type: 'tags' 
-                        } 
+                      onChange({
+                        target: {
+                          name: field.name,
+                          value: [...tags, tag],
+                          type: 'tags',
+                        },
                       });
                     }}
                     className="px-2 py-1 bg-secondary-100 dark:bg-secondary-700 text-secondary-700 dark:text-secondary-300 rounded text-xs hover:bg-secondary-200 dark:hover:bg-secondary-600 transition-colors"
@@ -353,9 +398,7 @@ const TagsField = ({ field, value, onChange, onBlur, error }) => {
           </div>
         )}
 
-        {error && (
-          <p className="text-sm text-danger-600 dark:text-danger-400">{error}</p>
-        )}
+        {error && <p className="text-sm text-danger-600 dark:text-danger-400">{error}</p>}
       </div>
     </div>
   );
