@@ -7,38 +7,50 @@ import { X, AlertTriangle } from 'lucide-react';
  */
 const ConfirmationModal = ({
   isOpen,
-  title = "Confirm Action",
+  title = 'Confirm Action',
   message,
-  confirmText = "Confirm",
-  cancelText = "Cancel",
+  confirmText = 'Confirm',
+  cancelText = 'Cancel',
   onConfirm,
   onCancel,
-  variant = "warning" // warning, danger, info
+  variant = 'warning', // warning, danger, info
+  entityThemeClasses = null, // Optional entity theme classes to override variant
 }) => {
   if (!isOpen) return null;
 
   const getVariantClasses = () => {
+    // Use entity theme if provided
+    if (entityThemeClasses) {
+      return {
+        icon: entityThemeClasses.text,
+        confirmButton: `${entityThemeClasses.background} ${entityThemeClasses.hover} text-white`,
+        border: entityThemeClasses.border,
+        background: entityThemeClasses.backgroundLight,
+      };
+    }
+
+    // Fallback to default variant colors
     switch (variant) {
       case 'danger':
         return {
           icon: 'text-danger-600 dark:text-danger-400',
           confirmButton: 'bg-danger-600 hover:bg-danger-700 text-white',
           border: 'border-danger-200 dark:border-danger-700',
-          background: 'bg-danger-50 dark:bg-danger-900/20'
+          background: 'bg-danger-50 dark:bg-danger-900/20',
         };
       case 'info':
         return {
           icon: 'text-primary-600 dark:text-primary-400',
           confirmButton: 'bg-primary-600 hover:bg-primary-700 text-white',
           border: 'border-primary-200 dark:border-primary-700',
-          background: 'bg-primary-50 dark:bg-primary-900/20'
+          background: 'bg-primary-50 dark:bg-primary-900/20',
         };
       default: // warning
         return {
-          icon: 'text-amber-600 dark:text-amber-400',
-          confirmButton: 'bg-amber-600 hover:bg-amber-700 text-white',
-          border: 'border-amber-200 dark:border-amber-700',
-          background: 'bg-amber-50 dark:bg-amber-900/20'
+          icon: 'text-secondary-600 dark:text-secondary-400',
+          confirmButton: 'bg-secondary-600 hover:bg-secondary-700 text-white',
+          border: 'border-secondary-200 dark:border-secondary-600',
+          background: 'bg-secondary-50 dark:bg-secondary-800/50',
         };
     }
   };
@@ -52,7 +64,7 @@ const ConfirmationModal = ({
   };
 
   return (
-    <div 
+    <div
       className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
       onClick={handleBackdropClick}
     >
@@ -75,10 +87,10 @@ const ConfirmationModal = ({
 
         {/* Content */}
         <div className="px-6 pb-4">
-          <div className={`p-4 rounded-lg ${variantClasses.background} ${variantClasses.border} border`}>
-            <p className="text-secondary-700 dark:text-secondary-300 leading-relaxed">
-              {message}
-            </p>
+          <div
+            className={`p-4 rounded-lg ${variantClasses.background} ${variantClasses.border} border`}
+          >
+            <p className="text-secondary-700 dark:text-secondary-300 leading-relaxed">{message}</p>
           </div>
         </div>
 
