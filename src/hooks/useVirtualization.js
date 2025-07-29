@@ -12,28 +12,27 @@ export const useVirtualization = (items, options = {}) => {
     threshold = 0,
     horizontal = false,
     onVisibilityChange = null,
-    enableDebug = false
+    enableDebug = false,
   } = options;
 
   // State for visible range
-  const [visibleRange, setVisibleRange] = useState({ 
-    start: 0, 
-    end: Math.min(50, items.length) 
+  const [visibleRange, setVisibleRange] = useState({
+    start: 0,
+    end: Math.min(50, items.length),
   });
-  
+
   // Performance metrics
   const [metrics, setMetrics] = useState({
     renderCount: 0,
     visibleItems: 0,
     totalItems: items.length,
-    lastUpdateTime: Date.now()
+    lastUpdateTime: Date.now(),
   });
 
   // Refs
   const containerRef = useRef(null);
   const itemsRef = useRef(new Map());
   const observerRef = useRef(null);
-  const sentinelRefs = useRef({ top: null, bottom: null });
   const scrollPositionRef = useRef(0);
   const isScrollingRef = useRef(false);
   const scrollTimeoutRef = useRef(null);
@@ -47,54 +46,57 @@ export const useVirtualization = (items, options = {}) => {
   const visibleItems = useMemo(() => {
     const start = Math.max(0, visibleRange.start - overscan);
     const end = Math.min(items.length, visibleRange.end + overscan);
-    
+
     return items.slice(start, end).map((item, index) => ({
       ...item,
       virtualIndex: start + index,
-      virtualOffset: (start + index) * estimatedItemSize
+      virtualOffset: (start + index) * estimatedItemSize,
     }));
   }, [items, visibleRange, overscan, estimatedItemSize]);
 
   // Update metrics
   useEffect(() => {
     if (enableDebug) {
-      setMetrics(prev => ({
+      setMetrics((prev) => ({
         ...prev,
         renderCount: prev.renderCount + 1,
         visibleItems: visibleItems.length,
         totalItems: items.length,
-        lastUpdateTime: Date.now()
+        lastUpdateTime: Date.now(),
       }));
     }
   }, [visibleItems.length, items.length, enableDebug]);
 
   // Intersection Observer callback
-  const handleIntersection = useCallback((entries) => {
-    if (isScrollingRef.current) return; // Skip during active scrolling
+  const handleIntersection = useCallback(
+    (entries) => {
+      if (isScrollingRef.current) return; // Skip during active scrolling
 
-    entries.forEach(entry => {
-      const index = parseInt(entry.target.dataset.index, 10);
-      
-      if (entry.isIntersecting) {
-        // Item is becoming visible
-        setVisibleRange(prev => {
-          const newStart = Math.min(prev.start, index);
-          const newEnd = Math.max(prev.end, index);
-          
-          // Only update if there's a significant change
-          if (newStart !== prev.start || newEnd !== prev.end) {
-            return { start: newStart, end: newEnd };
+      entries.forEach((entry) => {
+        const index = parseInt(entry.target.dataset.index, 10);
+
+        if (entry.isIntersecting) {
+          // Item is becoming visible
+          setVisibleRange((prev) => {
+            const newStart = Math.min(prev.start, index);
+            const newEnd = Math.max(prev.end, index);
+
+            // Only update if there's a significant change
+            if (newStart !== prev.start || newEnd !== prev.end) {
+              return { start: newStart, end: newEnd };
+            }
+            return prev;
+          });
+
+          // Notify visibility change
+          if (onVisibilityChange) {
+            onVisibilityChange(index, true);
           }
-          return prev;
-        });
-
-        // Notify visibility change
-        if (onVisibilityChange) {
-          onVisibilityChange(index, true);
         }
-      }
-    });
-  }, [onVisibilityChange]);
+      });
+    },
+    [onVisibilityChange]
+  );
 
   // Setup Intersection Observer
   useEffect(() => {
@@ -108,7 +110,7 @@ export const useVirtualization = (items, options = {}) => {
       // Reduce observer overhead
       // @ts-ignore - trackVisibility is experimental
       trackVisibility: false,
-      delay: 100
+      delay: 100,
     });
 
     return () => {
@@ -126,7 +128,7 @@ export const useVirtualization = (items, options = {}) => {
     const itemsToObserve = new Set();
 
     // Observe visible items and boundary items
-    visibleItems.forEach((item, index) => {
+    visibleItems.forEach((item) => {
       const element = itemsRef.current.get(item.virtualIndex);
       if (element && !element.dataset.observed) {
         observer.observe(element);
@@ -145,38 +147,39 @@ export const useVirtualization = (items, options = {}) => {
   }, [visibleItems]);
 
   // Handle scroll for better range updates
-  const handleScroll = useCallback((e) => {
-    const container = e.target;
-    const scrollTop = container.scrollTop;
-    const scrollLeft = container.scrollLeft;
-    const scrollPos = horizontal ? scrollLeft : scrollTop;
-    
-    scrollPositionRef.current = scrollPos;
-    isScrollingRef.current = true;
+  const handleScroll = useCallback(
+    (e) => {
+      const container = e.target;
+      const scrollTop = container.scrollTop;
+      const scrollLeft = container.scrollLeft;
+      const scrollPos = horizontal ? scrollLeft : scrollTop;
 
-    // Clear existing timeout
-    if (scrollTimeoutRef.current) {
-      clearTimeout(scrollTimeoutRef.current);
-    }
+      scrollPositionRef.current = scrollPos;
+      isScrollingRef.current = true;
 
-    // Update visible range based on scroll position
-    const viewportSize = horizontal 
-      ? container.clientWidth 
-      : container.clientHeight;
-    
-    const startIndex = Math.floor(scrollPos / estimatedItemSize);
-    const endIndex = Math.ceil((scrollPos + viewportSize) / estimatedItemSize);
+      // Clear existing timeout
+      if (scrollTimeoutRef.current) {
+        clearTimeout(scrollTimeoutRef.current);
+      }
 
-    setVisibleRange({
-      start: Math.max(0, startIndex),
-      end: Math.min(items.length, endIndex)
-    });
+      // Update visible range based on scroll position
+      const viewportSize = horizontal ? container.clientWidth : container.clientHeight;
 
-    // Debounce scroll end
-    scrollTimeoutRef.current = setTimeout(() => {
-      isScrollingRef.current = false;
-    }, 150);
-  }, [estimatedItemSize, horizontal, items.length]);
+      const startIndex = Math.floor(scrollPos / estimatedItemSize);
+      const endIndex = Math.ceil((scrollPos + viewportSize) / estimatedItemSize);
+
+      setVisibleRange({
+        start: Math.max(0, startIndex),
+        end: Math.min(items.length, endIndex),
+      });
+
+      // Debounce scroll end
+      scrollTimeoutRef.current = setTimeout(() => {
+        isScrollingRef.current = false;
+      }, 150);
+    },
+    [estimatedItemSize, horizontal, items.length]
+  );
 
   // Register item ref
   const registerItem = useCallback((index, element) => {
@@ -188,23 +191,26 @@ export const useVirtualization = (items, options = {}) => {
   }, []);
 
   // Scroll to item
-  const scrollToItem = useCallback((index, behavior = 'smooth') => {
-    if (!containerRef.current) return;
+  const scrollToItem = useCallback(
+    (index, behavior = 'smooth') => {
+      if (!containerRef.current) return;
 
-    const offset = index * estimatedItemSize;
-    const scrollOptions = {
-      behavior,
-      [horizontal ? 'left' : 'top']: offset
-    };
+      const offset = index * estimatedItemSize;
+      const scrollOptions = {
+        behavior,
+        [horizontal ? 'left' : 'top']: offset,
+      };
 
-    containerRef.current.scrollTo(scrollOptions);
-  }, [estimatedItemSize, horizontal]);
+      containerRef.current.scrollTo(scrollOptions);
+    },
+    [estimatedItemSize, horizontal]
+  );
 
   // Reset on items change
   useEffect(() => {
-    setVisibleRange({ 
-      start: 0, 
-      end: Math.min(50, items.length) 
+    setVisibleRange({
+      start: 0,
+      end: Math.min(50, items.length),
     });
     itemsRef.current.clear();
   }, [items.length]);
@@ -227,40 +233,41 @@ export const useVirtualization = (items, options = {}) => {
         overflow: 'auto',
         position: 'relative',
         height: '100%',
-        width: '100%'
-      }
+        width: '100%',
+      },
     },
-    
+
     // Virtualization data
     visibleItems,
     totalSize,
-    
+
     // Methods
     registerItem,
     scrollToItem,
-    
+
     // Metrics for debugging
     metrics: enableDebug ? metrics : null,
-    
+
     // Render helpers
     renderSpacer: (position) => {
-      const size = position === 'top' 
-        ? visibleRange.start * estimatedItemSize
-        : (items.length - visibleRange.end) * estimatedItemSize;
-      
+      const size =
+        position === 'top'
+          ? visibleRange.start * estimatedItemSize
+          : (items.length - visibleRange.end) * estimatedItemSize;
+
       if (size <= 0) return null;
-      
+
       return (
         <div
           style={{
             [horizontal ? 'width' : 'height']: size,
             [horizontal ? 'height' : 'width']: '1px',
-            pointerEvents: 'none'
+            pointerEvents: 'none',
           }}
           aria-hidden="true"
         />
       );
-    }
+    },
   };
 };
 
@@ -268,13 +275,7 @@ export const useVirtualization = (items, options = {}) => {
  * Hook for virtual scrolling with dynamic item heights
  */
 export const useDynamicVirtualization = (items, options = {}) => {
-  const {
-    estimatedItemSize = 100,
-    overscan = 5,
-    getItemHeight = () => estimatedItemSize,
-    horizontal = false,
-    cacheKey = 'default'
-  } = options;
+  const { estimatedItemSize = 100, horizontal = false, cacheKey = 'default' } = options;
 
   // Cache for measured heights
   const heightCacheRef = useRef(new Map());
@@ -304,25 +305,26 @@ export const useDynamicVirtualization = (items, options = {}) => {
   }, [itemPositions]);
 
   // Measure item height
-  const measureItem = useCallback((index, element) => {
-    if (!element) return;
+  const measureItem = useCallback(
+    (index, element) => {
+      if (!element) return;
 
-    const key = `${cacheKey}-${index}`;
-    const measuredHeight = horizontal 
-      ? element.offsetWidth 
-      : element.offsetHeight;
+      const key = `${cacheKey}-${index}`;
+      const measuredHeight = horizontal ? element.offsetWidth : element.offsetHeight;
 
-    if (measuredHeight > 0 && measuredHeight !== heights.get(key)) {
-      setHeights(prev => new Map(prev).set(key, measuredHeight));
-      heightCacheRef.current.set(key, measuredHeight);
-    }
-  }, [horizontal, cacheKey, heights]);
+      if (measuredHeight > 0 && measuredHeight !== heights.get(key)) {
+        setHeights((prev) => new Map(prev).set(key, measuredHeight));
+        heightCacheRef.current.set(key, measuredHeight);
+      }
+    },
+    [horizontal, cacheKey, heights]
+  );
 
   // Clear cache when items change significantly
   useEffect(() => {
     const currentSize = items.length;
     const cachedSize = heightCacheRef.current.size;
-    
+
     if (Math.abs(currentSize - cachedSize) > 100) {
       heightCacheRef.current.clear();
       setHeights(new Map());
@@ -332,7 +334,7 @@ export const useDynamicVirtualization = (items, options = {}) => {
   // Use the base virtualization with enhanced options
   const virtualization = useVirtualization(items, {
     ...options,
-    estimatedItemSize
+    estimatedItemSize,
   });
 
   return {
@@ -341,7 +343,7 @@ export const useDynamicVirtualization = (items, options = {}) => {
     itemPositions,
     totalSize,
     getItemOffset: (index) => itemPositions.get(index)?.offset || 0,
-    getItemHeight: (index) => itemPositions.get(index)?.height || estimatedItemSize
+    getItemHeight: (index) => itemPositions.get(index)?.height || estimatedItemSize,
   };
 };
 
@@ -349,12 +351,7 @@ export const useDynamicVirtualization = (items, options = {}) => {
  * Hook for virtualized grid layouts
  */
 export const useVirtualizedGrid = (items, options = {}) => {
-  const {
-    columns = 3,
-    gap = 16,
-    estimatedItemHeight = 200,
-    overscan = 2
-  } = options;
+  const { columns = 3, gap = 16, estimatedItemHeight = 200, overscan = 2 } = options;
 
   // Calculate rows from items
   const rows = useMemo(() => {
@@ -362,7 +359,7 @@ export const useVirtualizedGrid = (items, options = {}) => {
     for (let i = 0; i < items.length; i += columns) {
       result.push({
         index: Math.floor(i / columns),
-        items: items.slice(i, i + columns)
+        items: items.slice(i, i + columns),
       });
     }
     return result;
@@ -372,13 +369,13 @@ export const useVirtualizedGrid = (items, options = {}) => {
   const virtualization = useVirtualization(rows, {
     estimatedItemSize: estimatedItemHeight + gap,
     overscan,
-    ...options
+    ...options,
   });
 
   return {
     ...virtualization,
     columns,
     gap,
-    rowHeight: estimatedItemHeight
+    rowHeight: estimatedItemHeight,
   };
 };

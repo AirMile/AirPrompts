@@ -7,7 +7,8 @@ class PerformanceMonitor {
   constructor() {
     this.metrics = new Map();
     this.observers = new Map();
-    this.isEnabled = process.env.NODE_ENV === 'development' || window.location.search.includes('debug=true');
+    this.isEnabled =
+      process.env.NODE_ENV === 'development' || window.location.search.includes('debug=true');
   }
 
   // Measure component render time
@@ -19,7 +20,7 @@ class PerformanceMonitor {
     current.push({
       duration: actualDuration,
       timestamp: Date.now(),
-      phase
+      phase,
     });
 
     // Keep only last 100 measurements
@@ -30,7 +31,8 @@ class PerformanceMonitor {
     this.metrics.set(key, current);
 
     // Log slow renders
-    if (actualDuration > 16) { // More than 1 frame (60fps)
+    if (actualDuration > 16) {
+      // More than 1 frame (60fps)
       console.warn(`[Performance] Slow render in ${componentName}: ${actualDuration.toFixed(2)}ms`);
     }
   }
@@ -52,9 +54,13 @@ class PerformanceMonitor {
     // First Input Delay (FID)
     const fidObserver = new PerformanceObserver((list) => {
       const entries = list.getEntries();
-      entries.forEach(entry => {
+      entries.forEach((entry) => {
         this.metrics.set('fid', entry.processingStart - entry.startTime);
-        console.log('[Performance] FID:', (entry.processingStart - entry.startTime).toFixed(2), 'ms');
+        console.log(
+          '[Performance] FID:',
+          (entry.processingStart - entry.startTime).toFixed(2),
+          'ms'
+        );
       });
     });
     fidObserver.observe({ entryTypes: ['first-input'] });
@@ -90,7 +96,7 @@ class PerformanceMonitor {
 
   measure(name, startMark, endMark) {
     if (!this.isEnabled) return;
-    
+
     try {
       performance.measure(name, startMark, endMark);
       const measure = performance.getEntriesByName(name, 'measure')[0];
@@ -110,10 +116,10 @@ class PerformanceMonitor {
         lcp: this.metrics.get('lcp'),
         fid: this.metrics.get('fid'),
         cls: this.metrics.get('cls'),
-        ttfb: this.metrics.get('ttfb')
+        ttfb: this.metrics.get('ttfb'),
       },
       customMetrics: {},
-      componentRenders: {}
+      componentRenders: {},
     };
 
     this.metrics.forEach((value, key) => {
@@ -123,12 +129,12 @@ class PerformanceMonitor {
         if (!report.componentRenders[component]) {
           report.componentRenders[component] = {};
         }
-        const durations = value.map(v => v.duration);
+        const durations = value.map((v) => v.duration);
         report.componentRenders[component][phase] = {
           count: durations.length,
           average: durations.reduce((a, b) => a + b, 0) / durations.length,
           max: Math.max(...durations),
-          min: Math.min(...durations)
+          min: Math.min(...durations),
         };
       } else if (!['lcp', 'fid', 'cls', 'ttfb'].includes(key)) {
         // Custom metrics
@@ -141,7 +147,7 @@ class PerformanceMonitor {
 
   // Cleanup
   destroy() {
-    this.observers.forEach(observer => observer.disconnect());
+    this.observers.forEach((observer) => observer.disconnect());
     this.observers.clear();
     this.metrics.clear();
   }
@@ -151,7 +157,7 @@ class PerformanceMonitor {
 export const performanceMonitor = new PerformanceMonitor();
 
 // React Profiler callback
-export const onRenderCallback = (id, phase, actualDuration, baseDuration, startTime, commitTime) => {
+export const onRenderCallback = (id, phase, actualDuration) => {
   performanceMonitor.measureRender(id, phase, actualDuration);
 };
 
@@ -215,8 +221,8 @@ export const analyzeBundleSize = () => {
   }
 
   const resources = window.performance.getEntriesByType('resource');
-  const scripts = resources.filter(r => r.name.endsWith('.js'));
-  const styles = resources.filter(r => r.name.endsWith('.css'));
+  const scripts = resources.filter((r) => r.name.endsWith('.js'));
+  const styles = resources.filter((r) => r.name.endsWith('.css'));
 
   const totalScriptSize = scripts.reduce((acc, script) => {
     return acc + (script.transferSize || 0);
@@ -232,7 +238,7 @@ export const analyzeBundleSize = () => {
   console.log(`- Total: ${((totalScriptSize + totalStyleSize) / 1024).toFixed(2)}KB`);
 
   // Log individual chunks
-  scripts.forEach(script => {
+  scripts.forEach((script) => {
     const size = script.transferSize || 0;
     if (size > 0) {
       console.log(`  - ${script.name.split('/').pop()}: ${(size / 1024).toFixed(2)}KB`);
@@ -242,6 +248,6 @@ export const analyzeBundleSize = () => {
   return {
     scripts: totalScriptSize,
     styles: totalStyleSize,
-    total: totalScriptSize + totalStyleSize
+    total: totalScriptSize + totalStyleSize,
   };
 };

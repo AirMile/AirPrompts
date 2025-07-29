@@ -12,23 +12,10 @@ import { GripVertical } from 'lucide-react';
  * @param {React.ReactNode} props.children - ListView item content
  * @param {string} props.className - Extra CSS classes
  */
-const SortableListItem = ({ 
-  item, 
-  id, 
-  disabled = false,
-  children,
-  className = ''
-}) => {
-  const {
-    attributes,
-    listeners,
-    setNodeRef,
-    transform,
-    transition,
-    isDragging,
-  } = useSortable({ 
-    id, 
-    disabled 
+const SortableListItem = ({ id, disabled = false, children, className = '' }) => {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
+    id,
+    disabled,
   });
 
   const style = {
@@ -49,7 +36,7 @@ const SortableListItem = ({
       {React.cloneElement(children, {
         dragAttributes: attributes,
         dragListeners: listeners,
-        isDragging
+        isDragging,
       })}
     </div>
   );

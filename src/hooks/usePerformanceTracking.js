@@ -4,7 +4,7 @@ import { startMark, endMark, recordCustomMetric } from '../services/monitoring/p
 
 /**
  * Hook for tracking component performance
- * 
+ *
  * Measures render time, re-render count, and custom metrics
  */
 export function usePerformanceTracking(componentName, options = {}) {
@@ -21,15 +21,15 @@ export function usePerformanceTracking(componentName, options = {}) {
     startMark(`${componentName}-mount`);
 
     return () => {
-      endMark(`${componentName}-mount`, { 
+      endMark(`${componentName}-mount`, {
         component: componentName,
-        renderCount: renderCount.current 
+        renderCount: renderCount.current,
       });
 
       // Record total component lifetime
       const lifetime = performance.now() - mountTime.current;
       recordCustomMetric(`component.${componentName}.lifetime`, lifetime, {
-        renderCount: renderCount.current
+        renderCount: renderCount.current,
       });
     };
   }, [componentName, isEnabled]);
@@ -56,62 +56,72 @@ export function usePerformanceTracking(componentName, options = {}) {
   });
 
   // Track custom metrics
-  const trackMetric = useCallback((metricName, value, tags = {}) => {
-    if (!isEnabled) return;
+  const trackMetric = useCallback(
+    (metricName, value, tags = {}) => {
+      if (!isEnabled) return;
 
-    recordCustomMetric(`component.${componentName}.${metricName}`, value, {
-      component: componentName,
-      ...tags
-    });
-  }, [componentName, isEnabled]);
+      recordCustomMetric(`component.${componentName}.${metricName}`, value, {
+        component: componentName,
+        ...tags,
+      });
+    },
+    [componentName, isEnabled]
+  );
 
   // Track user interactions
-  const trackInteraction = useCallback((action, data = {}) => {
-    if (!isEnabled) return;
+  const trackInteraction = useCallback(
+    (action, data = {}) => {
+      if (!isEnabled) return;
 
-    const interactionData = {
-      component: componentName,
-      action,
-      timestamp: Date.now(),
-      ...data
-    };
+      const interactionData = {
+        component: componentName,
+        action,
+        timestamp: Date.now(),
+        ...data,
+      };
 
-    recordCustomMetric(`interaction.${action}`, 1, interactionData);
+      recordCustomMetric(`interaction.${action}`, 1, interactionData);
 
-    // Log to console in development
-    if (process.env.NODE_ENV === 'development') {
-      console.log(`[Interaction] ${componentName}.${action}`, data);
-    }
-  }, [componentName, isEnabled]);
+      // Log to console in development
+      // eslint-disable-next-line no-undef
+      if (typeof process !== 'undefined' && process.env?.NODE_ENV === 'development') {
+        console.log(`[Interaction] ${componentName}.${action}`, data);
+      }
+    },
+    [componentName, isEnabled]
+  );
 
   // Performance measurement wrapper
-  const measure = useCallback(async (operationName, fn) => {
-    if (!isEnabled) return fn();
+  const measure = useCallback(
+    async (operationName, fn) => {
+      if (!isEnabled) return fn();
 
-    const markName = `${componentName}.${operationName}`;
-    startMark(markName);
+      const markName = `${componentName}.${operationName}`;
+      startMark(markName);
 
-    try {
-      const result = await fn();
-      endMark(markName, { component: componentName });
-      return result;
-    } catch (error) {
-      endMark(markName, { component: componentName, error: true });
-      throw error;
-    }
-  }, [componentName, isEnabled]);
+      try {
+        const result = await fn();
+        endMark(markName, { component: componentName });
+        return result;
+      } catch (error) {
+        endMark(markName, { component: componentName, error: true });
+        throw error;
+      }
+    },
+    [componentName, isEnabled]
+  );
 
   return {
     trackMetric,
     trackInteraction,
     measure,
-    renderCount: renderCount.current
+    renderCount: renderCount.current,
   };
 }
 
 /**
  * Hook for tracking list performance
- * 
+ *
  * Specifically designed for virtualized lists and large datasets
  */
 export function useListPerformanceTracking(listName, items = []) {
@@ -120,7 +130,7 @@ export function useListPerformanceTracking(listName, items = []) {
   const scrollMetrics = useRef({
     scrollCount: 0,
     lastScrollTime: null,
-    totalScrollDistance: 0
+    totalScrollDistance: 0,
   });
 
   // Track item count changes
@@ -128,10 +138,10 @@ export function useListPerformanceTracking(listName, items = []) {
     if (!isEnabled) return;
 
     const itemCountDelta = items.length - lastItemCount.current;
-    
+
     if (itemCountDelta !== 0) {
       recordCustomMetric(`list.${listName}.itemCount`, items.length, {
-        delta: itemCountDelta
+        delta: itemCountDelta,
       });
     }
 
@@ -139,48 +149,54 @@ export function useListPerformanceTracking(listName, items = []) {
   }, [items.length, listName, isEnabled]);
 
   // Track scroll performance
-  const trackScroll = useCallback((scrollTop, scrollHeight, clientHeight) => {
-    if (!isEnabled) return;
+  const trackScroll = useCallback(
+    (scrollTop, scrollHeight, clientHeight) => {
+      if (!isEnabled) return;
 
-    const now = performance.now();
-    const metrics = scrollMetrics.current;
+      const now = performance.now();
+      const metrics = scrollMetrics.current;
 
-    // Calculate scroll velocity
-    if (metrics.lastScrollTime) {
-      const timeDelta = now - metrics.lastScrollTime;
-      const scrollDelta = Math.abs(scrollTop - metrics.lastScrollTop);
-      const velocity = scrollDelta / timeDelta;
+      // Calculate scroll velocity
+      if (metrics.lastScrollTime) {
+        const timeDelta = now - metrics.lastScrollTime;
+        const scrollDelta = Math.abs(scrollTop - metrics.lastScrollTop);
+        const velocity = scrollDelta / timeDelta;
 
-      recordCustomMetric(`list.${listName}.scrollVelocity`, velocity);
-    }
+        recordCustomMetric(`list.${listName}.scrollVelocity`, velocity);
+      }
 
-    // Update metrics
-    metrics.scrollCount++;
-    metrics.lastScrollTime = now;
-    metrics.lastScrollTop = scrollTop;
-    metrics.totalScrollDistance += Math.abs(scrollTop - (metrics.lastScrollTop || 0));
+      // Update metrics
+      metrics.scrollCount++;
+      metrics.lastScrollTime = now;
+      metrics.lastScrollTop = scrollTop;
+      metrics.totalScrollDistance += Math.abs(scrollTop - (metrics.lastScrollTop || 0));
 
-    // Track viewport coverage
-    const viewportCoverage = (clientHeight / scrollHeight) * 100;
-    recordCustomMetric(`list.${listName}.viewportCoverage`, viewportCoverage);
-  }, [listName, isEnabled]);
+      // Track viewport coverage
+      const viewportCoverage = (clientHeight / scrollHeight) * 100;
+      recordCustomMetric(`list.${listName}.viewportCoverage`, viewportCoverage);
+    },
+    [listName, isEnabled]
+  );
 
   // Track render performance for visible items
-  const trackVisibleItems = useCallback((visibleStart, visibleEnd) => {
-    if (!isEnabled) return;
+  const trackVisibleItems = useCallback(
+    (visibleStart, visibleEnd) => {
+      if (!isEnabled) return;
 
-    const visibleCount = visibleEnd - visibleStart;
-    recordCustomMetric(`list.${listName}.visibleItems`, visibleCount, {
-      start: visibleStart,
-      end: visibleEnd,
-      total: items.length
-    });
-  }, [listName, items.length, isEnabled]);
+      const visibleCount = visibleEnd - visibleStart;
+      recordCustomMetric(`list.${listName}.visibleItems`, visibleCount, {
+        start: visibleStart,
+        end: visibleEnd,
+        total: items.length,
+      });
+    },
+    [listName, items.length, isEnabled]
+  );
 
   return {
     trackScroll,
     trackVisibleItems,
-    itemCount: items.length
+    itemCount: items.length,
   };
 }
 
@@ -190,50 +206,53 @@ export function useListPerformanceTracking(listName, items = []) {
 export function useAPIPerformanceTracking() {
   const isEnabled = useFeature('USE_PERFORMANCE_MONITORING');
 
-  const trackAPICall = useCallback(async (endpoint, method, fn) => {
-    if (!isEnabled) return fn();
+  const trackAPICall = useCallback(
+    async (endpoint, method, fn) => {
+      if (!isEnabled) return fn();
 
-    const startTime = performance.now();
-    const markName = `api.${method}.${endpoint.replace(/[/:]/g, '_')}`;
-    
-    startMark(markName);
+      const startTime = performance.now();
+      const markName = `api.${method}.${endpoint.replace(/[/:]/g, '_')}`;
 
-    try {
-      const result = await fn();
-      const duration = performance.now() - startTime;
-      
-      endMark(markName, {
-        endpoint,
-        method,
-        status: 'success'
-      });
+      startMark(markName);
 
-      recordCustomMetric('api.responseTime', duration, {
-        endpoint,
-        method,
-        status: 'success'
-      });
+      try {
+        const result = await fn();
+        const duration = performance.now() - startTime;
 
-      return result;
-    } catch (error) {
-      const duration = performance.now() - startTime;
-      
-      endMark(markName, {
-        endpoint,
-        method,
-        status: 'error',
-        error: error.message
-      });
+        endMark(markName, {
+          endpoint,
+          method,
+          status: 'success',
+        });
 
-      recordCustomMetric('api.responseTime', duration, {
-        endpoint,
-        method,
-        status: 'error'
-      });
+        recordCustomMetric('api.responseTime', duration, {
+          endpoint,
+          method,
+          status: 'success',
+        });
 
-      throw error;
-    }
-  }, [isEnabled]);
+        return result;
+      } catch (error) {
+        const duration = performance.now() - startTime;
+
+        endMark(markName, {
+          endpoint,
+          method,
+          status: 'error',
+          error: error.message,
+        });
+
+        recordCustomMetric('api.responseTime', duration, {
+          endpoint,
+          method,
+          status: 'error',
+        });
+
+        throw error;
+      }
+    },
+    [isEnabled]
+  );
 
   return { trackAPICall };
 }

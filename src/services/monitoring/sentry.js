@@ -3,7 +3,7 @@ import { isFeatureEnabled } from '../featureFlags';
 
 /**
  * Sentry Error Monitoring Configuration
- * 
+ *
  * Provides comprehensive error tracking and performance monitoring
  * Integrates with React Error Boundaries and feature flags
  */
@@ -12,102 +12,99 @@ import { isFeatureEnabled } from '../featureFlags';
 const SENTRY_CONFIG = {
   dsn: process.env.REACT_APP_SENTRY_DSN,
   environment: process.env.NODE_ENV,
-  
+
   // Performance monitoring
   tracesSampleRate: process.env.NODE_ENV === 'production' ? 0.1 : 1.0,
-  
+
   // Session tracking
   autoSessionTracking: true,
-  
+
   // Release tracking
   release: process.env.REACT_APP_VERSION || 'unknown',
-  
+
   // Integration settings
   integrations: [
     new Sentry.BrowserTracing({
       // Set sampling rate for performance monitoring
       tracingOrigins: ['localhost', /^\//],
-      
+
       // Track specific user interactions
-      routingInstrumentation: Sentry.reactRouterV6Instrumentation(
-        React.useEffect,
-        window.history
-      ),
+      routingInstrumentation: Sentry.reactRouterV6Instrumentation(React.useEffect, window.history),
     }),
-    
+
     // Capture console errors
     new Sentry.CaptureConsole({
-      levels: ['error', 'warn']
+      levels: ['error', 'warn'],
     }),
   ],
-  
+
   // Filter out certain errors
   beforeSend(event, hint) {
     // Don't send events if monitoring is disabled
     if (!isFeatureEnabled('USE_PERFORMANCE_MONITORING')) {
       return null;
     }
-    
+
     // Filter out known non-errors
     const error = hint.originalException;
-    
+
     // Ignore network errors in development
     if (process.env.NODE_ENV === 'development' && error?.name === 'NetworkError') {
       return null;
     }
-    
+
     // Ignore canceled requests
     if (error?.name === 'AbortError') {
       return null;
     }
-    
+
     // Ignore specific error messages
     const ignoredMessages = [
       'ResizeObserver loop limit exceeded',
       'ResizeObserver loop completed with undelivered notifications',
-      'Non-Error promise rejection captured'
+      'Non-Error promise rejection captured',
     ];
-    
-    if (ignoredMessages.some(msg => event.message?.includes(msg))) {
+
+    if (ignoredMessages.some((msg) => event.message?.includes(msg))) {
       return null;
     }
-    
+
     // Add user context
     if (window.userContext) {
       event.user = {
         id: window.userContext.userId,
         email: window.userContext.email,
-        username: window.userContext.displayName
+        username: window.userContext.displayName,
       };
     }
-    
+
     // Add custom tags
     event.tags = {
       ...event.tags,
       component: hint.component || 'unknown',
-      feature_flags: JSON.stringify(getActiveFeatureFlags())
+      feature_flags: JSON.stringify(getActiveFeatureFlags()),
     };
-    
+
     return event;
   },
-  
+
   // Configure breadcrumbs
   beforeBreadcrumb(breadcrumb) {
     // Filter out noisy breadcrumbs
     if (breadcrumb.category === 'console' && breadcrumb.level === 'debug') {
       return null;
     }
-    
+
     // Enhance navigation breadcrumbs
     if (breadcrumb.category === 'navigation') {
       breadcrumb.data = {
         ...breadcrumb.data,
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
       };
     }
-    
+
     return breadcrumb;
-  }
+  },
 };
 
 /**
@@ -119,29 +116,28 @@ export function initializeSentry() {
     console.log('Sentry monitoring disabled');
     return;
   }
-  
+
   try {
     Sentry.init(SENTRY_CONFIG);
     console.log('Sentry monitoring initialized');
-    
+
     // Set initial user context if available
     if (window.userContext) {
       Sentry.setUser({
         id: window.userContext.userId,
         email: window.userContext.email,
-        username: window.userContext.displayName
+        username: window.userContext.displayName,
       });
     }
-    
+
     // Add global error handler
     window.addEventListener('unhandledrejection', (event) => {
       Sentry.captureException(event.reason, {
         tags: {
-          type: 'unhandledRejection'
-        }
+          type: 'unhandledRejection',
+        },
       });
     });
-    
   } catch (error) {
     console.error('Failed to initialize Sentry:', error);
   }
@@ -158,8 +154,8 @@ function getActiveFeatureFlags() {
       'USE_ERROR_BOUNDARIES',
       'USE_VIRTUALIZED_LISTS',
       'USE_BASE_COMPONENTS',
-      'ENABLE_CODE_SPLITTING'
-    ].forEach(flag => {
+      'ENABLE_CODE_SPLITTING',
+    ].forEach((flag) => {
       flags[flag] = isFeatureEnabled(flag);
     });
     return flags;
@@ -176,17 +172,17 @@ export function captureError(error, context = {}) {
     console.error('Error captured (Sentry disabled):', error, context);
     return;
   }
-  
+
   Sentry.captureException(error, {
     tags: {
       ...context.tags,
-      component: context.component || 'unknown'
+      component: context.component || 'unknown',
     },
     extra: {
       ...context.extra,
-      feature_flags: getActiveFeatureFlags()
+      feature_flags: getActiveFeatureFlags(),
     },
-    level: context.level || 'error'
+    level: context.level || 'error',
   });
 }
 
@@ -198,11 +194,11 @@ export function captureMessage(message, level = 'info', context = {}) {
     console.log(`Message captured (Sentry disabled) [${level}]:`, message, context);
     return;
   }
-  
+
   Sentry.captureMessage(message, {
     level,
     tags: context.tags,
-    extra: context.extra
+    extra: context.extra,
   });
 }
 
@@ -213,10 +209,10 @@ export function addBreadcrumb(breadcrumb) {
   if (!isFeatureEnabled('USE_PERFORMANCE_MONITORING')) {
     return;
   }
-  
+
   Sentry.addBreadcrumb({
     timestamp: Date.now() / 1000,
-    ...breadcrumb
+    ...breadcrumb,
   });
 }
 
@@ -229,15 +225,15 @@ export function setUserContext(user) {
     window.userContext = null;
     return;
   }
-  
+
   const userContext = {
     id: user.id || user.userId,
     email: user.email,
     username: user.displayName || user.name,
     plan: user.plan,
-    isBetaUser: user.isBetaUser
+    isBetaUser: user.isBetaUser,
   };
-  
+
   Sentry.setUser(userContext);
   window.userContext = userContext;
 }
@@ -256,7 +252,7 @@ export function startTransaction(name, op = 'navigation') {
   if (!isFeatureEnabled('USE_PERFORMANCE_MONITORING')) {
     return null;
   }
-  
+
   return Sentry.startTransaction({ name, op });
 }
 
@@ -281,15 +277,15 @@ export const withProfiler = Sentry.withProfiler;
 export class EnhancedErrorBoundary extends React.Component {
   constructor(props) {
     super(props);
-    this.state = { 
-      hasError: false, 
+    this.state = {
+      hasError: false,
       error: null,
       errorInfo: null,
-      eventId: null
+      eventId: null,
     };
   }
 
-  static getDerivedStateFromError(error) {
+  static getDerivedStateFromError() {
     return { hasError: true };
   }
 
@@ -297,19 +293,19 @@ export class EnhancedErrorBoundary extends React.Component {
     const eventId = Sentry.captureException(error, {
       contexts: {
         react: {
-          componentStack: errorInfo.componentStack
-        }
+          componentStack: errorInfo.componentStack,
+        },
       },
       tags: {
         component: this.props.name || 'Unknown',
-        ...this.props.tags
-      }
+        ...this.props.tags,
+      },
     });
 
     this.setState({
       error,
       errorInfo,
-      eventId
+      eventId,
     });
 
     // Call custom error handler if provided
@@ -337,7 +333,7 @@ export class EnhancedErrorBoundary extends React.Component {
               <p className="text-secondary-600 dark:text-secondary-400 mb-4">
                 {this.state.error?.message || 'An unexpected error occurred'}
               </p>
-              
+
               <div className="flex gap-2 justify-center mb-4">
                 <button
                   onClick={() => window.location.reload()}
@@ -352,13 +348,13 @@ export class EnhancedErrorBoundary extends React.Component {
                   Try Again
                 </button>
               </div>
-              
+
               {this.state.eventId && (
                 <p className="text-xs text-secondary-500 dark:text-secondary-400">
                   Error ID: {this.state.eventId}
                 </p>
               )}
-              
+
               {process.env.NODE_ENV === 'development' && (
                 <details className="mt-4 text-left">
                   <summary className="cursor-pointer text-sm text-primary-500">
@@ -382,6 +378,4 @@ export class EnhancedErrorBoundary extends React.Component {
 }
 
 // Export all Sentry methods for convenience
-export {
-  Sentry
-};
+export { Sentry };

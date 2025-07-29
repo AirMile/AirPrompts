@@ -114,13 +114,16 @@ export default [
     },
     rules: {
       ...js.configs.recommended.rules,
-      'no-unused-vars': ['error', { varsIgnorePattern: '^[A-Z_]|page|context' }],
+      'no-unused-vars': [
+        'error',
+        { argsIgnorePattern: '^_|page|context', varsIgnorePattern: '^[A-Z_]|page|context' },
+      ],
     },
   },
 
-  // CommonJS files (jest config, legacy files)
+  // CommonJS files (jest config only)
   {
-    files: ['jest.config.cjs', 'src/tests/**/*.js'],
+    files: ['jest.config.cjs'],
     languageOptions: {
       ecmaVersion: 2020,
       globals: {
@@ -129,6 +132,31 @@ export default [
         module: 'writable',
       },
       sourceType: 'commonjs',
+    },
+    rules: {
+      ...js.configs.recommended.rules,
+      'no-unused-vars': ['error', { varsIgnorePattern: '^[A-Z_]' }],
+    },
+  },
+
+  // Test setup files
+  {
+    files: ['src/tests/**/*.js'],
+    languageOptions: {
+      ecmaVersion: 2020,
+      globals: {
+        ...globals.browser,
+        ...globals.jest,
+        global: 'writable',
+        process: 'writable',
+        jest: 'readonly',
+        beforeAll: 'readonly',
+        afterAll: 'readonly',
+        afterEach: 'readonly',
+        Headers: 'readonly',
+        Blob: 'readonly',
+      },
+      sourceType: 'module',
     },
     rules: {
       ...js.configs.recommended.rules,

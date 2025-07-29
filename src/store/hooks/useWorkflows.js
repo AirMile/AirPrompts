@@ -8,11 +8,11 @@ export function useWorkflows() {
   const dispatch = useAppDispatch();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-  
+
   const fetchWorkflows = useCallback(async () => {
     setLoading(true);
     setError(null);
-    
+
     try {
       const data = await StorageService.getWorkflows();
       dispatch({ type: 'SET_WORKFLOWS', payload: data });
@@ -23,65 +23,74 @@ export function useWorkflows() {
       setLoading(false);
     }
   }, [dispatch]);
-  
+
   useEffect(() => {
     if (workflows.length === 0) {
       fetchWorkflows();
     }
-  }, []); // Remove dependencies to prevent infinite loop
-  
-  const updateWorkflow = useCallback(async (workflow) => {
-    setLoading(true);
-    try {
-      dispatch({ type: 'UPDATE_WORKFLOW', payload: workflow });
-      await StorageService.updateWorkflow(workflow);
-      
-      if (!meta.isOnline) {
-        dispatch({ 
-          type: 'ADD_PENDING_CHANGE', 
-          payload: { type: 'update', entity: 'workflow', data: workflow }
-        });
+  }, [fetchWorkflows, workflows.length]);
+
+  const updateWorkflow = useCallback(
+    async (workflow) => {
+      setLoading(true);
+      try {
+        dispatch({ type: 'UPDATE_WORKFLOW', payload: workflow });
+        await StorageService.updateWorkflow(workflow);
+
+        if (!meta.isOnline) {
+          dispatch({
+            type: 'ADD_PENDING_CHANGE',
+            payload: { type: 'update', entity: 'workflow', data: workflow },
+          });
+        }
+      } catch (err) {
+        await fetchWorkflows();
+        throw err;
+      } finally {
+        setLoading(false);
       }
-    } catch (err) {
-      await fetchWorkflows();
-      throw err;
-    } finally {
-      setLoading(false);
-    }
-  }, [dispatch, meta.isOnline, fetchWorkflows]);
-  
-  const deleteWorkflow = useCallback(async (id) => {
-    const backup = workflows.find(w => w.id === id);
-    
-    try {
-      dispatch({ type: 'DELETE_WORKFLOW', payload: id });
-      await StorageService.deleteWorkflow(id);
-    } catch (err) {
-      if (backup) {
-        dispatch({ type: 'ADD_WORKFLOW', payload: backup });
+    },
+    [dispatch, meta.isOnline, fetchWorkflows]
+  );
+
+  const deleteWorkflow = useCallback(
+    async (id) => {
+      const backup = workflows.find((w) => w.id === id);
+
+      try {
+        dispatch({ type: 'DELETE_WORKFLOW', payload: id });
+        await StorageService.deleteWorkflow(id);
+      } catch (err) {
+        if (backup) {
+          dispatch({ type: 'ADD_WORKFLOW', payload: backup });
+        }
+        throw err;
       }
-      throw err;
-    }
-  }, [dispatch, workflows]);
-  
-  const addWorkflow = useCallback(async (workflowData) => {
-    const workflow = {
-      ...workflowData,
-      id: crypto.randomUUID(),
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString()
-    };
-    
-    try {
-      dispatch({ type: 'ADD_WORKFLOW', payload: workflow });
-      await StorageService.createWorkflow(workflow);
-      return workflow;
-    } catch (err) {
-      await fetchWorkflows();
-      throw err;
-    }
-  }, [dispatch, fetchWorkflows]);
-  
+    },
+    [dispatch, workflows]
+  );
+
+  const addWorkflow = useCallback(
+    async (workflowData) => {
+      const workflow = {
+        ...workflowData,
+        id: crypto.randomUUID(),
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      };
+
+      try {
+        dispatch({ type: 'ADD_WORKFLOW', payload: workflow });
+        await StorageService.createWorkflow(workflow);
+        return workflow;
+      } catch (err) {
+        await fetchWorkflows();
+        throw err;
+      }
+    },
+    [dispatch, fetchWorkflows]
+  );
+
   return {
     workflows,
     loading,
@@ -90,6 +99,6 @@ export function useWorkflows() {
     updateWorkflow,
     deleteWorkflow,
     addWorkflow,
-    getWorkflowById: useCallback((id) => workflows.find(w => w.id === id), [workflows])
+    getWorkflowById: useCallback((id) => workflows.find((w) => w.id === id), [workflows]),
   };
 }

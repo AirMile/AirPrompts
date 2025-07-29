@@ -1,6 +1,6 @@
 /**
  * Feature Flags Service
- * 
+ *
  * Provides a centralized system for managing feature toggles
  * Supports environment-based configuration and runtime updates
  * Enables gradual rollout and A/B testing capabilities
@@ -12,7 +12,7 @@ class FeatureFlagsService {
     this.listeners = new Map();
     this.userContext = null;
     this.initialized = false;
-    
+
     // Default flags configuration
     this.defaultFlags = {
       // Core refactoring features
@@ -21,29 +21,29 @@ class FeatureFlagsService {
       USE_PERFORMANCE_MONITORING: true,
       USE_VIRTUALIZED_LISTS: false,
       USE_BASE_COMPONENTS: false,
-      
+
       // UI/UX features
       ENABLE_DARK_MODE: true,
       ENABLE_DRAG_DROP: true,
       ENABLE_ADVANCED_SEARCH: false,
       ENABLE_CONTEXT_MENUS: false,
       ENABLE_KEYBOARD_SHORTCUTS: true,
-      
+
       // Performance features
       ENABLE_CODE_SPLITTING: false,
       ENABLE_LAZY_LOADING: true,
       ENABLE_SERVICE_WORKER: false,
       ENABLE_PREFETCHING: false,
-      
+
       // Developer features
-      SHOW_DEBUG_INFO: process.env.NODE_ENV === 'development',
-      ENABLE_DEV_TOOLS: process.env.NODE_ENV === 'development',
-      ENABLE_PERFORMANCE_MARKS: process.env.NODE_ENV === 'development',
-      
+      SHOW_DEBUG_INFO: import.meta.env.DEV,
+      ENABLE_DEV_TOOLS: import.meta.env.DEV,
+      ENABLE_PERFORMANCE_MARKS: import.meta.env.DEV,
+
       // Experimental features
       ENABLE_AI_SUGGESTIONS: false,
       ENABLE_COLLABORATION: false,
-      ENABLE_CLOUD_SYNC: false
+      ENABLE_CLOUD_SYNC: false,
     };
   }
 
@@ -52,20 +52,20 @@ class FeatureFlagsService {
    */
   async initialize() {
     if (this.initialized) return;
-    
+
     try {
       // 1. Load from environment variables
       this.loadFromEnvironment();
-      
+
       // 2. Load from localStorage (user overrides)
       this.loadFromLocalStorage();
-      
+
       // 3. Load from remote config (if available)
       await this.loadFromRemote();
-      
+
       // 4. Apply user context rules
       this.applyUserContext();
-      
+
       this.initialized = true;
       console.log('Feature flags initialized:', this.getAllFlags());
     } catch (error) {
@@ -79,12 +79,11 @@ class FeatureFlagsService {
    * Load flags from environment variables
    */
   loadFromEnvironment() {
-    // Check for REACT_APP_FEATURE_* environment variables
-    Object.keys(process.env).forEach(key => {
-      if (key.startsWith('REACT_APP_FEATURE_')) {
-        const flagName = key.replace('REACT_APP_FEATURE_', '');
-        const value = process.env[key] === 'true';
-        this.flags.set(flagName, value);
+    // Check for VITE_FEATURE_* environment variables
+    Object.entries(import.meta.env).forEach(([key, value]) => {
+      if (key.startsWith('VITE_FEATURE_')) {
+        const flagName = key.replace('VITE_FEATURE_', '');
+        this.flags.set(flagName, value === 'true');
       }
     });
   }
@@ -111,17 +110,17 @@ class FeatureFlagsService {
    */
   async loadFromRemote() {
     // Skip in development or if no endpoint configured
-    if (process.env.NODE_ENV === 'development' || !process.env.REACT_APP_FLAGS_ENDPOINT) {
+    if (import.meta.env.DEV || !import.meta.env.VITE_FLAGS_ENDPOINT) {
       return;
     }
-    
+
     try {
-      const response = await fetch(process.env.REACT_APP_FLAGS_ENDPOINT, {
+      const response = await fetch(import.meta.env.VITE_FLAGS_ENDPOINT, {
         headers: {
-          'X-User-Context': JSON.stringify(this.userContext)
-        }
+          'X-User-Context': JSON.stringify(this.userContext),
+        },
       });
-      
+
       if (response.ok) {
         const remoteFlags = await response.json();
         Object.entries(remoteFlags).forEach(([flag, value]) => {
@@ -157,28 +156,28 @@ class FeatureFlagsService {
    */
   applyUserContext() {
     if (!this.userContext) return;
-    
+
     // Example: Enable features for beta users
     if (this.userContext.isBetaUser) {
       this.flags.set('ENABLE_AI_SUGGESTIONS', true);
       this.flags.set('ENABLE_ADVANCED_SEARCH', true);
     }
-    
+
     // Example: Enable features based on user plan
     if (this.userContext.plan === 'premium') {
       this.flags.set('ENABLE_CLOUD_SYNC', true);
       this.flags.set('ENABLE_COLLABORATION', true);
     }
-    
+
     // Example: Gradual rollout based on user ID
     if (this.userContext.userId) {
       const hash = this.hashUserId(this.userContext.userId);
-      
+
       // 10% rollout for virtualized lists
       if (hash % 100 < 10) {
         this.flags.set('USE_VIRTUALIZED_LISTS', true);
       }
-      
+
       // 50% rollout for new storage
       if (hash % 100 < 50) {
         this.flags.set('USE_NEW_STORAGE_FACADE', true);
@@ -192,7 +191,7 @@ class FeatureFlagsService {
   hashUserId(userId) {
     let hash = 0;
     for (let i = 0; i < userId.length; i++) {
-      hash = ((hash << 5) - hash) + userId.charCodeAt(i);
+      hash = (hash << 5) - hash + userId.charCodeAt(i);
       hash = hash & hash; // Convert to 32-bit integer
     }
     return Math.abs(hash);
@@ -207,7 +206,7 @@ class FeatureFlagsService {
       console.warn('Feature flags not initialized, using defaults');
       this.useDefaults();
     }
-    
+
     return this.flags.get(flagName) ?? this.defaultFlags[flagName] ?? false;
   }
 
@@ -216,17 +215,17 @@ class FeatureFlagsService {
    */
   getAllFlags() {
     const allFlags = {};
-    
+
     // Include all default flags
-    Object.keys(this.defaultFlags).forEach(flag => {
+    Object.keys(this.defaultFlags).forEach((flag) => {
       allFlags[flag] = this.isEnabled(flag);
     });
-    
+
     // Include any additional flags
     this.flags.forEach((value, key) => {
       allFlags[key] = value;
     });
-    
+
     return allFlags;
   }
 
@@ -236,7 +235,7 @@ class FeatureFlagsService {
   override(flagName, value) {
     this.flags.set(flagName, value);
     this.notifyListeners(flagName, value);
-    
+
     // Persist override to localStorage
     this.saveOverrides();
   }
@@ -248,7 +247,7 @@ class FeatureFlagsService {
     localStorage.removeItem('airprompts_feature_flags');
     this.flags.clear();
     this.useDefaults();
-    
+
     // Notify all listeners
     this.flags.forEach((value, key) => {
       this.notifyListeners(key, value);
@@ -265,7 +264,7 @@ class FeatureFlagsService {
         overrides[key] = value;
       }
     });
-    
+
     if (Object.keys(overrides).length > 0) {
       localStorage.setItem('airprompts_feature_flags', JSON.stringify(overrides));
     } else {
@@ -281,7 +280,7 @@ class FeatureFlagsService {
       this.listeners.set(flagName, new Set());
     }
     this.listeners.get(flagName).add(callback);
-    
+
     // Return unsubscribe function
     return () => {
       const callbacks = this.listeners.get(flagName);
@@ -300,7 +299,7 @@ class FeatureFlagsService {
   notifyListeners(flagName, value) {
     const callbacks = this.listeners.get(flagName);
     if (callbacks) {
-      callbacks.forEach(callback => {
+      callbacks.forEach((callback) => {
         try {
           callback(value);
         } catch (error) {
@@ -318,7 +317,7 @@ class FeatureFlagsService {
       name: flagName,
       enabled: this.isEnabled(flagName),
       source: this.getFlagSource(flagName),
-      description: this.getFlagDescription(flagName)
+      description: this.getFlagDescription(flagName),
     };
   }
 
@@ -326,10 +325,10 @@ class FeatureFlagsService {
    * Determine where a flag value came from
    */
   getFlagSource(flagName) {
-    if (process.env[`REACT_APP_FEATURE_${flagName}`] !== undefined) {
+    if (import.meta.env[`VITE_FEATURE_${flagName}`] !== undefined) {
       return 'environment';
     }
-    
+
     const stored = localStorage.getItem('airprompts_feature_flags');
     if (stored) {
       const overrides = JSON.parse(stored);
@@ -337,11 +336,14 @@ class FeatureFlagsService {
         return 'override';
       }
     }
-    
-    if (this.flags.has(flagName) && !this.defaultFlags.hasOwnProperty(flagName)) {
+
+    if (
+      this.flags.has(flagName) &&
+      !Object.prototype.hasOwnProperty.call(this.defaultFlags, flagName)
+    ) {
       return 'remote';
     }
-    
+
     return 'default';
   }
 
@@ -369,9 +371,9 @@ class FeatureFlagsService {
       ENABLE_PERFORMANCE_MARKS: 'Enable performance mark logging',
       ENABLE_AI_SUGGESTIONS: 'Enable AI-powered suggestions',
       ENABLE_COLLABORATION: 'Enable real-time collaboration features',
-      ENABLE_CLOUD_SYNC: 'Enable cloud synchronization'
+      ENABLE_CLOUD_SYNC: 'Enable cloud synchronization',
     };
-    
+
     return descriptions[flagName] || 'No description available';
   }
 }
@@ -384,6 +386,7 @@ export default featureFlags;
 
 export const isFeatureEnabled = (flagName) => featureFlags.isEnabled(flagName);
 export const overrideFeature = (flagName, value) => featureFlags.override(flagName, value);
-export const subscribeToFeature = (flagName, callback) => featureFlags.subscribe(flagName, callback);
+export const subscribeToFeature = (flagName, callback) =>
+  featureFlags.subscribe(flagName, callback);
 export const getAllFeatures = () => featureFlags.getAllFlags();
 export const getFeature = (flagName) => featureFlags.getFlag(flagName);

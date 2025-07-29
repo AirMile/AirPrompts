@@ -5,7 +5,7 @@ import MemoryCache from './MemoryCache';
 
 /**
  * Storage Facade - Unified interface for all storage operations
- * 
+ *
  * Features:
  * - Multiple storage backends (localStorage, sessionStorage, IndexedDB, memory)
  * - Automatic fallbacks and strategy selection
@@ -20,22 +20,22 @@ class StorageFacade {
     this.indexedDB = new IndexedDBAdapter();
     this.memoryCache = new MemoryCache();
     this.sessionStorage = new SessionStorageAdapter();
-    
+
     // Listeners for storage events
     this.listeners = new Map();
-    
+
     // Metrics tracking
     this.metrics = {
       hits: { cache: 0, localStorage: 0, indexedDB: 0 },
       misses: 0,
       errors: 0,
-      sets: 0
+      sets: 0,
     };
-    
+
     // Configuration
     this.maxLocalStorageSize = 50 * 1024; // 50KB
     this.maxSize = 10 * 1024 * 1024; // 10MB
-    
+
     // Initialize on creation
     this.initialized = false;
     this.initPromise = this.initialize();
@@ -43,20 +43,20 @@ class StorageFacade {
 
   async initialize() {
     if (this.initialized) return;
-    
+
     try {
       // Initialize IndexedDB
       await this.indexedDB.initialize();
-      
+
       // Start memory cache cleanup interval
       this.memoryCache.startCleanupInterval();
-      
+
       // Setup cross-tab synchronization
       this.setupStorageSync();
-      
+
       // Warm up cache with frequently accessed data
       await this.warmUpCache();
-      
+
       this.initialized = true;
     } catch (error) {
       console.error('Failed to initialize StorageFacade:', error);
@@ -71,7 +71,7 @@ class StorageFacade {
 
   async get(key, options = {}) {
     await this.ensureInitialized();
-    
+
     try {
       // 1. Check memory cache (fastest)
       if (!options.skipCache) {
@@ -115,27 +115,26 @@ class StorageFacade {
 
       this.recordMetrics('miss', key);
       return options.defaultValue ?? null;
-
     } catch (error) {
       console.error(`Storage facade error for ${key}:`, error);
       this.recordMetrics('error', key);
-      
+
       // Try fallback storage
       if (options.fallback) {
         try {
-          return await this.localStorage.get(key) || options.defaultValue;
+          return (await this.localStorage.get(key)) || options.defaultValue;
         } catch (fallbackError) {
           console.error('Fallback storage also failed:', fallbackError);
         }
       }
-      
+
       return options.defaultValue ?? null;
     }
   }
 
   async set(key, value, options = {}) {
     await this.ensureInitialized();
-    
+
     try {
       // Validate data size
       const size = this.calculateSize(value);
@@ -153,21 +152,23 @@ class StorageFacade {
         case 'session':
           await this.sessionStorage.set(key, value);
           break;
-        
+
         case 'local':
           await this.localStorage.set(key, value);
           break;
-        
+
         case 'indexed':
           await this.indexedDB.set(key, value);
           // Also store metadata in localStorage
-          await this.localStorage.set(`${key}_meta`, {
-            size,
-            updatedAt: new Date().toISOString(),
-            location: 'indexedDB'
-          }).catch(() => {});
+          await this.localStorage
+            .set(`${key}_meta`, {
+              size,
+              updatedAt: new Date().toISOString(),
+              location: 'indexedDB',
+            })
+            .catch(() => {});
           break;
-        
+
         case 'distributed':
           // Large data split across multiple storage
           await this.distributeData(key, value);
@@ -176,12 +177,11 @@ class StorageFacade {
 
       // Notify listeners
       this.notifyListeners(key, value);
-      
+
       // Sync across tabs
       this.broadcastChange(key, value);
 
       this.recordMetrics('set', key);
-
     } catch (error) {
       console.error(`Storage write error for ${key}:`, error);
       this.recordMetrics('set_error', key);
@@ -191,30 +191,30 @@ class StorageFacade {
 
   async delete(key) {
     await this.ensureInitialized();
-    
+
     // Remove from all storage layers
     await Promise.allSettled([
       this.memoryCache.delete(key),
       this.sessionStorage.delete(key),
       this.localStorage.delete(key),
       this.indexedDB.delete(key),
-      this.localStorage.delete(`${key}_meta`)
+      this.localStorage.delete(`${key}_meta`),
     ]);
-    
+
     this.notifyListeners(key, null);
     this.broadcastChange(key, null);
   }
 
   async clear() {
     await this.ensureInitialized();
-    
+
     await Promise.allSettled([
       this.memoryCache.clear(),
       this.sessionStorage.clear(),
       this.localStorage.clear(),
-      this.indexedDB.clear()
+      this.indexedDB.clear(),
     ]);
-    
+
     // Notify all listeners
     this.listeners.forEach((callbacks, key) => {
       this.notifyListeners(key, null);
@@ -227,7 +227,7 @@ class StorageFacade {
       this.listeners.set(key, new Set());
     }
     this.listeners.get(key).add(callback);
-    
+
     // Return unsubscribe function
     return () => {
       const callbacks = this.listeners.get(key);
@@ -241,9 +241,9 @@ class StorageFacade {
   }
 
   // Private methods
-  private determineStorageStrategy(value, options) {
+  determineStorageStrategy(value, options) {
     const size = JSON.stringify(value).length;
-    
+
     if (options.temporary || options.ttl) return 'session';
     if (options.forceLocal) return 'local';
     if (size > 1024 * 1024) return 'indexed'; // > 1MB
@@ -251,19 +251,19 @@ class StorageFacade {
     return 'local';
   }
 
-  private shouldPromoteToLocalStorage(data) {
+  shouldPromoteToLocalStorage(data) {
     const size = JSON.stringify(data).length;
     return size < this.maxLocalStorageSize;
   }
 
-  private calculateSize(data) {
+  calculateSize(data) {
     return new Blob([JSON.stringify(data)]).size;
   }
 
-  private notifyListeners(key, value) {
+  notifyListeners(key, value) {
     const callbacks = this.listeners.get(key);
     if (callbacks) {
-      callbacks.forEach(callback => {
+      callbacks.forEach((callback) => {
         try {
           callback(value);
         } catch (error) {
@@ -273,7 +273,7 @@ class StorageFacade {
     }
   }
 
-  private broadcastChange(key, value) {
+  broadcastChange(key, value) {
     if (typeof BroadcastChannel !== 'undefined') {
       const channel = new BroadcastChannel('storage_sync');
       channel.postMessage({ key, value, timestamp: Date.now() });
@@ -281,7 +281,7 @@ class StorageFacade {
     }
   }
 
-  private setupStorageSync() {
+  setupStorageSync() {
     if (typeof BroadcastChannel !== 'undefined') {
       this.syncChannel = new BroadcastChannel('storage_sync');
       this.syncChannel.onmessage = (event) => {
@@ -294,29 +294,21 @@ class StorageFacade {
     }
   }
 
-  private async warmUpCache() {
-    const keysToWarm = [
-      'templates',
-      'workflows', 
-      'snippets',
-      'ui_preferences',
-      'recent_items'
-    ];
-    
-    await Promise.all(
-      keysToWarm.map(key => this.get(key, { skipCache: true }))
-    );
+  async warmUpCache() {
+    const keysToWarm = ['templates', 'workflows', 'snippets', 'ui_preferences', 'recent_items'];
+
+    await Promise.all(keysToWarm.map((key) => this.get(key, { skipCache: true })));
   }
 
-  private async distributeData(key, value) {
+  async distributeData(key, value) {
     // Split large data across multiple storage locations
     const chunks = this.chunkData(value);
     const chunkKeys = [];
-    
+
     for (let i = 0; i < chunks.length; i++) {
       const chunkKey = `${key}_chunk_${i}`;
       chunkKeys.push(chunkKey);
-      
+
       // Store each chunk in localStorage or IndexedDB based on size
       const chunkSize = this.calculateSize(chunks[i]);
       if (chunkSize < this.maxLocalStorageSize) {
@@ -325,28 +317,28 @@ class StorageFacade {
         await this.indexedDB.set(chunkKey, chunks[i]);
       }
     }
-    
+
     // Store manifest in localStorage
     await this.localStorage.set(`${key}_manifest`, {
       type: 'distributed',
       chunks: chunkKeys,
       totalSize: this.calculateSize(value),
-      createdAt: new Date().toISOString()
+      createdAt: new Date().toISOString(),
     });
   }
 
-  private chunkData(data, chunkSize = 50 * 1024) {
+  chunkData(data, chunkSize = 50 * 1024) {
     const jsonStr = JSON.stringify(data);
     const chunks = [];
-    
+
     for (let i = 0; i < jsonStr.length; i += chunkSize) {
       chunks.push(jsonStr.slice(i, i + chunkSize));
     }
-    
+
     return chunks;
   }
 
-  private recordMetrics(action, key) {
+  recordMetrics(action, key) {
     switch (action) {
       case 'cache_hit':
         this.metrics.hits.cache++;
@@ -368,7 +360,7 @@ class StorageFacade {
         this.metrics.sets++;
         break;
     }
-    
+
     // Send to analytics if configured
     if (window.analytics) {
       window.analytics.track('storage_operation', { action, key });
@@ -385,15 +377,15 @@ class StorageFacade {
       this.localStorage.getSize(),
       this.sessionStorage.getSize(),
       this.indexedDB.getSize(),
-      this.memoryCache.getSize()
+      this.memoryCache.getSize(),
     ]);
-    
+
     return {
       localStorage: localSize,
       sessionStorage: sessionSize,
       indexedDB: indexedSize,
       memoryCache: cacheSize,
-      total: localSize + sessionSize + indexedSize + cacheSize
+      total: localSize + sessionSize + indexedSize + cacheSize,
     };
   }
 

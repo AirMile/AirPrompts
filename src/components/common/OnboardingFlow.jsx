@@ -11,24 +11,26 @@ export const OnboardingFlow = ({ onComplete, onSkip }) => {
   const steps = [
     {
       title: 'Welcome to AirPrompts!',
-      description: 'Your intelligent prompt template management system. Let\'s get you started with a quick tour.',
+      description:
+        "Your intelligent prompt template management system. Let's get you started with a quick tour.",
       image: '/onboarding/welcome.svg',
       features: [
         'Create and manage prompt templates',
         'Build complex workflows',
         'Organize with folders and tags',
-        'Share and collaborate'
-      ]
+        'Share and collaborate',
+      ],
     },
     {
       title: 'Create Your First Template',
-      description: 'Templates are reusable prompts with dynamic variables. Perfect for repetitive tasks.',
+      description:
+        'Templates are reusable prompts with dynamic variables. Perfect for repetitive tasks.',
       demo: 'template',
       tips: [
         'Use {variables} for dynamic content',
         'Add descriptions for clarity',
-        'Organize with categories and tags'
-      ]
+        'Organize with categories and tags',
+      ],
     },
     {
       title: 'Build Powerful Workflows',
@@ -37,8 +39,8 @@ export const OnboardingFlow = ({ onComplete, onSkip }) => {
       tips: [
         'Link templates in sequence',
         'Pass outputs between steps',
-        'Save time on complex tasks'
-      ]
+        'Save time on complex tasks',
+      ],
     },
     {
       title: 'Stay Organized',
@@ -48,9 +50,9 @@ export const OnboardingFlow = ({ onComplete, onSkip }) => {
         'Nested folder structure',
         'Custom tags and colors',
         'Advanced search filters',
-        'Favorites for quick access'
-      ]
-    }
+        'Favorites for quick access',
+      ],
+    },
   ];
 
   const handleNext = () => {
@@ -84,8 +86,12 @@ export const OnboardingFlow = ({ onComplete, onSkip }) => {
   const step = steps[currentStep];
 
   return (
-    <div className={`fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 ${isExiting ? 'animate-fadeOut' : 'animate-fadeIn'}`}>
-      <div className={`bg-white dark:bg-secondary-800 rounded-xl max-w-2xl w-full max-h-[90vh] overflow-hidden shadow-2xl ${isExiting ? 'animate-fadeOut' : 'animate-scaleIn'}`}>
+    <div
+      className={`fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 ${isExiting ? 'animate-fadeOut' : 'animate-fadeIn'}`}
+    >
+      <div
+        className={`bg-white dark:bg-secondary-800 rounded-xl max-w-2xl w-full max-h-[90vh] overflow-hidden shadow-2xl ${isExiting ? 'animate-fadeOut' : 'animate-scaleIn'}`}
+      >
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-secondary-200 dark:border-secondary-700">
           <div className="flex items-center gap-3">
@@ -110,9 +116,7 @@ export const OnboardingFlow = ({ onComplete, onSkip }) => {
             <h3 className="text-2xl font-bold text-secondary-900 dark:text-secondary-100 mb-2">
               {step.title}
             </h3>
-            <p className="text-secondary-600 dark:text-secondary-400">
-              {step.description}
-            </p>
+            <p className="text-secondary-600 dark:text-secondary-400">{step.description}</p>
           </div>
 
           {/* Features or Tips */}
@@ -166,8 +170,8 @@ export const OnboardingFlow = ({ onComplete, onSkip }) => {
                   index === currentStep
                     ? 'w-8 bg-primary-600'
                     : index < currentStep
-                    ? 'w-2 bg-primary-400'
-                    : 'w-2 bg-secondary-300 dark:bg-secondary-600'
+                      ? 'w-2 bg-primary-400'
+                      : 'w-2 bg-secondary-300 dark:bg-secondary-600'
                 }`}
               />
             ))}
@@ -182,7 +186,7 @@ export const OnboardingFlow = ({ onComplete, onSkip }) => {
                 <ChevronLeft className="w-5 h-5" />
               </button>
             )}
-            
+
             <button
               onClick={handleSkip}
               className="px-4 py-2 text-secondary-600 dark:text-secondary-400 hover:text-secondary-900 dark:hover:text-secondary-100 transition-colors"
@@ -213,13 +217,7 @@ export const OnboardingFlow = ({ onComplete, onSkip }) => {
 /**
  * Onboarding tooltip for specific features
  */
-export const OnboardingTooltip = ({ 
-  target, 
-  title, 
-  description, 
-  position = 'bottom',
-  onDismiss 
-}) => {
+export const OnboardingTooltip = ({ title, description, position = 'bottom', onDismiss }) => {
   const [isVisible, setIsVisible] = useState(false);
 
   useEffect(() => {
@@ -237,11 +235,11 @@ export const OnboardingTooltip = ({
     top: 'bottom-full mb-2',
     bottom: 'top-full mt-2',
     left: 'right-full mr-2',
-    right: 'left-full ml-2'
+    right: 'left-full ml-2',
   };
 
   return (
-    <div 
+    <div
       className={`
         absolute ${positionClasses[position]} z-50
         ${isVisible ? 'animate-fadeIn' : 'animate-fadeOut'}
@@ -258,9 +256,9 @@ export const OnboardingTooltip = ({
           </button>
         </div>
         <p className="text-sm text-primary-100">{description}</p>
-        
+
         {/* Arrow */}
-        <div 
+        <div
           className={`
             absolute w-0 h-0 border-8 border-transparent
             ${position === 'bottom' ? 'top-0 left-1/2 -translate-x-1/2 -translate-y-full border-b-primary-600' : ''}

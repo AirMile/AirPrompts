@@ -1,6 +1,6 @@
 /**
  * DataValidator - Comprehensive data validation for migrations
- * 
+ *
  * Features:
  * - Schema validation
  * - Type checking
@@ -18,15 +18,15 @@ class DataValidator {
       maxLength: this.validateMaxLength.bind(this),
       pattern: this.validatePattern.bind(this),
       enum: this.validateEnum.bind(this),
-      custom: this.validateCustom.bind(this)
+      custom: this.validateCustom.bind(this),
     };
-    
+
     // Common patterns
     this.patterns = {
       email: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
       url: /^https?:\/\/.+/,
       uuid: /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i,
-      iso8601: /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d{3})?Z?$/
+      iso8601: /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d{3})?Z?$/,
     };
   }
 
@@ -35,7 +35,7 @@ class DataValidator {
    */
   async validateData(type, data, schema) {
     const errors = [];
-    
+
     // Handle array data
     if (Array.isArray(data)) {
       for (let i = 0; i < data.length; i++) {
@@ -46,11 +46,11 @@ class DataValidator {
       const itemErrors = await this.validateItem(data, schema, '');
       errors.push(...itemErrors);
     }
-    
+
     return {
       valid: errors.length === 0,
       errors,
-      summary: this.generateErrorSummary(errors)
+      summary: this.generateErrorSummary(errors),
     };
   }
 
@@ -59,57 +59,53 @@ class DataValidator {
    */
   async validateItem(item, schema, path = '') {
     const errors = [];
-    
+
     if (!item || typeof item !== 'object') {
       errors.push({
         path,
         error: 'Item must be an object',
-        value: item
+        value: item,
       });
       return errors;
     }
-    
+
     // Check required fields
     if (schema.required) {
       for (const field of schema.required) {
-        if (!item.hasOwnProperty(field) || item[field] === null || item[field] === undefined) {
+        if (
+          !Object.prototype.hasOwnProperty.call(item, field) ||
+          item[field] === null ||
+          item[field] === undefined
+        ) {
           errors.push({
             path: `${path}.${field}`,
             error: 'Required field missing',
-            field
+            field,
           });
         }
       }
     }
-    
+
     // Validate field types
     if (schema.types) {
       for (const [field, expectedType] of Object.entries(schema.types)) {
-        if (item.hasOwnProperty(field)) {
-          const typeErrors = this.validateFieldType(
-            item[field], 
-            expectedType, 
-            `${path}.${field}`
-          );
+        if (Object.prototype.hasOwnProperty.call(item, field)) {
+          const typeErrors = this.validateFieldType(item[field], expectedType, `${path}.${field}`);
           errors.push(...typeErrors);
         }
       }
     }
-    
+
     // Custom validations
     if (schema.validations) {
       for (const [field, rules] of Object.entries(schema.validations)) {
-        if (item.hasOwnProperty(field)) {
-          const ruleErrors = await this.validateFieldRules(
-            item[field],
-            rules,
-            `${path}.${field}`
-          );
+        if (Object.prototype.hasOwnProperty.call(item, field)) {
+          const ruleErrors = await this.validateFieldRules(item[field], rules, `${path}.${field}`);
           errors.push(...ruleErrors);
         }
       }
     }
-    
+
     return errors;
   }
 
@@ -118,35 +114,33 @@ class DataValidator {
    */
   validateFieldType(value, expectedType, path) {
     const errors = [];
-    
+
     // Handle multiple allowed types
     if (Array.isArray(expectedType)) {
-      const validType = expectedType.some(type => 
-        this.isValidType(value, type)
-      );
-      
+      const validType = expectedType.some((type) => this.isValidType(value, type));
+
       if (!validType) {
         errors.push({
           path,
           error: `Invalid type. Expected one of: ${expectedType.join(', ')}`,
           actualType: this.getType(value),
-          expectedTypes: expectedType
+          expectedTypes: expectedType,
         });
       }
-      
+
       return errors;
     }
-    
+
     // Single type validation
     if (!this.isValidType(value, expectedType)) {
       errors.push({
         path,
         error: `Invalid type. Expected: ${expectedType}`,
         actualType: this.getType(value),
-        expectedType
+        expectedType,
       });
     }
-    
+
     return errors;
   }
 
@@ -157,28 +151,28 @@ class DataValidator {
     switch (expectedType) {
       case 'string':
         return typeof value === 'string';
-      
+
       case 'number':
         return typeof value === 'number' && !isNaN(value);
-      
+
       case 'boolean':
         return typeof value === 'boolean';
-      
+
       case 'array':
         return Array.isArray(value);
-      
+
       case 'object':
         return typeof value === 'object' && !Array.isArray(value) && value !== null;
-      
+
       case 'null':
         return value === null;
-      
+
       case 'date':
         return value instanceof Date || this.patterns.iso8601.test(value);
-      
+
       case 'function':
         return typeof value === 'function';
-      
+
       default:
         return false;
     }
@@ -199,18 +193,14 @@ class DataValidator {
    */
   async validateFieldRules(value, rules, path) {
     const errors = [];
-    
+
     for (const [ruleName, ruleValue] of Object.entries(rules)) {
       if (this.validators[ruleName]) {
-        const ruleErrors = await this.validators[ruleName](
-          value,
-          ruleValue,
-          path
-        );
+        const ruleErrors = await this.validators[ruleName](value, ruleValue, path);
         errors.push(...ruleErrors);
       }
     }
-    
+
     return errors;
   }
 
@@ -219,15 +209,15 @@ class DataValidator {
    */
   validateRequired(value, required, path) {
     const errors = [];
-    
+
     if (required && (value === null || value === undefined || value === '')) {
       errors.push({
         path,
         error: 'Value is required',
-        rule: 'required'
+        rule: 'required',
       });
     }
-    
+
     return errors;
   }
 
@@ -237,111 +227,111 @@ class DataValidator {
 
   validateMinLength(value, minLength, path) {
     const errors = [];
-    
+
     if (typeof value === 'string' && value.length < minLength) {
       errors.push({
         path,
         error: `Minimum length is ${minLength}`,
         actualLength: value.length,
-        rule: 'minLength'
+        rule: 'minLength',
       });
     }
-    
+
     if (Array.isArray(value) && value.length < minLength) {
       errors.push({
         path,
         error: `Minimum array length is ${minLength}`,
         actualLength: value.length,
-        rule: 'minLength'
+        rule: 'minLength',
       });
     }
-    
+
     return errors;
   }
 
   validateMaxLength(value, maxLength, path) {
     const errors = [];
-    
+
     if (typeof value === 'string' && value.length > maxLength) {
       errors.push({
         path,
         error: `Maximum length is ${maxLength}`,
         actualLength: value.length,
-        rule: 'maxLength'
+        rule: 'maxLength',
       });
     }
-    
+
     if (Array.isArray(value) && value.length > maxLength) {
       errors.push({
         path,
         error: `Maximum array length is ${maxLength}`,
         actualLength: value.length,
-        rule: 'maxLength'
+        rule: 'maxLength',
       });
     }
-    
+
     return errors;
   }
 
   validatePattern(value, pattern, path) {
     const errors = [];
-    
+
     if (typeof value !== 'string') {
       return errors;
     }
-    
+
     // Handle named patterns
     const regex = this.patterns[pattern] || new RegExp(pattern);
-    
+
     if (!regex.test(value)) {
       errors.push({
         path,
         error: `Value does not match pattern: ${pattern}`,
         value,
-        rule: 'pattern'
+        rule: 'pattern',
       });
     }
-    
+
     return errors;
   }
 
   validateEnum(value, allowedValues, path) {
     const errors = [];
-    
+
     if (!allowedValues.includes(value)) {
       errors.push({
         path,
         error: `Value must be one of: ${allowedValues.join(', ')}`,
         actualValue: value,
         allowedValues,
-        rule: 'enum'
+        rule: 'enum',
       });
     }
-    
+
     return errors;
   }
 
   async validateCustom(value, validator, path) {
     const errors = [];
-    
+
     try {
       const result = await validator(value);
-      
+
       if (result !== true) {
         errors.push({
           path,
           error: result || 'Custom validation failed',
-          rule: 'custom'
+          rule: 'custom',
         });
       }
     } catch (error) {
       errors.push({
         path,
         error: `Custom validation error: ${error.message}`,
-        rule: 'custom'
+        rule: 'custom',
       });
     }
-    
+
     return errors;
   }
 
@@ -353,29 +343,29 @@ class DataValidator {
       totalErrors: errors.length,
       byPath: {},
       byRule: {},
-      critical: []
+      critical: [],
     };
-    
+
     for (const error of errors) {
       // Group by path
       if (!summary.byPath[error.path]) {
         summary.byPath[error.path] = [];
       }
       summary.byPath[error.path].push(error);
-      
+
       // Group by rule
       const rule = error.rule || 'other';
       if (!summary.byRule[rule]) {
         summary.byRule[rule] = 0;
       }
       summary.byRule[rule]++;
-      
+
       // Identify critical errors
       if (error.rule === 'required' || error.error.includes('Invalid type')) {
         summary.critical.push(error);
       }
     }
-    
+
     return summary;
   }
 
@@ -384,29 +374,29 @@ class DataValidator {
    */
   async validateRelationships(data, relationships) {
     const errors = [];
-    
+
     for (const [field, config] of Object.entries(relationships)) {
       const relatedIds = data[field];
-      
+
       if (!relatedIds) continue;
-      
+
       // Handle both single and multiple relationships
       const ids = Array.isArray(relatedIds) ? relatedIds : [relatedIds];
-      
+
       for (const id of ids) {
         const exists = await config.validator(id);
-        
+
         if (!exists) {
           errors.push({
             path: field,
             error: `Related ${config.type} not found: ${id}`,
             relatedId: id,
-            relationType: config.type
+            relationType: config.type,
           });
         }
       }
     }
-    
+
     return errors;
   }
 
@@ -415,22 +405,22 @@ class DataValidator {
    */
   validateConsistency(data) {
     const errors = [];
-    
+
     // Check date consistency
     if (data.createdAt && data.updatedAt) {
       const created = new Date(data.createdAt);
       const updated = new Date(data.updatedAt);
-      
+
       if (created > updated) {
         errors.push({
           path: 'dates',
           error: 'Created date cannot be after updated date',
           createdAt: data.createdAt,
-          updatedAt: data.updatedAt
+          updatedAt: data.updatedAt,
         });
       }
     }
-    
+
     // Check array field consistency
     if (data.folderIds && data.folderId) {
       if (!data.folderIds.includes(data.folderId)) {
@@ -438,11 +428,11 @@ class DataValidator {
           path: 'folders',
           error: 'Primary folder must be in folder list',
           folderId: data.folderId,
-          folderIds: data.folderIds
+          folderIds: data.folderIds,
         });
       }
     }
-    
+
     return errors;
   }
 
@@ -451,31 +441,31 @@ class DataValidator {
    */
   sanitizeData(data, schema) {
     const sanitized = { ...data };
-    
+
     // Remove unknown fields
     if (schema.strict) {
       const allowedFields = new Set([
         ...(schema.required || []),
         ...Object.keys(schema.types || {}),
-        ...Object.keys(schema.validations || {})
+        ...Object.keys(schema.validations || {}),
       ]);
-      
+
       for (const field of Object.keys(sanitized)) {
         if (!allowedFields.has(field)) {
           delete sanitized[field];
         }
       }
     }
-    
+
     // Apply field sanitizers
     if (schema.sanitizers) {
       for (const [field, sanitizer] of Object.entries(schema.sanitizers)) {
-        if (sanitized.hasOwnProperty(field)) {
+        if (Object.prototype.hasOwnProperty.call(sanitized, field)) {
           sanitized[field] = sanitizer(sanitized[field]);
         }
       }
     }
-    
+
     return sanitized;
   }
 }

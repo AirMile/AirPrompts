@@ -15,14 +15,14 @@ export const queryClient = new QueryClient({
       },
       // Refetch settings
       refetchOnWindowFocus: false,
-      refetchOnReconnect: true
+      refetchOnReconnect: true,
     },
     mutations: {
       // Optimistic updates by default
-      onError: (error, variables, context) => {
+      onError: (error) => {
         // Global error handling
         console.error('Mutation error:', error);
-      }
-    }
-  }
+      },
+    },
+  },
 });

@@ -55,11 +55,11 @@ export const ViewModeStrategies = {
     virtualization: {
       overscan: 2,
       scrollThreshold: 0.8,
-      estimatedItemSize: 220
+      estimatedItemSize: 220,
     },
-    itemComponent: ItemCard
+    itemComponent: ItemCard,
   },
-  
+
   list: {
     Component: VirtualizedList,
     getItemSize: () => ({ width: '100%', height: 80 }),
@@ -68,11 +68,11 @@ export const ViewModeStrategies = {
     virtualization: {
       overscan: 5,
       scrollThreshold: 0.9,
-      estimatedItemSize: 80
+      estimatedItemSize: 80,
     },
-    itemComponent: ItemListRow
+    itemComponent: ItemListRow,
   },
-  
+
   compact: {
     Component: CompactList,
     getItemSize: () => ({ width: '100%', height: 48 }),
@@ -81,11 +81,11 @@ export const ViewModeStrategies = {
     virtualization: {
       overscan: 10,
       scrollThreshold: 0.95,
-      estimatedItemSize: 48
+      estimatedItemSize: 48,
     },
-    itemComponent: ItemCompactRow
+    itemComponent: ItemCompactRow,
   },
-  
+
   kanban: {
     Component: KanbanBoard,
     getItemSize: () => ({ width: 320, height: 'auto' }),
@@ -93,9 +93,9 @@ export const ViewModeStrategies = {
     gap: 16,
     virtualization: null, // Kanban uses different optimization
     itemComponent: KanbanCard,
-    groupBy: 'category' // Group by category for kanban
+    groupBy: 'category', // Group by category for kanban
   },
-  
+
   timeline: {
     Component: TimelineView,
     getItemSize: () => ({ width: '100%', height: 'auto' }),
@@ -104,61 +104,64 @@ export const ViewModeStrategies = {
     virtualization: {
       overscan: 3,
       scrollThreshold: 0.85,
-      estimatedItemSize: 120
+      estimatedItemSize: 120,
     },
     itemComponent: TimelineItem,
-    sortBy: 'updatedAt' // Sort by date for timeline
-  }
+    sortBy: 'updatedAt', // Sort by date for timeline
+  },
 };
 
 // Intelligent View Mode Manager
 export const ViewModeManager = memo(({ items, viewMode = 'grid', ...props }) => {
   const [viewportWidth, setViewportWidth] = useState(window.innerWidth);
   const strategy = ViewModeStrategies[viewMode];
-  
+
   // Handle responsive updates
   useEffect(() => {
     const handleResize = debounce(() => {
       setViewportWidth(window.innerWidth);
     }, 300);
-    
+
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   }, []);
-  
+
+  // Apply strategy-specific transformations
+  const processedItems = useMemo(() => {
+    if (!strategy) return items;
+    let result = [...items];
+
+    const { groupBy: groupByKey, sortBy: sortByKey } = strategy;
+
+    // Apply grouping if specified
+    if (groupByKey) {
+      result = groupBy(result, groupByKey);
+    }
+
+    // Apply sorting if specified
+    if (sortByKey) {
+      result = sortBy(result, sortByKey);
+    }
+
+    return result;
+  }, [items, strategy]);
+
   if (!strategy) {
     console.warn(`Unknown view mode: ${viewMode}, falling back to grid`);
     return <ViewModeManager items={items} viewMode="grid" {...props} />;
   }
-  
+
   const { Component, itemComponent: ItemComponent, ...strategyProps } = strategy;
-  
-  // Apply strategy-specific transformations
-  const processedItems = useMemo(() => {
-    let result = [...items];
-    
-    // Apply grouping if specified
-    if (strategyProps.groupBy) {
-      result = groupBy(result, strategyProps.groupBy);
-    }
-    
-    // Apply sorting if specified
-    if (strategyProps.sortBy) {
-      result = sortBy(result, strategyProps.sortBy);
-    }
-    
-    return result;
-  }, [items, strategyProps.groupBy, strategyProps.sortBy]);
-  
+
   // Calculate responsive properties
   const responsiveProps = {
     ...strategyProps,
     columns: strategyProps.getColumns(viewportWidth),
-    itemSize: strategyProps.getItemSize(viewportWidth)
+    itemSize: strategyProps.getItemSize(viewportWidth),
   };
-  
+
   return (
-    <Component 
+    <Component
       items={processedItems}
       {...responsiveProps}
       renderItem={({ item, ...itemProps }) => (

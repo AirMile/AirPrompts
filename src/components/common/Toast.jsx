@@ -4,13 +4,7 @@ import { X, CheckCircle, XCircle, AlertCircle, Info } from 'lucide-react';
 /**
  * Toast notification component for user feedback
  */
-export const Toast = ({ 
-  message, 
-  type = 'info', 
-  duration = 3000, 
-  onClose,
-  action
-}) => {
+export const Toast = ({ message, type = 'info', duration = 3000, onClose, action }) => {
   const [isVisible, setIsVisible] = useState(true);
   const [isExiting, setIsExiting] = useState(false);
 
@@ -18,22 +12,33 @@ export const Toast = ({
     success: CheckCircle,
     error: XCircle,
     warning: AlertCircle,
-    info: Info
+    info: Info,
   };
 
   const colors = {
-    success: 'bg-green-50 dark:bg-green-900/20 text-green-800 dark:text-green-200 border-green-200 dark:border-green-800',
-    error: 'bg-red-50 dark:bg-red-900/20 text-red-800 dark:text-red-200 border-red-200 dark:border-red-800',
-    warning: 'bg-yellow-50 dark:bg-yellow-900/20 text-yellow-800 dark:text-yellow-200 border-yellow-200 dark:border-yellow-800',
-    info: 'bg-blue-50 dark:bg-blue-900/20 text-blue-800 dark:text-blue-200 border-blue-200 dark:border-blue-800'
+    success:
+      'bg-green-50 dark:bg-green-900/20 text-green-800 dark:text-green-200 border-green-200 dark:border-green-800',
+    error:
+      'bg-red-50 dark:bg-red-900/20 text-red-800 dark:text-red-200 border-red-200 dark:border-red-800',
+    warning:
+      'bg-yellow-50 dark:bg-yellow-900/20 text-yellow-800 dark:text-yellow-200 border-yellow-200 dark:border-yellow-800',
+    info: 'bg-blue-50 dark:bg-blue-900/20 text-blue-800 dark:text-blue-200 border-blue-200 dark:border-blue-800',
   };
 
   const iconColors = {
     success: 'text-green-500 dark:text-green-400',
     error: 'text-red-500 dark:text-red-400',
     warning: 'text-yellow-500 dark:text-yellow-400',
-    info: 'text-blue-500 dark:text-blue-400'
+    info: 'text-blue-500 dark:text-blue-400',
   };
+
+  const handleClose = React.useCallback(() => {
+    setIsExiting(true);
+    setTimeout(() => {
+      setIsVisible(false);
+      onClose?.();
+    }, 300);
+  }, [onClose]);
 
   useEffect(() => {
     if (duration > 0) {
@@ -43,15 +48,7 @@ export const Toast = ({
 
       return () => clearTimeout(timer);
     }
-  }, [duration]);
-
-  const handleClose = () => {
-    setIsExiting(true);
-    setTimeout(() => {
-      setIsVisible(false);
-      onClose?.();
-    }, 300);
-  };
+  }, [duration, handleClose]);
 
   if (!isVisible) return null;
 
@@ -68,7 +65,7 @@ export const Toast = ({
       role="alert"
     >
       <Icon className={`w-5 h-5 flex-shrink-0 mt-0.5 ${iconColors[type]}`} />
-      
+
       <div className="flex-1">
         <p className="text-sm font-medium">{message}</p>
         {action && (
@@ -80,7 +77,7 @@ export const Toast = ({
           </button>
         )}
       </div>
-      
+
       <button
         onClick={handleClose}
         className="flex-shrink-0 ml-4 hover:opacity-70 transition-opacity"
@@ -99,11 +96,7 @@ export const ToastContainer = ({ toasts, removeToast }) => {
   return (
     <div className="fixed bottom-4 right-4 z-50 space-y-2 max-w-sm">
       {toasts.map((toast) => (
-        <Toast
-          key={toast.id}
-          {...toast}
-          onClose={() => removeToast(toast.id)}
-        />
+        <Toast key={toast.id} {...toast} onClose={() => removeToast(toast.id)} />
       ))}
     </div>
   );
@@ -126,17 +119,16 @@ export const useToast = () => {
     setToasts((prev) => prev.filter((toast) => toast.id !== id));
   };
 
-  const showSuccess = (message, options = {}) => 
+  const showSuccess = (message, options = {}) =>
     showToast({ message, type: 'success', ...options });
 
-  const showError = (message, options = {}) => 
+  const showError = (message, options = {}) =>
     showToast({ message, type: 'error', duration: 5000, ...options });
 
-  const showWarning = (message, options = {}) => 
+  const showWarning = (message, options = {}) =>
     showToast({ message, type: 'warning', ...options });
 
-  const showInfo = (message, options = {}) => 
-    showToast({ message, type: 'info', ...options });
+  const showInfo = (message, options = {}) => showToast({ message, type: 'info', ...options });
 
   return {
     toasts,
@@ -145,7 +137,7 @@ export const useToast = () => {
     showSuccess,
     showError,
     showWarning,
-    showInfo
+    showInfo,
   };
 };
 

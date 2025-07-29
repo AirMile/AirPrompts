@@ -1,7 +1,6 @@
 import React, { useRef, useEffect } from 'react';
 import { ChevronDownIcon, ChevronRightIcon } from '@heroicons/react/24/outline';
 import useSectionVisibility from '../../hooks/ui/useSectionVisibility';
-import { useItemColors } from '../../hooks/useItemColors.js';
 
 /**
  * CollapsibleSection component for organizing content with expand/collapse functionality
@@ -36,28 +35,27 @@ const CollapsibleSection = ({
   ...restProps // Pass through any additional props
 }) => {
   const { isVisible: internalVisible, toggle } = useSectionVisibility(sectionId, defaultVisible);
-  const { getColorClasses } = useItemColors();
   const isFirstRender = useRef(true);
   const sectionRef = useRef(null);
-  
+
   // Use external visibility if provided, otherwise use internal state
   const isVisible = externalVisible !== null ? externalVisible : internalVisible;
-  
+
   // Disable animations on first render or during initial load to prevent flicker
   useEffect(() => {
     if ((isFirstRender.current || isInitialLoad) && sectionRef.current) {
       // Add no-transition class to prevent animation on initial render or load
       sectionRef.current.classList.add('no-transition');
-      
+
       // Remove the class after DOM updates complete
       const timer = setTimeout(() => {
         if (sectionRef.current && !isInitialLoad) {
           sectionRef.current.classList.remove('no-transition');
         }
       }, 100);
-      
+
       isFirstRender.current = false;
-      
+
       return () => clearTimeout(timer);
     }
   }, [isInitialLoad]);
@@ -69,16 +67,16 @@ const CollapsibleSection = ({
 
   const handleToggle = () => {
     const totalCount = count || itemCount || 0;
-    
+
     // If no items and onCreateNew is provided, create new item
     if (totalCount === 0 && onCreateNew) {
       onCreateNew();
       return;
     }
-    
+
     // Only allow toggle if there are items
     if (totalCount === 0) return;
-    
+
     if (externalVisible !== null && onVisibilityChange) {
       // When using external control, only call the callback
       const newState = !externalVisible;
@@ -99,27 +97,28 @@ const CollapsibleSection = ({
   // Calculate spacing based on content - ALWAYS use reduced spacing for empty sections
   const totalCount = count || itemCount || 0;
   const hasContent = totalCount > 0;
-  
-  // Force reduced spacing for ALL empty sections, regardless of visibility state
-  // This ensures consistent spacing across all folders
-  const shouldUseReducedSpacing = !hasContent;
-  
+
   // Build spacing class - consistent spacing for all sections
   // mb-4 = 1rem = 16px, same as the py-4 container padding
   const spacingClass = 'mb-4';
-  
+
   // Clean className of any existing margin-bottom classes and add our spacing
   const cleanClassName = className.replace(/mb-\d+/g, '').trim();
   const dynamicClassName = cleanClassName ? `${cleanClassName} ${spacingClass}` : spacingClass;
-  
+
   return (
-    <div className={`collapsible-section section-boundary-restricted ${dynamicClassName}`} {...restProps}>
+    <div
+      className={`collapsible-section section-boundary-restricted ${dynamicClassName}`}
+      {...restProps}
+    >
       {/* Section Header */}
-      <div className={`w-full flex items-center justify-between rounded-lg overflow-hidden transition-colors duration-200 group border ${
-        (count || itemCount || 0) > 0 
-          ? 'bg-primary-50 dark:bg-primary-900/10 hover:bg-primary-100 dark:hover:bg-primary-900/20 has-[.action-button:hover]:bg-primary-50 dark:has-[.action-button:hover]:bg-primary-900/10 border-primary-200 dark:border-primary-800/50' 
-          : 'bg-secondary-50 dark:bg-secondary-900/10 border-secondary-200 dark:border-secondary-800/50'
-      }`}>
+      <div
+        className={`w-full flex items-center justify-between rounded-lg overflow-hidden transition-colors duration-200 group border ${
+          (count || itemCount || 0) > 0
+            ? 'bg-primary-50 dark:bg-primary-900/10 hover:bg-primary-100 dark:hover:bg-primary-900/20 has-[.action-button:hover]:bg-primary-50 dark:has-[.action-button:hover]:bg-primary-900/10 border-primary-200 dark:border-primary-800/50'
+            : 'bg-secondary-50 dark:bg-secondary-900/10 border-secondary-200 dark:border-secondary-800/50'
+        }`}
+      >
         <button
           type="button"
           onClick={handleToggle}
@@ -134,7 +133,7 @@ const CollapsibleSection = ({
         >
           <div className="flex items-center space-x-2">
             {/* Collapse/Expand Icon - only show if there are items */}
-            {(count > 0 || itemCount > 0) ? (
+            {count > 0 || itemCount > 0 ? (
               isVisible ? (
                 <ChevronDownIcon className="w-5 h-5 text-secondary-600 dark:text-secondary-400" />
               ) : (
@@ -143,34 +142,28 @@ const CollapsibleSection = ({
             ) : (
               <div className="w-5 h-5" /> // Empty space to maintain alignment
             )}
-            
+
             {/* Section Icon */}
-            {icon && (
-              <div className="flex items-center">
-                {icon}
-              </div>
-            )}
-            
+            {icon && <div className="flex items-center">{icon}</div>}
+
             {/* Section Title */}
             <h3 className="text-lg font-medium text-secondary-900 dark:text-secondary-100">
               {title}
             </h3>
           </div>
-          
+
           {/* Item Count Badge */}
           {(count > 0 || itemCount > 0) && (
-            <span className={`inline-flex items-center justify-center min-w-[1.5rem] h-6 px-2 rounded-full text-xs font-medium tabular-nums ${getCountBadgeColor()}`}>
+            <span
+              className={`inline-flex items-center justify-center min-w-[1.5rem] h-6 px-2 rounded-full text-xs font-medium tabular-nums ${getCountBadgeColor()}`}
+            >
               {count || itemCount}
             </span>
           )}
         </button>
-        
+
         {/* Action Button */}
-        {actionButton && (
-          <div className="flex-shrink-0 p-3 action-button">
-            {actionButton}
-          </div>
-        )}
+        {actionButton && <div className="flex-shrink-0 p-3 action-button">{actionButton}</div>}
       </div>
 
       {/* Section Content - CSS Grid Collapse Animation */}
@@ -179,17 +172,15 @@ const CollapsibleSection = ({
         id={`section-content-${sectionId}`}
         className="grid transition-[grid-template-rows] duration-300 ease-in-out"
         style={{
-          gridTemplateRows: isVisible ? '1fr' : '0fr'
+          gridTemplateRows: isVisible ? '1fr' : '0fr',
         }}
         aria-hidden={!isVisible}
       >
         <div className="overflow-hidden">
-          <div 
-            className={`transition-all duration-300 ease-in-out ${
-              hasContent ? 'pt-4' : ''
-            }`}
+          <div
+            className={`transition-all duration-300 ease-in-out ${hasContent ? 'pt-4' : ''}`}
             style={{
-              opacity: isVisible ? 1 : 0
+              opacity: isVisible ? 1 : 0,
             }}
           >
             {children}

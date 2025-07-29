@@ -21,7 +21,7 @@ const PromptTemplateSystem = () => {
     templates: defaultTemplates,
     workflows: defaultWorkflows,
     snippets: defaultSnippets,
-    folders: defaultFolders
+    folders: defaultFolders,
   });
 
   // Use persisted state that auto-saves to localStorage
@@ -39,14 +39,14 @@ const PromptTemplateSystem = () => {
     updateSnippet,
     deleteTemplate,
     deleteWorkflow,
-    deleteSnippet
+    deleteSnippet,
   } = usePersistedAppState(initialData, {
     debounceMs: 300, // Snellere save voor betere UX
     onSaveError: (type, error) => {
       console.error(`💾 Error bij opslaan van ${type}:`, error);
       setError(`Kon ${type} niet opslaan. Wijzigingen kunnen verloren gaan.`);
     },
-    onSaveSuccess: (type) => {}
+    onSaveSuccess: () => {},
   });
 
   // UI state (niet persistent)
@@ -64,6 +64,7 @@ const PromptTemplateSystem = () => {
     const storageInfo = getStorageInfo();
     if (storageInfo.available) {
       if (initialData.migrated) {
+        // Migration already completed
       }
     } else {
       console.warn('⚠️ LocalStorage niet beschikbaar, wijzigingen gaan verloren bij refresh');
@@ -76,10 +77,10 @@ const PromptTemplateSystem = () => {
     try {
       setIsLoading(true);
       setError(null);
-      
-      if (template.id && templates.find(t => t.id === template.id)) {
+
+      if (template.id && templates.find((t) => t.id === template.id)) {
         // Update bestaande template
-        setTemplates(templates.map(t => t.id === template.id ? template : t));
+        setTemplates(templates.map((t) => (t.id === template.id ? template : t)));
       } else {
         // Nieuwe template
         setTemplates([...templates, { ...template, id: Date.now() }]);
@@ -96,10 +97,10 @@ const PromptTemplateSystem = () => {
     try {
       setIsLoading(true);
       setError(null);
-      
-      if (workflow.id && workflows.find(w => w.id === workflow.id)) {
+
+      if (workflow.id && workflows.find((w) => w.id === workflow.id)) {
         // Update bestaande workflow
-        setWorkflows(workflows.map(w => w.id === workflow.id ? workflow : w));
+        setWorkflows(workflows.map((w) => (w.id === workflow.id ? workflow : w)));
       } else {
         // Nieuwe workflow
         setWorkflows([...workflows, { ...workflow, id: Date.now() }]);
@@ -116,10 +117,10 @@ const PromptTemplateSystem = () => {
     try {
       setIsLoading(true);
       setError(null);
-      
-      if (snippet.id && snippets.find(s => s.id === snippet.id)) {
+
+      if (snippet.id && snippets.find((s) => s.id === snippet.id)) {
         // Update bestaande snippet
-        setSnippets(snippets.map(s => s.id === snippet.id ? snippet : s));
+        setSnippets(snippets.map((s) => (s.id === snippet.id ? snippet : s)));
       } else {
         // Nieuwe snippet
         setSnippets([...snippets, { ...snippet, id: Date.now() }]);
@@ -141,7 +142,7 @@ const PromptTemplateSystem = () => {
         parentId: parentId,
         type: 'folder',
         createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString()
+        updatedAt: new Date().toISOString(),
       };
       setFolders([...folders, newFolder]);
     }
@@ -232,14 +233,10 @@ const PromptTemplateSystem = () => {
           {/* Global Error Message */}
           {error && (
             <div className="fixed top-4 right-4 z-50 max-w-md">
-              <ErrorMessage 
-                error={error}
-                onDismiss={() => setError(null)}
-                variant="critical"
-              />
+              <ErrorMessage error={error} onDismiss={() => setError(null)} variant="critical" />
             </div>
           )}
-          
+
           {/* Global Loading Overlay */}
           {isLoading && (
             <div className="fixed inset-0 bg-black/50 z-40 flex items-center justify-center">
@@ -248,8 +245,8 @@ const PromptTemplateSystem = () => {
               </div>
             </div>
           )}
-          
-          <Homepage 
+
+          <Homepage
             templates={templates}
             workflows={workflows}
             snippets={snippets}

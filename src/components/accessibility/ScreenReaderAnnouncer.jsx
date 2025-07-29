@@ -12,7 +12,7 @@ export const ScreenReaderAnnouncer = () => {
     // Listen for custom events to announce messages
     const handleAnnounce = (event) => {
       const { message, priority = 'polite' } = event.detail;
-      
+
       if (priority === 'assertive') {
         setAnnouncement(message);
         // Clear after announcement
@@ -30,22 +30,12 @@ export const ScreenReaderAnnouncer = () => {
   return (
     <>
       {/* Assertive announcements for urgent messages */}
-      <div
-        role="status"
-        aria-live="assertive"
-        aria-atomic="true"
-        className="sr-only"
-      >
+      <div role="status" aria-live="assertive" aria-atomic="true" className="sr-only">
         {announcement}
       </div>
-      
+
       {/* Polite announcements for general updates */}
-      <div
-        role="status"
-        aria-live="polite"
-        aria-atomic="true"
-        className="sr-only"
-      >
+      <div role="status" aria-live="polite" aria-atomic="true" className="sr-only">
         {politeAnnouncement}
       </div>
     </>
@@ -58,7 +48,7 @@ export const ScreenReaderAnnouncer = () => {
 export const announce = (message, priority = 'polite') => {
   window.dispatchEvent(
     new CustomEvent('announce', {
-      detail: { message, priority }
+      detail: { message, priority },
     })
   );
 };
@@ -82,8 +72,9 @@ export const SkipToContent = ({ targetId = 'main-content' }) => {
 /**
  * Visually hidden component for screen reader only content
  */
-export const VisuallyHidden = ({ children, as: Component = 'span' }) => {
-  return <Component className="sr-only">{children}</Component>;
+export const VisuallyHidden = ({ children, as = 'span' }) => {
+  const Element = as;
+  return <Element className="sr-only">{children}</Element>;
 };
 
 /**
@@ -91,27 +82,27 @@ export const VisuallyHidden = ({ children, as: Component = 'span' }) => {
  */
 export const FocusTrap = ({ children, isActive = true }) => {
   const containerRef = React.useRef(null);
-  
+
   useEffect(() => {
     if (!isActive) return;
-    
+
     const container = containerRef.current;
     if (!container) return;
-    
+
     // Get all focusable elements
     const focusableElements = container.querySelectorAll(
       'a[href], button:not([disabled]), textarea:not([disabled]), input:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])'
     );
-    
+
     const firstFocusable = focusableElements[0];
     const lastFocusable = focusableElements[focusableElements.length - 1];
-    
+
     // Focus first element
     firstFocusable?.focus();
-    
+
     const handleTabKey = (e) => {
       if (e.key !== 'Tab') return;
-      
+
       if (e.shiftKey) {
         if (document.activeElement === firstFocusable) {
           e.preventDefault();
@@ -124,11 +115,11 @@ export const FocusTrap = ({ children, isActive = true }) => {
         }
       }
     };
-    
+
     container.addEventListener('keydown', handleTabKey);
     return () => container.removeEventListener('keydown', handleTabKey);
   }, [isActive]);
-  
+
   return <div ref={containerRef}>{children}</div>;
 };
 
@@ -149,7 +140,7 @@ export const AccessibleLoadingIndicator = ({ label = 'Loading' }) => {
  */
 export const AccessibleProgress = ({ value, max = 100, label }) => {
   const percentage = Math.round((value / max) * 100);
-  
+
   return (
     <div
       role="progressbar"
@@ -174,7 +165,7 @@ export const AccessibleProgress = ({ value, max = 100, label }) => {
 export const AccessibleTooltip = ({ content, children }) => {
   const [isVisible, setIsVisible] = useState(false);
   const tooltipId = React.useId();
-  
+
   return (
     <div className="relative inline-block">
       <div
@@ -186,7 +177,7 @@ export const AccessibleTooltip = ({ content, children }) => {
       >
         {children}
       </div>
-      
+
       {isVisible && (
         <div
           id={tooltipId}
@@ -195,8 +186,10 @@ export const AccessibleTooltip = ({ content, children }) => {
                      -top-8 left-1/2 -translate-x-1/2 whitespace-nowrap"
         >
           {content}
-          <div className="absolute w-0 h-0 border-4 border-transparent border-t-gray-900 
-                          top-full left-1/2 -translate-x-1/2" />
+          <div
+            className="absolute w-0 h-0 border-4 border-transparent border-t-gray-900 
+                          top-full left-1/2 -translate-x-1/2"
+          />
         </div>
       )}
     </div>
@@ -211,5 +204,5 @@ export default {
   FocusTrap,
   AccessibleLoadingIndicator,
   AccessibleProgress,
-  AccessibleTooltip
+  AccessibleTooltip,
 };

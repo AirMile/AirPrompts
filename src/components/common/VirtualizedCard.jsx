@@ -7,7 +7,6 @@ import Card from '../shared/ui/Card.jsx';
  */
 const VirtualizedCard = memo(function VirtualizedCard({
   item,
-  index,
   style,
   sectionType,
   onToggleFavorite,
@@ -21,13 +20,17 @@ const VirtualizedCard = memo(function VirtualizedCard({
   ...cardProps
 }) {
   // Haal type op van item of section
-  const itemType = item.type || 
-    (sectionType === 'workflows' ? 'workflow' : 
-     sectionType === 'snippets' ? 'snippet' : 'template');
+  const itemType =
+    item.type ||
+    (sectionType === 'workflows'
+      ? 'workflow'
+      : sectionType === 'snippets'
+        ? 'snippet'
+        : 'template');
 
   return (
-    <div 
-      style={style} 
+    <div
+      style={style}
       className="p-2" // Padding voor grid spacing
     >
       <Card
