@@ -162,7 +162,7 @@ export const getItemColorClasses = (itemType, variant = 'base') => {
         primary:
           'bg-primary-50 dark:bg-primary-950/50 text-primary-700 dark:text-primary-300 border border-primary-200 dark:border-primary-800',
         success:
-          'bg-success-50 dark:bg-success-950/50 text-success-700 dark:text-success-300 border border-success-200 dark:border-success-800',
+          'bg-success-50 dark:bg-success-900/30 text-success-700 dark:text-success-400 border border-success-200 dark:border-success-700',
         warning:
           'bg-warning-50 dark:bg-warning-950/50 text-warning-700 dark:text-warning-300 border border-warning-200 dark:border-warning-800',
         danger:
@@ -179,7 +179,7 @@ export const getItemColorClasses = (itemType, variant = 'base') => {
     case 'info-header':
       return {
         primary: 'text-primary-700 dark:text-primary-300',
-        success: 'text-success-700 dark:text-success-300',
+        success: 'text-success-700 dark:text-success-400',
         warning: 'text-warning-700 dark:text-warning-300',
         danger: 'text-danger-700 dark:text-danger-300',
         orange: 'text-orange-700 dark:text-orange-300',
@@ -191,7 +191,7 @@ export const getItemColorClasses = (itemType, variant = 'base') => {
     case 'info-text':
       return {
         primary: 'text-primary-600 dark:text-primary-400',
-        success: 'text-success-600 dark:text-success-400',
+        success: 'text-success-600 dark:text-success-500',
         warning: 'text-warning-600 dark:text-warning-400',
         danger: 'text-danger-600 dark:text-danger-400',
         orange: 'text-orange-600 dark:text-orange-400',
