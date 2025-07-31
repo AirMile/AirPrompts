@@ -76,7 +76,7 @@ const ResizableSection = ({
     document.addEventListener('mouseup', handleMouseUp);
     document.body.style.cursor = 'ns-resize';
     document.body.style.userSelect = 'none';
-  }, [contentHeight, defaultHeight, shouldBeResizable]);
+  }, [contentHeight, defaultHeight, shouldBeResizable, handleMouseMove, handleMouseUp]);
 
   // Mouse move handler for resize
   const handleMouseMove = useCallback((e) => {

@@ -1515,7 +1515,7 @@ const Homepage = ({
       default:
         return null;
     }
-  }, [renderItems, onEditWorkflow, onEditTemplate, onEditSnippet]);
+  }, [renderItems, onEditWorkflow, onEditTemplate, onEditSnippet, selectedFolderId, sensors, favoritesDragDrop, workflowsDragDrop, templatesDragDrop, snippetsDragDrop, handleFavoriteToggle, workflowsPagination, templatesPagination, snippetsPagination, favorites, filteredWorkflows, filteredTemplates, filteredSnippets, favoritesVisibility, workflowsVisibility, templatesVisibility, snippetsVisibility, isFolderChanging]);
 
 
   return (

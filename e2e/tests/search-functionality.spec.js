@@ -35,7 +35,7 @@ test.describe('Search Functionality', () => {
     await expect(page.locator('text="Bug Report Template"')).not.toBeVisible();
   });
 
-  test('should search with case-insensitive matching', async ({ page }) => {
+  test('should search with case-insensitive matching', async () => {
     // Search with different cases
     await helpers.searchForItem('EMAIL');
     await helpers.verifyItemExists('Test Email Template');
@@ -47,7 +47,7 @@ test.describe('Search Functionality', () => {
     await helpers.verifyItemExists('Test Email Template');
   });
 
-  test('should search by description content', async ({ page }) => {
+  test('should search by description content', async () => {
     await helpers.searchForItem('code review feedback');
     
     // Verify template with matching description is found
@@ -114,7 +114,7 @@ test.describe('Search Functionality', () => {
     await expect(page.locator('text="Bug Report Template"')).not.toBeVisible();
   });
 
-  test('should search with special characters', async ({ page }) => {
+  test('should search with special characters', async () => {
     // Create template with special characters
     await helpers.navigateToTemplates();
     await helpers.createTemplate({
@@ -192,7 +192,7 @@ test.describe('Search Functionality', () => {
     await helpers.verifyItemExists('Test Email Template');
   });
 
-  test('should search within template content', async ({ page }) => {
+  test('should search within template content', async () => {
     // Search for variable names that appear in content
     await helpers.searchForItem('recipient_name');
     
