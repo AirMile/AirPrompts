@@ -207,7 +207,7 @@ test.describe('Workflow Execution', () => {
     await expect(steps.nth(2)).toContainText(testTemplates[1].name);
   });
 
-  test('should export workflow execution results', async ({ page, context }) => {
+  test('should export workflow execution results', async ({ page }) => {
     await helpers.navigateToWorkflows();
     
     // Create and execute workflow

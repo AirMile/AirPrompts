@@ -45,16 +45,18 @@ const FolderManagementWidget = ({
   const [draggedItem, setDraggedItem] = useState(null);
   const [draggedFromSection, setDraggedFromSection] = useState(null);
   
-  // Get widget configuration
-  const widgetConfig = dashboard.widgets?.[widgetId] || {
-    showFavorites: true,
-    showWorkflows: true,
-    showTemplates: true,
-    showSnippets: true,
-    maxItemsPerSection: 10,
-    showDescription: true,
-    showTags: false
-  };
+  // Get widget configuration with useMemo to prevent recreation
+  const widgetConfig = useMemo(() => {
+    return dashboard.widgets?.[widgetId] || {
+      showFavorites: true,
+      showWorkflows: true,
+      showTemplates: true,
+      showSnippets: true,
+      maxItemsPerSection: 10,
+      showDescription: true,
+      showTags: false
+    };
+  }, [dashboard.widgets, widgetId]);
 
   // Bereken items per sectie met memoization voor performance
   const folderFavorites = useMemo(() => {
@@ -98,8 +100,8 @@ const FolderManagementWidget = ({
     }
   };
 
-  // Get appropriate handler functions
-  const getHandlers = (item) => {
+  // Get appropriate handler functions with useCallback
+  const getHandlers = useCallback((item) => {
     const type = item.type;
     return {
       onEdit: type === 'workflow' ? onEditWorkflow : 
@@ -109,7 +111,7 @@ const FolderManagementWidget = ({
       onUpdate: type === 'workflow' ? onUpdateWorkflow :
                 type === 'template' ? onUpdateTemplate : onUpdateSnippet
     };
-  };
+  }, [onEditWorkflow, onEditTemplate, onEditSnippet, onDeleteWorkflow, onDeleteTemplate, onDeleteSnippet, onUpdateWorkflow, onUpdateTemplate, onUpdateSnippet]);
 
   // Handle item execution
   const handleExecute = useCallback((item) => {

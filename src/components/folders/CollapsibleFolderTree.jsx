@@ -484,7 +484,7 @@ const CollapsibleFolderTree = ({
     });
     
     return filteredFolders;
-  }, [folders, tempFolders, isReorderMode, expandedFolders, showOnlyFavorites, favoriteFolders, filterFavorites, sortBy, searchQuery]);
+  }, [folders, tempFolders, isReorderMode, showOnlyFavorites, filterFavorites, sortBy, searchQuery]);
 
 
   const toggleFolder = async (folderId) => {
